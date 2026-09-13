@@ -61,7 +61,7 @@ Copyright (C) 2026 Andrew Cupps
 <!-- [END] Nav Menu Toggle -->
 
 <aside
-  class="max-md:bg-bg-primary max-md:scrollbar-gutter-both custom-scrollbar md:text-md flex gap-2 py-2 text-lg max-md:fixed max-md:bottom-0 max-md:right-0 max-md:top-12 max-md:min-w-60 max-md:translate-x-full max-md:flex-col max-md:overflow-y-scroll max-md:border-l-2 max-md:px-4 max-md:transition-transform max-md:duration-300 max-md:peer-checked:translate-x-0 md:gap-6 lg:gap-8"
+  class="custom-scrollbar max-md:bg-bg-primary md:text-md max-md:min-w-62 flex gap-2 px-6 py-4 text-lg max-md:fixed max-md:bottom-0 max-md:right-0 max-md:top-12 max-md:translate-x-full max-md:flex-col max-md:overflow-y-auto max-md:border-l-2 max-md:transition-transform max-md:duration-300 max-md:peer-checked:translate-x-0 md:gap-6 md:px-0 md:py-2 lg:gap-8"
 >
   {#each navLinks as item, i (i)}
     {#if item.children}

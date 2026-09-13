@@ -9,7 +9,7 @@ Copyright (C) 2026 Andrew Cupps
 
   interface Props {
     onClose: () => void;
-    onSubmit: (event: UserEvent) => void;
+    onSubmit: (event: UserEvent) => void | Promise<void>;
     initialEventData?: UserEvent | null;
   }
 
@@ -24,6 +24,7 @@ Copyright (C) 2026 Andrew Cupps
   let location = $state('');
   let notes = $state('');
   let errors: string[] = $state([]);
+  let isSubmitting = $state(false);
 
   // Keystroke caches to catch lone digits typed by the user
   let rawStartKeys = '';
@@ -176,7 +177,9 @@ Copyright (C) 2026 Andrew Cupps
     }
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
+    if (isSubmitting) return;
+
     errors = [];
     if (!name.trim()) errors.push('Name is required');
     if (selectedDays.length === 0) errors.push('Select at least one day');
@@ -187,6 +190,8 @@ Copyright (C) 2026 Andrew Cupps
     }
 
     if (errors.length > 0) return;
+
+    isSubmitting = true;
 
     const event: UserEvent = {
       id: initialEventData ? initialEventData.id : Date.now().toString(),
@@ -199,8 +204,12 @@ Copyright (C) 2026 Andrew Cupps
       colorNumber: 0,
     };
 
-    onSubmit(event);
-    onClose();
+    try {
+      await onSubmit(event);
+      onClose();
+    } finally {
+      isSubmitting = false;
+    }
   }
 </script>
 
@@ -317,8 +326,14 @@ Copyright (C) 2026 Andrew Cupps
   <!-- Actions -->
   <div class="flex justify-end gap-2">
     <button type="button" onclick={onClose} class="hover:bg-hover rounded-sm px-3 py-1.5 text-sm"> Cancel </button>
-    <button type="button" onclick={handleSubmit} class="bg-outline hover:bg-hover rounded-sm px-3 py-1.5 text-sm">
-      {initialEventData ? 'Save Event' : 'Add Event'}
+    <button
+      type="button"
+      onclick={handleSubmit}
+      disabled={isSubmitting}
+      aria-busy={isSubmitting}
+      class="bg-outline hover:bg-hover rounded-sm px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {isSubmitting ? 'Adding...' : initialEventData ? 'Save Event' : 'Add Event'}
     </button>
   </div>
 </div>
