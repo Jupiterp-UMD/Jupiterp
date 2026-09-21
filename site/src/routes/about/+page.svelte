@@ -12,8 +12,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <svelte:head>
   <title>About | Jupiterp</title>
 </svelte:head>
-<main>
-  <article class="custom-scrollbar fixed bottom-0 top-12 overflow-y-auto px-4 py-2">
+<main class="prose">
+  <article>
     <h1>About Jupiterp</h1>
     <p>
       Jupiterp is a website built to help students at the University of Maryland plan their schedules and make informed

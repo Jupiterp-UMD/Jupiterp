@@ -15,7 +15,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <main class="prose">
   <article>
     <h1>Terms of Use for Jupiterp</h1>
-    <p class="subtitle">Last Updated: 14th, 2024</p>
+    <p class="subtitle">Last Updated: August 14, 2026</p>
     <h2>Introduction</h2>
     <p>
       Welcome to Jupiterp. These Terms of Use ("Terms") govern your use of the Jupiterp website, a course planner for

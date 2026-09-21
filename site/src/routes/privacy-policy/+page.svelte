@@ -15,7 +15,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <main class="prose">
   <article>
     <h1>Privacy Policy for Jupiterp</h1>
-    <p class="subtitle">Last Updated: August 14th, 2026</p>
+    <p class="subtitle">Last Updated: August 14, 2026</p>
     <h2>Introduction</h2>
     <p>
       Welcome to Jupiterp. We are committed to protecting your personal information and your right to privacy. This

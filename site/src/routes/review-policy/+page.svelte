@@ -14,8 +14,6 @@ old decisions become unreproducible.
 -->
 <script lang="ts">
   import { resolve } from '$app/paths';
-  /** Keep in step with PolicyVersion in the API. */
-  const POLICY_VERSION = '2026-08-14';
 </script>
 
 <svelte:head>
@@ -29,8 +27,7 @@ old decisions become unreproducible.
 <main class="prose">
   <article>
     <h1>Review Policy</h1>
-
-    <p class="text-text-secondary my-2 text-sm">Version {POLICY_VERSION}</p>
+    <p class="subtitle">Last Updated: August 14, 2026</p>
 
     <p>
       Jupiterp publishes student reviews of named people. That is worth doing carefully. Everything below applies to
