@@ -76,8 +76,8 @@
   function exportCalender() {
     let icsData = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Jupiterp//EN\r\n';
     // hardcoded for now (dates are 0 indexed so jan is 0 and its yy, mm, dd)
-    const semesterStart = formatDate(new Date(2027, 1, 27));
-    const semesterEnd = formatDate(new Date(2027, 5, 11));
+    const semesterStart = formatDate(new Date(2027, 0, 27));
+    const semesterEnd = formatDate(new Date(2027, 4, 11));
 
     for (const currentClass of selectionsCustom) {
       const name = currentClass.name;
