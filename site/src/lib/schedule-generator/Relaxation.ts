@@ -2,7 +2,7 @@
  * This file is part of Jupiterp. For terms of use, please see the file
  * called LICENSE at the top level of the Jupiterp source tree (online at
  * https://github.com/atcupps/Jupiterp/LICENSE).
- * Copyright (C) 2026 Andrew Cupps
+ *
  *
  * @fileoverview When nothing fits, the generator loosens one constraint at a
  * time and re-runs to report how many schedules each single change would

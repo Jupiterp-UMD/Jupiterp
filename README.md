@@ -7,7 +7,7 @@ This repository is for the main Jupiterp site, which is built with SvelteKit and
 - The Jupiterp web-scraper, which collects course information to be used in the site
 - The [@jupiterp/jupiterp](https://www.npmjs.com/package/@jupiterp/jupiterp/) npm package, which provides a TS interface wrapping the Jupiterp API
 
-Jupiterp is not officially affiliated with the University of Maryland; it is primarily managed and maintained by @atcupps. Contact admin@jupiterp.com for any inquiries.
+Jupiterp is not officially affiliated with the University of Maryland; it is primarily managed and maintained by @chase-fournier and the JupiTerp Maintaining Team. Contact admin@jupiterp.com for any inquiries.
 
 For more information on Jupiterp and on contributing to this project please see `CONTRIBUTING.md`. Otherwise, see the instructions below to learn how to work on this project.
 
