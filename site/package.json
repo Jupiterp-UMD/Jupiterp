@@ -17,7 +17,7 @@
     "prepare": "cd .. && husky site/.husky"
   },
   "dependencies": {
-    "@jupiterp/jupiterp": "^0.8.5",
+    "@jupiterp/jupiterp": "^1.0.0",
     "@sentry/sveltekit": "^8.53.0",
     "@supabase/supabase-js": "^2.48.1",
     "@svelte-put/clickoutside": "^3.0.2",

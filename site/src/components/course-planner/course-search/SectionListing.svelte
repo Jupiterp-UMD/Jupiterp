@@ -35,29 +35,19 @@ Copyright (C) 2026 Andrew Cupps
     isDesktop = $bindable(false),
   }: Props = $props();
 
-  let hoveredSection: ScheduleSelection | null;
-  HoveredSectionStore.subscribe((store) => {
-    hoveredSection = store;
-  });
+  let hoveredSection = $derived($HoveredSectionStore);
+  let selectionsList = $derived($CurrentScheduleStore.selections);
+  let scheduleName = $derived($CurrentScheduleStore.scheduleName);
+  let onlyShowingOpen = $derived($CourseSearchFilterStore.clientSideFilters.onlyOpen === true);
+  let wasSectionSelected = $state(false);
 
-  let selectionsList: ScheduleBlock[] = $state([]);
-  let scheduleName: string = $state('');
-  let wasSectionSelected = false;
-  CurrentScheduleStore.subscribe((stored) => {
-    selectionsList = stored.selections;
-    scheduleName = stored.scheduleName;
-
-    const isSectionSelected = selectionsList.some(selectionEquals);
+  $effect(() => {
+    const isSectionSelected = selectionsList.some((selection) => selectionEquals(selection));
     if (wasSectionSelected && !isSectionSelected) {
       showRemoveAlert();
       removeHoverSection();
     }
     wasSectionSelected = isSectionSelected;
-  });
-
-  let onlyShowingOpen = false;
-  CourseSearchFilterStore.subscribe((store) => {
-    onlyShowingOpen = store.clientSideFilters.onlyOpen === true;
   });
 
   let newSelection: ScheduleSelection = {
@@ -223,7 +213,13 @@ Copyright (C) 2026 Andrew Cupps
            a section (e.g. PSYC100 0201 lists "OnlineAsync" twice), and a
            duplicate key is a fatal runtime error in Svelte 5. -->
       {#each section.instructors as instructor, i (i)}
-        <InstructorListing {instructor} bind:profsHover {removeHoverSection} />
+        <InstructorListing
+          {instructor}
+          slug={section.instructorSlugs?.[i]}
+          {courseCode}
+          bind:profsHover
+          {removeHoverSection}
+        />
       {/each}
 
       <!-- Seats info -->
