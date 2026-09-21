@@ -159,9 +159,7 @@ renders it.
       <ReviewForm
         instructorSlug={data.instructor.slug}
         instructorName={data.instructor.name}
-        courseCodes={[
-          ...new Set([...data.currentCourseCodes, ...data.courses.map((course) => course.courseCode)]),
-        ]}
+        courseCodes={[...new Set([...data.currentCourseCodes, ...data.courses.map((course) => course.courseCode)])]}
       />
       <button class="text-text-secondary self-start text-sm underline" onclick={() => (showForm = false)}>
         Cancel

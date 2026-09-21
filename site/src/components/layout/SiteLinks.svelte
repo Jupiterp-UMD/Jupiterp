@@ -21,6 +21,14 @@ Copyright (C) 2026 Andrew Cupps
     { link: '/', text: 'Course Planner' },
     { link: '/generate', text: 'Schedule Generator' },
     {
+      link: '/professors',
+      text: 'Professors',
+      children: [
+        { link: '/review/withdraw', text: 'Withdraw Review' },
+        { link: '/review-policy', text: 'Review Policy' },
+      ],
+    },
+    {
       link: '/about',
       text: 'About',
       children: [
@@ -85,7 +93,7 @@ Copyright (C) 2026 Andrew Cupps
 
         <div
           style="transition: height 0.3s;"
-          class="nav-list-contents md:-left-4.25 md:bg-bg-primary md:peer-checked:border-border md:mt-2.75 -mt-px flex h-auto flex-col overflow-clip peer-checked:h-0 max-md:border-y md:absolute md:h-0 md:rounded-lg md:border md:peer-checked:h-auto"
+          class="nav-list-contents md:-left-4.25 md:bg-bg-primary max-md:border-border/50 -mt-px flex h-auto flex-col overflow-clip peer-checked:h-0 max-md:border-y md:absolute md:mt-2.5 md:h-0 md:rounded-lg md:border md:peer-checked:h-auto"
         >
           {#each item.children as child, j (j)}
             <NavBarLink
