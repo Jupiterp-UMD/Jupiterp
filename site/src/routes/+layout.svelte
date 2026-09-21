@@ -5,7 +5,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 Copyright (C) 2026 Andrew Cupps
  -->
 <script lang="ts">
-  import { asset, resolve } from '$app/paths';
+  import { resolve } from '$app/paths';
   import '../app.css';
   import Analytics from '../components/layout/Analytics.svelte';
   import SiteLinks from '../components/layout/SiteLinks.svelte';
@@ -15,6 +15,7 @@ Copyright (C) 2026 Andrew Cupps
   }
 
   let { children }: Props = $props();
+  let resolvedHomeLink = $derived(resolve('/'));
 </script>
 
 <svelte:head>
@@ -27,26 +28,19 @@ Copyright (C) 2026 Andrew Cupps
 
 <Analytics />
 
-<header class="fixed z-50 w-full px-4">
-  <nav class="border-border flex h-12 flex-row justify-start border-b-2">
-    <a href={resolve('/')} aria-label="Home" rel="canonical" class="flex py-1">
-      <!-- `asset()`, not a bare "logo.svg". A relative src resolves against the
-           current route, so the logo loaded on / and 404'd on /professor/... and
-           /admin/... -- every page except the root. `asset()` is the counterpart
-           to the `resolve()` used for links, and stays correct under a base
-           path. -->
-      <img
-        src={asset('/logo.svg')}
-        alt="Jupiterp Logo"
-        width="143.75"
-        height="38"
-        fetchpriority="high"
-        decoding="sync"
-        class="h-full w-auto"
-      />
-    </a>
-    <SiteLinks />
-  </nav>
+<header class="fixed z-50 flex h-12 w-full flex-row justify-between border-b-2 px-4">
+  <a href={resolvedHomeLink} aria-label="Home" rel="canonical" class="flex py-1">
+    <img
+      src="logo.svg"
+      alt="Jupiterp Logo"
+      width="143.75"
+      height="38"
+      fetchpriority="high"
+      decoding="sync"
+      class="h-full w-auto"
+    />
+  </a>
+  <SiteLinks />
 </header>
 
 {@render children?.()}

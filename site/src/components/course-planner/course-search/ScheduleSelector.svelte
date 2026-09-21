@@ -7,26 +7,16 @@ Copyright (C) 2026 Andrew Cupps
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  import {
-    AngleRightOutline,
-    PlusOutline,
-    ForwardOutline,
-    TrashBinOutline,
-    LinkOutline,
-    ClipboardCheckOutline,
-  } from 'flowbite-svelte-icons';
+  import { AngleRightOutline, PlusOutline, ForwardOutline, TrashBinOutline } from 'flowbite-svelte-icons';
   import { CurrentScheduleStore, NonselectedScheduleStore } from '../../../stores/CoursePlannerStores';
   import ScheduleOptionsDropdown from './ScheduleOptionsDropdown.svelte';
   import { slide } from 'svelte/transition';
   import { deleteNonselectedSchedule, uniqueScheduleName } from '$lib/course-planner/ScheduleSelector';
-  import { encodeSchedule, SHARE_PARAM } from '$lib/course-planner/ShareLink';
-  import { base } from '$app/paths';
   import type { ScheduleBlock, StoredSchedule } from '../../../types';
-  import PopupShare from '../../layout/PopupShare.svelte';
+  import PopupShare from './PopupShare.svelte';
 
   let dropdownOpen: boolean = $state(false);
   let sharePopUpOpen: boolean = $state(false);
-  let linkCopied: boolean = $state(false);
 
   let currentScheduleName: string = $state('');
   let currentScheduleSelections: ScheduleBlock[];
@@ -122,23 +112,6 @@ Copyright (C) 2026 Andrew Cupps
       selections: currentScheduleSelections,
     });
   }
-
-  async function copyShareLink() {
-    const token = encodeSchedule(currentScheduleSelections);
-    if (!token) {
-      // No course sections to share.
-      return;
-    }
-
-    const url = `${window.location.origin}${base}/?${SHARE_PARAM}=${token}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      linkCopied = true;
-      setTimeout(() => (linkCopied = false), 1200);
-    } catch (e) {
-      console.error('Failed to copy share link:', e);
-    }
-  }
 </script>
 
 <div bind:this={containerElement} class="flex w-full flex-col">
@@ -166,18 +139,6 @@ Copyright (C) 2026 Andrew Cupps
     <button class="hover:bg-hover rounded-md px-1" title="Create new schedule" onclick={createNewSchedule}>
       <PlusOutline class="h-4 w-4" />
     </button>
-    <button
-      class="hover:bg-hover rounded-md px-1"
-      title={linkCopied ? 'Link copied!' : 'Copy shareable link'}
-      onclick={copyShareLink}
-    >
-      {#if linkCopied}
-        <ClipboardCheckOutline class="h-4 w-4" />
-      {:else}
-        <LinkOutline class="h-4 w-4" />
-      {/if}
-    </button>
-
     <button
       class="hover:bg-hover rounded-md px-1"
       title="Export schedule"

@@ -8,12 +8,12 @@ Copyright (C) 2026 Andrew Cupps
   <title>Bugs | Jupiterp</title>
 </svelte:head>
 
-<main class="fixed bottom-0 top-12 w-full px-4 py-2">
-  <!-- format-check exempt 5 -->
+<main class="prose p-0">
+  <!-- Parent div takes up the full viewport height -->
   <iframe
     title="Jupiterp Issue/Bug Report Form"
     src="https://docs.google.com/forms/d/e/1FAIpQLScGcTt4f8tQKgCDmgnLr5red9dFRW8QvUox-kn_lNWjxoBTzA/viewform?embedded=true"
-    class="h-full w-full"
+    class="h-full w-full dark:hue-rotate-180 dark:invert-[0.95]"
     frameborder="0"
     scrolling="auto"
   >

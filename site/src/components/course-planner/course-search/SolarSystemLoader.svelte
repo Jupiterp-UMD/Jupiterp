@@ -55,7 +55,6 @@ Copyright (C) 2026 Andrew Cupps
     --moon-size: calc(var(--wrapper-size) * 0.3);
     --ring-2-size: calc(var(--wrapper-size) * 0.5);
     --ring-3-size: calc(var(--wrapper-size) * 0.69);
-
     --p-inner-size: 12px;
     --p-outer-size: 12px;
 
@@ -72,7 +71,6 @@ Copyright (C) 2026 Andrew Cupps
     display: flex;
     justify-content: center;
     align-items: center;
-    animation: appear-disappear 4s ease-in-out infinite;
   }
 
   /* --- The Moon --- */
@@ -84,7 +82,6 @@ Copyright (C) 2026 Andrew Cupps
     position: absolute;
     z-index: 10;
     background: transparent;
-    animation: moon-pulse 4s ease-in-out infinite;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -176,41 +173,12 @@ Copyright (C) 2026 Andrew Cupps
   }
 
   /* --- ANIMATION --- */
-  @keyframes appear-disappear {
-    0% {
-      opacity: 0;
-      transform: scale(0.8);
-    }
-    15% {
-      opacity: 1;
-      transform: scale(1);
-    }
-    85% {
-      opacity: 1;
-      transform: scale(1);
-    }
-    100% {
-      opacity: 0;
-      transform: scale(1.1);
-    }
-  }
-
   @keyframes orbit-rotate {
     from {
       transform: rotate(0deg);
     }
     to {
       transform: rotate(360deg);
-    }
-  }
-
-  @keyframes moon-pulse {
-    0%,
-    100% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1);
     }
   }
 </style>
