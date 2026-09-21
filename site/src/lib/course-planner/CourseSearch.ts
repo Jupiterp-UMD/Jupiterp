@@ -7,7 +7,7 @@
  * @fileoverview Functions relating to searching for courses in Jupiterp.
  */
 
-import type { Course, Instructor, InstructorsConfig, InstructorsResponse } from '@jupiterp/jupiterp';
+import type { Course, Instructor, InstructorsResponse } from '@jupiterp/jupiterp';
 import { client } from '$lib/client';
 import { CourseDataCache, type RequestInput } from './CourseDataCache';
 import {
@@ -36,7 +36,19 @@ DepartmentsStore.subscribe((depts) => {
 let profNames: string[] = [];
 let profNamesReverse: string[] = [];
 ProfsLookupStore.subscribe((profs) => {
-  profNames = Object.keys(profs);
+  // The store is keyed by slug now, so the names for the `@professor` search
+  // come from the values.
+  //
+  // Filtered rather than mapped straight across. A subscriber that throws takes
+  // every subscriber registered after it down with it, because `set` notifies
+  // them in order -- so when the column list stopped requesting `name`, this
+  // callback did not just lose the professor search, it silently stopped the
+  // rest of the planner being told the lookup had loaded at all. Skipping a row
+  // with no name degrades to "that professor is unsearchable", which is a
+  // proportionate failure for a missing field.
+  profNames = Object.values(profs)
+    .map((prof) => prof.name)
+    .filter((name): name is string => typeof name === 'string' && name.length > 0);
   profNames.sort();
 
   profNamesReverse = profNames.map((name) => {
@@ -315,25 +327,27 @@ export async function setSearchResults(input: string) {
 }
 
 /**
- * Creates and returns an object mapping instructor names to `Instructor`s.
- * If there are multiple `Instructor`s in `profs` with the same `name`,
- * neither will be in the result because in `CourseSearch`, instructors'
- * ratings and slugs will only be looked for on the basis of their name, absent
- * of any additional information like what course they are teaching.
+ * Creates and returns an object mapping instructor *slugs* to `Instructor`s.
+ *
+ * Keyed on slug rather than name. A name is not an identifier: Testudo's
+ * spelling and the canonical instructor record disagree often enough to matter
+ * ("Aaron Kyei-Asare" against "Aaron Kyei-asare"), and two real professors can
+ * share one name outright -- there are two Douglas Hamiltons and two William
+ * Martins. The previous version keyed on name and deleted both entries on a
+ * collision, so those four professors were unreachable from the planner
+ * entirely, and every spelling mismatch silently lost its link.
+ *
+ * Callers get the slug from `section.instructorSlugs`, which the API resolves
+ * through the alias table rather than by matching strings.
+ *
  * @param profs An array `Instructor[]` to be included in a lookup
- * @returns A `Record<string, Instructor>` where instructor names as `string`s
- *              are mapped to `Instructor` objects.
+ * @returns A `Record<string, Instructor>` keyed by slug.
  */
 export function getProfsLookup(profs: Instructor[]): Record<string, Instructor> {
   const result: Record<string, Instructor> = {};
-  const names: Set<string> = new Set<string>();
   for (const prof of profs) {
-    const name = prof.name;
-    if (names.has(name)) {
-      delete result[name];
-    } else {
-      result[name] = prof;
-      names.add(name);
+    if (prof.slug) {
+      result[prof.slug] = prof;
     }
   }
   return result;
@@ -390,28 +404,76 @@ export function matchingStandardizedProfessorNames(partial: string): string[] {
 export async function loadInstructorLookup(): Promise<void> {
   try {
     const limit = 500;
-    let offset = 0;
-    let allInstructors: Instructor[] = [];
-    const config: InstructorsConfig = { limit, offset };
-    let complete = false;
-    while (!complete) {
-      const response: InstructorsResponse = await client.activeInstructors(config);
-      if (response.ok() && response.data != null) {
-        allInstructors = [...allInstructors, ...response.data];
-        if (response.data.length < limit) {
-          complete = true;
+
+    // Only the columns this lookup reads. The rest of the row -- the PlanetTerp
+    // provenance columns, the timestamps, the normalized name -- was being
+    // downloaded and discarded, which was about 94% of 1.3MB.
+    //
+    // `name` is one of them, and leaving it out broke the planner outright.
+    // Two of the three consumers of `ProfsLookupStore` need only the slug and
+    // the rating, which is what this list was trimmed to; the third is the
+    // subscriber above that builds `profNames` for the `@professor` search, and
+    // it reads `prof.name`. Without it every name was `undefined`, and the
+    // `.split(' ')` that builds the reversed "Last, First" list threw inside
+    // `ProfsLookupStore.set`, so every subscriber registered after that one
+    // stopped being notified.
+    const columns = ['slug', 'name', 'average_rating'];
+
+    // The first page also asks for the total, which is what makes the rest
+    // parallel. Without it the only way to find the end is to request pages
+    // until one comes back short, and that is necessarily sequential: six
+    // round trips, each waiting on the last, before the planner has any
+    // ratings at all.
+    const first: InstructorsResponse = await client.activeInstructors({
+      limit,
+      offset: 0,
+      columns,
+      count: true,
+    });
+    if (!first.ok() || first.data == null) {
+      // format-check exempt 3
+      throw new Error(
+        `Failed to fetch instructors: ${first.statusCode} ` + `${first.statusMessage} ${first.errorBody}`
+      );
+    }
+
+    const pages: Instructor[][] = [first.data];
+
+    // `total` comes from the `Content-Range` header. It is null if the header
+    // is unreadable -- it was, until the API started sending
+    // `Access-Control-Expose-Headers`, because `Content-Range` is not exposed
+    // to cross-origin JavaScript by default. Falling back to the sequential
+    // walk keeps this working against an older API rather than silently
+    // loading only the first 500 professors.
+    if (first.total == null) {
+      let offset = limit;
+      let previous = first.data;
+      while (previous.length === limit) {
+        const next: InstructorsResponse = await client.activeInstructors({ limit, offset, columns });
+        if (!next.ok() || next.data == null) {
           break;
         }
+        pages.push(next.data);
+        previous = next.data;
         offset += limit;
-        config.offset = offset;
-      } else {
-        // format-check exempt 3
-        throw new Error(
-          `Failed to fetch instructors: ${response.statusCode} ` + `${response.statusMessage} ${response.errorBody}`
-        );
+      }
+    } else {
+      const remaining: Promise<InstructorsResponse>[] = [];
+      for (let offset = limit; offset < first.total; offset += limit) {
+        remaining.push(client.activeInstructors({ limit, offset, columns }));
+      }
+      // A single rating page failing should cost its own rows, not the whole
+      // lookup -- every professor it would have covered simply shows no rating,
+      // which is already how an unrated professor renders.
+      const settled = await Promise.allSettled(remaining);
+      for (const result of settled) {
+        if (result.status === 'fulfilled' && result.value.ok() && result.value.data != null) {
+          pages.push(result.value.data);
+        }
       }
     }
-    ProfsLookupStore.set(getProfsLookup(allInstructors));
+
+    ProfsLookupStore.set(getProfsLookup(pages.flat()));
   } catch (error) {
     console.error('Error fetching professor data:', error);
   }

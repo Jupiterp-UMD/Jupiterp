@@ -1,0 +1,45 @@
+# Type-check and unit-test the site.
+#
+# This gate is why it exists: commit 7d139a4 removed an exported function from
+# CourseSearch.ts and left two routes importing it. `npm run check` failed with
+# two errors and `vite build` could not have succeeded, but nothing ran either
+# on push, so the branch sat broken. ESLint alone does not catch a missing
+# export -- only the type-checker does.
+#
+# Runs on every branch, not just PRs into main. The break above was pushed
+# directly to a feature branch that four repositories were being developed
+# against, and a gate that only fires at PR time finds it days later.
+name: Check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: bun install
+        working-directory: ./site
+
+      - name: Type-check
+        run: bun run check
+        working-directory: ./site
+
+      - name: Unit tests
+        run: bun run test
+        working-directory: ./site
+
+      - name: Build
+        run: bun run build
+        working-directory: ./site

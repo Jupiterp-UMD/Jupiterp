@@ -60,6 +60,18 @@
   --color-outline: var(--outline);
   --color-hover: var(--hover);
 
+  /* Grade distribution bar fills */
+  --color-grade-strong: var(--grade-strong);
+  --color-grade-mid: var(--grade-mid);
+  --color-grade-soft: var(--grade-soft);
+
+  /* UI state accents */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  /* Grade distribution bar fills */
+
   /* Animations */
   --animate-fade-out: fadeOut 0.75s forwards;
 
