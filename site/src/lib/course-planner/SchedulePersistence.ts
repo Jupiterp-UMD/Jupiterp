@@ -2,7 +2,7 @@
  * This file is part of Jupiterp. For terms of use, please see the file
  * called LICENSE at the top level of the Jupiterp source tree (online at
  * https://github.com/atcupps/Jupiterp/LICENSE).
- * Copyright (C) 2026 Andrew Cupps
+ *
  *
  * @fileoverview The planner's local-storage contract: the keys and
  * serialization for the active schedule and the saved (non-selected)
