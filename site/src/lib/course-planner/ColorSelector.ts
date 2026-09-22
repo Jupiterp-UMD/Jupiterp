@@ -1,3 +1,9 @@
+/**
+ * This file is part of Jupiterp. For terms of use, please see the file
+ * called LICENSE at the top level of the Jupiterp source tree (online at
+ * https://github.com/atcupps/Jupiterp/LICENSE).
+ *
+ */
 import type { ScheduleBlock } from '../../types';
 
 export function firstAvailableColor(selections: ScheduleBlock[]): number {
