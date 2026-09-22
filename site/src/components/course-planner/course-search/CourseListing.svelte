@@ -11,6 +11,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import CourseCondition from './CourseCondition.svelte';
   import { AngleRightOutline } from 'flowbite-svelte-icons';
   import type { Course, Section } from '@jupiterp/jupiterp';
+  import { TERM_ID } from '$lib/term';
 
   export let course: Course;
   export let isDesktop: boolean;
@@ -62,7 +63,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
         {#each course.genEds as genEd (genEd.code)}
           <a
             class="border-orange text-orange hover:bg-orange hover:text-bg-secondary mr-1 rounded-xl border px-1 text-[0.625rem] font-bold leading-tight 2xl:text-xs"
-            href={`https://app.testudo.umd.edu/soc/gen-ed/202608/` + genEd.code}
+            href={`https://app.testudo.umd.edu/soc/gen-ed/${TERM_ID}/${genEd.code}`}
             rel="external noopener noreferrer"
             target="_blank"
             title={'GenEd: ' + genEd.name}

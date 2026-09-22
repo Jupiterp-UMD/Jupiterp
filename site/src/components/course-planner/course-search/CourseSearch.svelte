@@ -20,6 +20,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import { chainScroll } from '../../../lib/course-planner/ChainScroll';
   import { PlannerState } from '../../../stores/CoursePlannerStores';
   import CustomUserEvents from './CustomUserEvents.svelte';
+  import { TERM_NAME } from '$lib/term';
 
   let plannerState: { isDesktop: boolean; chainScrollParent: HTMLElement | null } = $state({
     isDesktop: false,
@@ -150,7 +151,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   <!-- Course search input and filters [height of 7.5rem] -->
   <div id="planner-course-search" class="px-1 pt-1">
     <div class="ml-1 flex flex-row pb-1 text-xs 2xl:text-sm">
-      <div>Fall 2026</div>
+      <div>{TERM_NAME}</div>
       <div class="grow text-right">Credits: {totalCredits}</div>
     </div>
     <ScheduleSelector />
