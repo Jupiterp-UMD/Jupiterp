@@ -7,6 +7,7 @@
  * @fileoverview Functions for formatting various Jupiterp objects as strings.
  */
 
+import { TERM_ID } from '../term';
 import type { Classtime, Location } from '@jupiterp/jupiterp';
 
 /**
@@ -97,7 +98,9 @@ export function testudoLink(courseCode: string): string {
   return (
     'https://app.testudo.umd.edu/soc/search?courseId=' +
     courseCode +
-    '&sectionId=&termId=202608&_openSectionsOnly=on&creditCompare=%3E%3D&credits=0.0&courseLevelFilter=ALL&instructor=&_facetoface=on&_blended=on&_online=on&courseStartCompare=&courseStartHour=&courseStartMin=&courseStartAM=&courseEndHour=&courseEndMin=&courseEndAM=&teachingCenter=ALL&_classDay1=on&_classDay2=on&_classDay3=on&_classDay4=on&_classDay5=on'
+    '&sectionId=&termId=' +
+    TERM_ID +
+    '&_openSectionsOnly=on&creditCompare=%3E%3D&credits=0.0&courseLevelFilter=ALL&instructor=&_facetoface=on&_blended=on&_online=on&courseStartCompare=&courseStartHour=&courseStartMin=&courseStartAM=&courseEndHour=&courseEndMin=&courseEndAM=&teachingCenter=ALL&_classDay1=on&_classDay2=on&_classDay3=on&_classDay4=on&_classDay5=on'
   );
 }
 

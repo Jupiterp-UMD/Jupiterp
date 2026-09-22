@@ -3,6 +3,7 @@
   import { CurrentScheduleStore } from '../../stores/CoursePlannerStores';
   import type { ScheduleSelection, UserEvent } from '../../types';
   import Tooltip from '../course-planner/schedule/Tooltip.svelte';
+  import { TERM_END, TERM_START } from '$lib/term';
 
   let { onCloseExport } = $props<{ onCloseExport?: () => void }>();
   let selections: ScheduleSelection[] = [];
@@ -75,9 +76,9 @@
 
   function exportCalender() {
     let icsData = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Jupiterp//EN\r\n';
-    // hardcoded for now (dates are 0 indexed so jan is 0 and its yy, mm, dd)
-    const semesterStart = formatDate(new Date(2027, 0, 27));
-    const semesterEnd = formatDate(new Date(2027, 4, 11));
+    // dates hardcoded in term.ts
+    const semesterStart = formatDate(TERM_START);
+    const semesterEnd = formatDate(TERM_END);
 
     for (const currentClass of selectionsCustom) {
       const name = currentClass.name;
