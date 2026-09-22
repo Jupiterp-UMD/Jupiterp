@@ -6,7 +6,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 -->
 <script lang="ts">
   import SectionListing from './SectionListing.svelte';
-  import { formatCredits, testudoLink } from '../../../lib/course-planner/Formatting';
+  import { formatCredits, testudoGenEdLink, testudoLink } from '../../../lib/course-planner/Formatting';
   import { slide } from 'svelte/transition';
   import CourseCondition from './CourseCondition.svelte';
   import GradeDistributionBars from './GradeDistributionBars.svelte';
@@ -14,7 +14,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import type { Course, Section } from '@jupiterp/jupiterp';
   import { formatSemesterRange, hasEnoughForGpa } from '../../../lib/course-planner/Grades';
   import { gradesAutoload, loadCourseGrades } from '../../../lib/course-planner/GradesLoader';
-  import { CourseGradesStore } from '../../../stores/CoursePlannerStores';
+  import { CatalogTermStore, CourseGradesStore } from '../../../stores/CoursePlannerStores';
 
   export let course: Course;
   export let isDesktop: boolean;
@@ -73,7 +73,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
         {#each course.genEds as genEd (genEd.code)}
           <a
             class="border-orange text-orange hover:bg-orange hover:text-bg-secondary mr-1 rounded-xl border px-1 text-[0.625rem] font-bold leading-tight 2xl:text-xs"
-            href={`https://app.testudo.umd.edu/soc/gen-ed/202608/` + genEd.code}
+            href={testudoGenEdLink(genEd.code, $CatalogTermStore)}
             rel="external noopener noreferrer"
             target="_blank"
             title={'GenEd: ' + genEd.name}
@@ -103,7 +103,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       <div class="font-base flex flex-col py-1 text-sm leading-tight 2xl:text-base" transition:slide>
         <div class="pb-1">
           <a
-            href={testudoLink(course.courseCode)}
+            href={testudoLink(course.courseCode, $CatalogTermStore)}
             class="text-orange underline"
             rel="external noopener noreferrer"
             target="_blank"

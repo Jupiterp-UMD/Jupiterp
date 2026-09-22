@@ -19,7 +19,12 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import { SHARE_PARAM } from '$lib/course-planner/ShareLink';
   import { loadInstructorLookup } from '$lib/course-planner/CourseSearch';
   import { handlePlannerShortcutKeydown } from '../lib/course-planner/PlannerShortcuts';
-  import { CurrentScheduleStore, NonselectedScheduleStore, DepartmentsStore } from '../stores/CoursePlannerStores';
+  import {
+    CurrentScheduleStore,
+    NonselectedScheduleStore,
+    DepartmentsStore,
+    CatalogTermStore,
+  } from '../stores/CoursePlannerStores';
   import { client } from '$lib/client';
   import type { StoredSchedule } from '../types';
   import IsDesktop from '../components/course-planner/IsDesktop.svelte';
@@ -46,6 +51,17 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       DepartmentsStore.set(depts);
     } else {
       console.error('Error fetching department codes:', res.errorBody);
+    }
+  }
+
+  // Get the term the course data is from, which labels the planner and
+  // points its Testudo links at the right term.
+  async function fetchCatalogTerm() {
+    const res = await client.term();
+    if (res.ok() && res.data != null) {
+      CatalogTermStore.set(res.data[0]?.term ?? null);
+    } else {
+      console.error('Error fetching catalog term:', res.errorBody);
     }
   }
 
@@ -86,6 +102,9 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
     // Fetch department codes from API
     fetchDeptCodes();
+
+    // Fetch the term the course data is from
+    fetchCatalogTerm();
 
     // Retrieve data from client local storage
     try {

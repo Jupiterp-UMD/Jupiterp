@@ -158,6 +158,10 @@ export function toDistribution(summary: GradeSummary): GradeDistribution {
 
 /**
  * Format a term code as a human-readable string.
+ *
+ * Winter is named for the January it runs in, a year after its code says:
+ * 202612 is Winter 2027. The scraper's `term_label` does the same.
+ *
  * @param code A term code such as 201801, as a number or string
  * @returns e.g. 'Spring 2018'; returns the input unchanged if malformed
  */
@@ -166,14 +170,15 @@ export function formatSemester(code: string | number): string {
   if (!/^\d{6}$/.test(text)) {
     return text;
   }
-  const year = text.slice(0, 4);
+  const month = text.slice(4);
+  const year = Number(text.slice(0, 4)) + (month === '12' ? 1 : 0);
   const seasons: Record<string, string> = {
     '01': 'Spring',
     '05': 'Summer',
     '08': 'Fall',
     '12': 'Winter',
   };
-  const season = seasons[text.slice(4)];
+  const season = seasons[month];
   if (season === undefined) {
     return text;
   }

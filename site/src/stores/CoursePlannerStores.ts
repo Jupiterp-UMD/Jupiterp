@@ -51,6 +51,9 @@ export const AddCustomEventStore: Writable<boolean> = writable(false);
 /** List of departments */
 export const DepartmentsStore: Writable<Department[]> = writable([]);
 
+/** Term code the course and section data is from (ex. 202608); null until loaded */
+export const CatalogTermStore: Writable<number | null> = writable(null);
+
 /** Search results */
 export const SearchResultsStore: Writable<Course[]> = writable([]);
 

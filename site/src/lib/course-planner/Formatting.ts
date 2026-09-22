@@ -91,14 +91,34 @@ export function formatInstructors(instructors: string[]): string {
 /**
  * Generates a link to the UMD Testudo page for a given course code
  * @param courseCode The course code for which to generate a link
+ * @param term The term code to search, or null while it is still loading.
+ * Without one the link falls back to Testudo's default term, which is not
+ * always the term Jupiterp is showing.
  */
-export function testudoLink(courseCode: string): string {
+export function testudoLink(courseCode: string, term: number | null): string {
+  const termParam = term === null ? '' : '&termId=' + term;
   // format-check exempt 1
   return (
     'https://app.testudo.umd.edu/soc/search?courseId=' +
     courseCode +
-    '&sectionId=&termId=202608&_openSectionsOnly=on&creditCompare=%3E%3D&credits=0.0&courseLevelFilter=ALL&instructor=&_facetoface=on&_blended=on&_online=on&courseStartCompare=&courseStartHour=&courseStartMin=&courseStartAM=&courseEndHour=&courseEndMin=&courseEndAM=&teachingCenter=ALL&_classDay1=on&_classDay2=on&_classDay3=on&_classDay4=on&_classDay5=on'
+    '&sectionId=' +
+    termParam +
+    '&_openSectionsOnly=on&creditCompare=%3E%3D&credits=0.0&courseLevelFilter=ALL&instructor=&_facetoface=on&_blended=on&_online=on&courseStartCompare=&courseStartHour=&courseStartMin=&courseStartAM=&courseEndHour=&courseEndMin=&courseEndAM=&teachingCenter=ALL&_classDay1=on&_classDay2=on&_classDay3=on&_classDay4=on&_classDay5=on'
   );
+}
+
+/**
+ * Generates a link to Testudo's list of courses satisfying a Gen-Ed
+ * @param genEdCode The Gen-Ed code, such as `DSHS`
+ * @param term The term code to list, or null while it is still loading
+ * @returns The link, or null without a term: Testudo has no termless Gen-Ed
+ * page, and the URL without one is a 404
+ */
+export function testudoGenEdLink(genEdCode: string, term: number | null): string | null {
+  if (term === null) {
+    return null;
+  }
+  return `https://app.testudo.umd.edu/soc/gen-ed/${term}/${genEdCode}`;
 }
 
 /**

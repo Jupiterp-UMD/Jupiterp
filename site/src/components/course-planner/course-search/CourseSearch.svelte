@@ -10,7 +10,13 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import CourseListing from './CourseListing.svelte';
   import { pendingResults } from '../../../lib/course-planner/CourseSearch';
   import { appendHoveredSection } from '../../../lib/course-planner/Schedule';
-  import { HoveredSectionStore, CurrentScheduleStore, SearchResultsStore } from '../../../stores/CoursePlannerStores';
+  import {
+    HoveredSectionStore,
+    CurrentScheduleStore,
+    SearchResultsStore,
+    CatalogTermStore,
+  } from '../../../stores/CoursePlannerStores';
+  import { formatSemester } from '../../../lib/course-planner/Grades';
   import ScheduleSelector from './ScheduleSelector.svelte';
   import type { Course } from '@jupiterp/jupiterp';
   import type { ScheduleBlock, ScheduleSelection } from '../../../types';
@@ -150,7 +156,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   <!-- Course search input and filters [height of 7.5rem] -->
   <div id="planner-course-search" class="px-1 pt-1">
     <div class="ml-1 flex flex-row pb-1 text-xs 2xl:text-sm">
-      <div>Fall 2026</div>
+      <div>{$CatalogTermStore === null ? '' : formatSemester($CatalogTermStore)}</div>
       <div class="grow text-right">Credits: {totalCredits}</div>
     </div>
     <ScheduleSelector />

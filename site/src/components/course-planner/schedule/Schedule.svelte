@@ -17,7 +17,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import type { Schedule, ScheduleBlock, ScheduleSelection } from '../../../types';
   import type { CourseBasic, Section } from '@jupiterp/jupiterp';
   import { chainScroll } from '../../../lib/course-planner/ChainScroll';
-  import { PlannerState } from '../../../stores/CoursePlannerStores';
+  import { PlannerState, CatalogTermStore } from '../../../stores/CoursePlannerStores';
 
   let { earliest = $bindable(8), latest = $bindable(16), h = $bindable(0) } = $props();
 
@@ -214,7 +214,11 @@ https://github.com/atcupps/Jupiterp/LICENSE).
         </span>
         <span class="font-normal"> - {courseInfoCourse.name} </span>
         <span class="text-orange mx-1 text-base font-normal underline 2xl:text-lg">
-          <a href={testudoLink(courseInfoCourse.courseCode)} rel="external noopener noreferrer" target="_blank">
+          <a
+            href={testudoLink(courseInfoCourse.courseCode, $CatalogTermStore)}
+            rel="external noopener noreferrer"
+            target="_blank"
+          >
             (view on Testudo)
           </a>
         </span>
