@@ -9,7 +9,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   interface Props {
     onClose: () => void;
-    onSubmit: (event: UserEvent) => void;
+    onSubmit: (event: UserEvent) => void | Promise<void>;
     initialEventData?: UserEvent | null;
   }
 
@@ -24,6 +24,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   let location = $state('');
   let notes = $state('');
   let errors: string[] = $state([]);
+  let isSubmitting = $state(false);
 
   // Keystroke caches to catch lone digits typed by the user
   let rawStartKeys = '';
@@ -176,7 +177,9 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     }
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
+    if (isSubmitting) return;
+
     errors = [];
     if (!name.trim()) errors.push('Name is required');
     if (selectedDays.length === 0) errors.push('Select at least one day');
@@ -187,6 +190,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     }
 
     if (errors.length > 0) return;
+
+    isSubmitting = true;
 
     const event: UserEvent = {
       id: initialEventData ? initialEventData.id : Date.now().toString(),
@@ -199,8 +204,12 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       colorNumber: 0,
     };
 
-    onSubmit(event);
-    onClose();
+    try {
+      await onSubmit(event);
+      onClose();
+    } finally {
+      isSubmitting = false;
+    }
   }
 </script>
 
@@ -223,7 +232,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   <!-- Name -->
   <div class="mb-2">
-    <label class="mb-0.5 block text-sm" for="user-event-name">Name<span class="text-red-500">*</span></label>
+    <label class="mb-0.5 block text-sm" for="user-event-name">Name<span class="text-orange">*</span></label>
     <input
       id="user-event-name"
       type="text"
@@ -235,7 +244,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   <!-- Days -->
   <div class="mb-2">
-    <label class="mb-0.5 block text-sm" for="user-event-days">Days<span class="text-red-500">*</span></label>
+    <label class="mb-0.5 block text-sm" for="user-event-days">Days<span class="text-orange">*</span></label>
     <div class="flex gap-1.5">
       {#each DAYS as day (day)}
         <button
@@ -255,7 +264,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   <!-- Start / End time fields -->
   <div class="mb-2 flex gap-2">
     <div class="flex-1">
-      <label class="mb-0.5 block text-sm" for="user-event-start">Start<span class="text-red-500">*</span></label>
+      <label class="mb-0.5 block text-sm" for="user-event-start">Start<span class="text-orange">*</span></label>
       <input
         bind:this={startInputRef}
         id="user-event-start"
@@ -268,7 +277,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       />
     </div>
     <div class="flex-1">
-      <label class="mb-0.5 block text-sm" for="user-event-end">End<span class="text-red-500">*</span></label>
+      <label class="mb-0.5 block text-sm" for="user-event-end">End<span class="text-orange">*</span></label>
       <input
         bind:this={endInputRef}
         id="user-event-end"
@@ -307,7 +316,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   <!-- Validation errors -->
   {#if errors.length > 0}
-    <div class="mb-2 text-xs text-red-500">
+    <div class="text-orange mb-2 text-xs">
       {#each errors as error, i (i)}
         <div>{error}</div>
       {/each}
@@ -317,8 +326,14 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   <!-- Actions -->
   <div class="flex justify-end gap-2">
     <button type="button" onclick={onClose} class="hover:bg-hover rounded-sm px-3 py-1.5 text-sm"> Cancel </button>
-    <button type="button" onclick={handleSubmit} class="bg-outline hover:bg-hover rounded-sm px-3 py-1.5 text-sm">
-      {initialEventData ? 'Save Event' : 'Add Event'}
+    <button
+      type="button"
+      onclick={handleSubmit}
+      disabled={isSubmitting}
+      aria-busy={isSubmitting}
+      class="bg-outline hover:bg-hover rounded-sm px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {isSubmitting ? 'Adding...' : initialEventData ? 'Save Event' : 'Add Event'}
     </button>
   </div>
 </div>

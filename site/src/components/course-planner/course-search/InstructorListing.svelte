@@ -135,7 +135,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   }
 </script>
 
-<div class="text-sm xl:text-base">
+<div class="relative text-sm xl:text-base">
   {#if currentProf}
     <!-- Internal professor page, not an outbound PlanetTerp link. -->
     <a

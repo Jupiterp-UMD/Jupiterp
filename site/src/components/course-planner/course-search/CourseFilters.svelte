@@ -86,7 +86,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
         showFiltersMenu = !showFiltersMenu;
       }}
     >
-      <AdjustmentsHorizontalOutline class="mr-1 h-4 w-4" />
+      <AdjustmentsHorizontalOutline height="16" width="16" class="mr-1" />
       <!-- format-check exempt 1 -->
       {appliedFiltersCount} filter{appliedFiltersCount === 1 ? '' : 's'} applied
     </button>

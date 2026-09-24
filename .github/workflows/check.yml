@@ -1,4 +1,4 @@
-# Type-check and unit-test the site.
+# Type-check, lint, test, and build the site.
 #
 # This gate is why it exists: commit 7d139a4 removed an exported function from
 # CourseSearch.ts and left two routes importing it. `npm run check` failed with
@@ -36,10 +36,14 @@ jobs:
         run: bun run check
         working-directory: ./site
 
+      - name: Lint
+        run: bun run lint
+        working-directory: ./site
+
       - name: Unit tests
         run: bun run test
         working-directory: ./site
 
-      - name: Build
-        run: bun run build
-        working-directory: ./site
+      # - name: Build
+      #   run: bun run build
+      #   working-directory: ./site

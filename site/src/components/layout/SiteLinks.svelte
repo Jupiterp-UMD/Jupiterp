@@ -5,124 +5,170 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
 -->
 <script lang="ts">
-  import { fade } from 'svelte/transition';
   import { page } from '$app/state';
-  import NavBarElement from './NavBarElement.svelte';
+  import NavBarLink from './NavBarLink.svelte';
   import DarkModeToggle from './DarkModeToggle.svelte';
-  import ExpandableNavBarElement from './ExpandableNavBarElement.svelte';
+  import { AngleDownOutline, GithubSolid } from 'flowbite-svelte-icons';
 
-  let siteLinksSelected: boolean = $state(false);
+  interface NavLink {
+    link: string;
+    text: string;
+    children?: { link: string; text: string; isExternal?: boolean; icon?: import('svelte').Component }[];
+    isExternal?: boolean;
+  }
 
-  let currentPage = $derived(page.url.pathname);
+  const navLinks: NavLink[] = [
+    { link: '/', text: 'Course Planner' },
+    { link: '/generate', text: 'Schedule Generator' },
+    {
+      link: '/professors',
+      text: 'Professors',
+      children: [
+        { link: '/review/withdraw', text: 'Withdraw Review' },
+        { link: '/review-policy', text: 'Review Policy' },
+      ],
+    },
+    {
+      link: '/about',
+      text: 'About',
+      children: [
+        { link: '/terms-of-use', text: 'Terms of Use' },
+        { link: '/privacy-policy', text: 'Privacy Policy' },
+        { link: '/changelog', text: 'Changelog' },
+        { link: '/bugs', text: 'Report Bugs' },
+        { link: 'https://github.com/atcupps/Jupiterp', text: 'GitHub', isExternal: true, icon: GithubSolid },
+      ],
+    },
+  ];
+
+  const currentPath: string = $derived(page.url.pathname);
 </script>
 
-<!-- For larger screens -->
-<div class="hidden grow justify-end self-center lg:flex">
-  <NavBarElement link="./" text="Course Planner" isOnPage={currentPage == '/'} />
-  <NavBarElement link="./generate" text="Schedule Generator" isOnPage={currentPage == '/generate'} />
-  <NavBarElement link="./bugs" text="Report an Issue" isOnPage={currentPage == '/bugs'} />
-  <ExpandableNavBarElement link="./about" text="About" isOnPage={currentPage == '/about'}>
-    <NavBarElement
-      link="./terms-of-use"
-      text="Terms of Use"
-      reduceXMargin={true}
-      isOnPage={currentPage == '/terms-of-use'}
-    />
-    <NavBarElement
-      link="./privacy-policy"
-      text="Privacy Policy"
-      reduceXMargin={true}
-      isOnPage={currentPage == '/privacy-policy'}
-    />
-    <NavBarElement link="./changelog" text="Changelog" reduceXMargin={true} isOnPage={currentPage == '/changelog'} />
-  </ExpandableNavBarElement>
-  <NavBarElement link="https://github.com/atcupps/Jupiterp" text="GitHub" target="_blank" />
-  <DarkModeToggle />
-</div>
+<!-- [START] Nav Menu Toggle -->
+<input type="checkbox" id="nav-menu-toggle" class="peer hidden" />
 
-<!-- Button to toggle site links on mobile -->
-<button
-  title="Toggle site links"
-  class="z-52 visible absolute right-5 top-3 h-6 w-6 lg:hidden"
-  onclick={() => {
-    siteLinksSelected = !siteLinksSelected;
-  }}
+<label for="nav-menu-toggle" class="group relative -mr-4 flex cursor-pointer select-none items-center px-4 md:hidden">
+  <svg xmlns="http://w3.org" width="1em" height="1em" viewBox="0 0 24 24" class="h-6 w-6">
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+      <!-- Top Line: Rotates and slides left by 2px on the X-axis -->
+      <path
+        d="M4 6h17"
+        class="group-peer-checked:rotate-45 group-peer-checked:translate-x-0.5 origin-[4px_6px] transition-transform duration-300"
+      />
+      <!-- Middle Line: Fades out smoothly -->
+      <path d="M4 12h15" class="group-peer-checked:opacity-0 transition-opacity duration-150 ease-in-out" />
+      <!-- Bottom Line: Rotates and slides left by 2px on the X-axis -->
+      <path
+        d="M4 18h17"
+        class="group-peer-checked:-rotate-45 group-peer-checked:translate-x-0.5 origin-[4px_18px] transition-transform duration-300"
+      />
+    </g>
+  </svg>
+  <div class="group-peer-checked:block fixed inset-0 top-12 hidden bg-black/50"></div>
+</label>
+<!-- [END] Nav Menu Toggle -->
+
+<aside
+  class="custom-scrollbar max-md:bg-bg-primary md:text-md max-md:min-w-62 flex gap-2 px-6 py-4 text-lg max-md:fixed max-md:bottom-0 max-md:right-0 max-md:top-12 max-md:translate-x-full max-md:flex-col max-md:overflow-y-auto max-md:border-l-2 max-md:transition-transform max-md:duration-300 max-md:peer-checked:translate-x-0 md:gap-6 md:px-0 md:py-2 lg:gap-8"
 >
-  <!-- format-check exempt 10 -->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 448 512"
-    class="fill-text-primary visible h-full w-full transition"
-    class:hidden={siteLinksSelected}
-  >
-    <!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path
-      d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"
-    /></svg
-  >
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 384 512"
-    class="fill-text-primary visible h-full w-full"
-    class:hidden={!siteLinksSelected}
-  >
-    <!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path
-      d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z"
-    /></svg
-  >
-</button>
+  {#each navLinks as item, i (i)}
+    {#if item.children}
+      <div class="nav-list-wrapper relative">
+        <!-- [START] Nav List Toggle  -->
+        <input type="checkbox" id="nav-list-{i}" class="peer hidden" />
 
-<!-- Using this method to avoid having to listen to a variable on Schedule -->
-{#if siteLinksSelected}
-  <button
-    aria-label="Close Site Links"
-    style="height: calc(100% - 3rem);"
-    class="z-55 visible fixed top-12 -mx-4 w-full bg-black/20 lg:hidden"
-    in:fade={{ duration: 150 }}
-    out:fade={{ duration: 150 }}
-    onclick={() => (siteLinksSelected = false)}
-  ></button>
-{/if}
+        <div class="flex justify-between md:-mr-2">
+          <NavBarLink link={item.link} current={currentPath === item.link} isExternal={item.isExternal}>
+            {item.text}
+          </NavBarLink>
+          <label
+            for="nav-list-{i}"
+            class="nav-list-toggle hover:text-orange dark:hover:text-light-orange float-right origin-center transition-transform"
+            ><AngleDownOutline height="1.75rem" width="1.75rem" class="p-0.75" />
+          </label>
+        </div>
 
-<!-- Mobile site links -->
-<div
-  class="site-links z-61 border-border bg-bg-primary w-75 visible fixed right-0 top-12 flex flex-col border-l-2 border-solid p-2 transition-transform duration-300 lg:hidden"
-  class:site-links-transition={!siteLinksSelected}
-  class:shadow-lg={siteLinksSelected}
->
-  <div class="my-2 w-full text-lg">
-    <NavBarElement link="./" text="Course Planner" />
+        <label for="nav-list-{i}" class="fixed inset-0 hidden bg-black/50 md:peer-checked:block"></label>
+        <!-- [END] Nav List Toggle  -->
+
+        <div
+          style="transition: height 0.3s;"
+          class="nav-list-contents md:-left-4.25 md:bg-bg-primary max-md:border-border/50 -mt-px flex h-auto flex-col overflow-clip peer-checked:h-0 max-md:border-y md:absolute md:mt-2.5 md:h-0 md:rounded-lg md:border md:peer-checked:h-auto"
+        >
+          {#each item.children as child, j (j)}
+            <NavBarLink
+              link={child.link}
+              current={currentPath === child.link}
+              isExternal={child.isExternal}
+              class="md:hover:bg-hover flex items-center px-4 py-1"
+            >
+              {child.text}
+              {#if child.icon}
+                {@const Icon = child.icon}
+                <Icon class="ml-2 h-5 w-5" />
+              {/if}
+            </NavBarLink>
+          {/each}
+        </div>
+      </div>
+    {:else}
+      <NavBarLink link={item.link} current={currentPath === item.link} isExternal={item.isExternal}>
+        {item.text}
+      </NavBarLink>
+    {/if}
+  {/each}
+  <div class="flex flex-col items-center justify-center text-sm max-md:mt-auto max-md:py-4">
+    <DarkModeToggle />
   </div>
-  <div class="my-2 w-full text-lg">
-    <NavBarElement link="./generate" text="Schedule Generator" />
-  </div>
-  <div class="my-2 w-full text-lg">
-    <NavBarElement link="./bugs" text="Report an Issue" />
-  </div>
-  <div class="my-2 w-full text-lg">
-    <NavBarElement link="./about" text="About" />
-  </div>
-  <div class="my-2 w-full text-lg">
-    <NavBarElement link="./terms-of-use" text="Terms of Use" />
-  </div>
-  <div class="my-2 w-full text-lg">
-    <NavBarElement link="./privacy-policy" text="Privacy Policy" />
-  </div>
-  <div class="my-2 w-full text-lg">
-    <NavBarElement link="https://github.com/atcupps/Jupiterp" text="GitHub" target="_blank" />
-  </div>
-</div>
+</aside>
 
 <style>
-  @media screen and (max-width: 1023px) {
-    .site-links {
-      height: calc(100svh - 3rem);
+  div.nav-list-wrapper {
+    interpolate-size: allow-keywords;
+    --toggle-deg: 180deg;
+
+    &:has(div.nav-list-contents :global(a[aria-current='true'])) > div > label.nav-list-toggle {
+      color: var(--color-orange);
     }
 
-    .site-links-transition {
-      transition-property: transform;
-      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-      transition-duration: 150ms;
-      transform: translateX(100%);
+    > div > label.nav-list-toggle {
+      transform: rotate(var(--toggle-deg));
+      transition: transform 0.2s ease;
+    }
+
+    &:has(input:checked) {
+      --toggle-deg: 0deg;
+    }
+
+    /* Target desktop devices that support a real mouse hover */
+    @media (min-width: 768px) and (hover: hover) {
+      padding-bottom: 0.75rem;
+      margin-bottom: -0.75rem;
+      --toggle-deg: 0deg;
+
+      &:has(input:checked) {
+        --toggle-deg: 180deg;
+      }
+
+      &:hover {
+        --toggle-deg: 180deg;
+
+        > div.nav-list-contents {
+          height: auto;
+          box-shadow:
+            0 10px 15px -3px rgb(0 0 0 / 0.1),
+            0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+      }
+    }
+
+    /* Fallback behavior for tablets/touch screens wider than 768px */
+    @media (min-width: 768px) and (hover: none) {
+      --toggle-deg: 0deg;
+
+      &:has(input:checked) {
+        --toggle-deg: 180deg;
+      }
     }
   }
 </style>

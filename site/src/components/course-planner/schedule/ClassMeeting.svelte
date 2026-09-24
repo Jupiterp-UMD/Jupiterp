@@ -188,14 +188,14 @@ https://github.com/atcupps/Jupiterp/LICENSE).
           removeCourseByClassMeeting();
         }
       }}
-      class="hover:text-orange absolute right-0 top-0 h-4 w-6 items-center justify-center overflow-clip 2xl:right-1 2xl:top-1"
+      class="hover:text-orange absolute right-0 top-0 flex h-6 w-6 items-center justify-end overflow-clip sm:justify-center 2xl:right-1 2xl:top-1"
       onclick={(e) => {
         e.stopPropagation();
         removeCourseByClassMeeting();
       }}
       title={meeting.userEvent ? 'Remove event from schedule' : 'Remove course from schedule'}
     >
-      <svg xmlns="http://w3.org" viewBox="0 0 24 24" class="absolute left-1 top-0 h-4 w-4"
+      <svg xmlns="http://w3.org" viewBox="0 0 24 24" width="16" height="16" class="sm:h-6 sm:w-6"
         ><path
           fill="currentColor"
           d="m12 13.4l-2.917 2.925q-.277.275-.704.275t-.704-.275q-.275-.275-.275-.7t.275-.7L10.6 12L7.675 9.108Q7.4 8.831 7.4 8.404t.275-.704q.275-.275.7-.275t.7.275L12 10.625L14.892 7.7q.277-.275.704-.275t.704.275q.3.3.3.713t-.3.687L13.375 12l2.925 2.917q.275.277.275.704t-.275.704q-.3.3-.712.3t-.688-.3z"

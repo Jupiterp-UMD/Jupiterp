@@ -61,7 +61,7 @@
   --bg-primary: #151922;
   --bg-secondary: #141721;
   --text-primary: #d9dfea;
-  --text-secondary: #667085;
+  --text-secondary: hsl(221, 13%, 70%);
   --border: #252e3e;
   --outline: #47526a;
   --hover: #30374a;

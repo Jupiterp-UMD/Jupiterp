@@ -1,0 +1,56 @@
+[
+  {
+    "title": "Jupiterp 2 (SQL)",
+    "version": "1.1.2",
+    "date": "Oct 8, 2025",
+    "content": "Major backend overhaul to use SQL-powered Jupiterp API for fetching course and instruction data. Paves the way for some future great improvements! Also some minor UI changes: course info panel now changes when selecting a course on the search, and departments show up when searching before it resolves to a single department."
+  },
+  {
+    "title": "GenEd Maxxing",
+    "version": "1.1.1",
+    "date": "Apr 7, 2025",
+    "content": "Add additional information for courses available in course search. Add GenEd information for courses."
+  },
+  {
+    "title": "Saturp",
+    "version": "1.1.0",
+    "date": "Nov 4, 2024",
+    "content": "Allow searching just by number; enable users having and switching between multiple schedules."
+  },
+  {
+    "title": "Have a Seat",
+    "version": "1.0.5",
+    "date": "Sep 23, 2024",
+    "content": "Display number of seats left in sections in both course search and in the course info panel. Reduce number of requests necessary to retreive course information from the Testudo SOC."
+  },
+  {
+    "title": "Galileo Time",
+    "version": "1.0.4",
+    "date": "July 14, 2024",
+    "content": "Show class times and meetings on course info panel. Add dropdown menus to site links. Make 'X' button to remove course on Schedule UI adapt to screen size. Improve tooltip descriptions for accessibility. Add Sentry error reporting."
+  },
+  {
+    "title": "The P = NP Update",
+    "version": "1.0.3",
+    "date": "May 24, 2024",
+    "content": "Fix bug preventing Sunday and Saturday classes from being added to schedule. Provide classtimes in schedule course info panel. Make light/dark theme toggleable. Fix negative times on schedule when only async or weekend classes are added. Add error pages. Optimize spacing of conflicting classes on schedule. Improve underlying code site code quality."
+  },
+  {
+    "title": "Minor Quality Changes",
+    "version": "1.0.2",
+    "date": "April 30, 2024",
+    "content": "Add banner to show when classes are added or removed on mobile; add changelog page. Add more colors for classes on the Schedule. Link to buildings on the UMD Map in course search."
+  },
+  {
+    "title": "Feedback",
+    "version": "1.0.1",
+    "date": "April 4, 2024",
+    "content": "Minor changes to improve Jupiterp based on feedback after launch (these were pushed separately but are merged to one version for organizational purposes."
+  },
+  {
+    "title": "Initial Release",
+    "version": "1.0.0",
+    "date": "March 12, 2024",
+    "content": "The original version of Jupiterp when officially published. Complete with the ability to add courses to a schedule, save schedules locally, and easily see PlanetTerp reviews for professors."
+  }
+]

@@ -16,7 +16,7 @@ import { env } from '$env/dynamic/public';
  * rather than a source edit:
  *
  *     PUBLIC_JUPITERP_API=http://localhost:8080 npm run dev
- * 
+ *
  * Note the scheme: the local API serves plain HTTP, so `http://localhost:8080`.
  * `https://` there fails the TLS handshake and surfaces as a network error with
  * no response at all, which reads like the server being down.
