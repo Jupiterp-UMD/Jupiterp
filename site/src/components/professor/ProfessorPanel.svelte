@@ -10,23 +10,26 @@ Neither knows about the other -- this takes a fully-loaded data object and
 renders it.
 -->
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { bucketPercent, hasEnoughForGpa } from '../../lib/course-planner/Grades';
   import { ratingBreakdown, type ProfessorData } from '../../lib/professor/ProfessorData';
-  import GradeDistributionBars from '../course-planner/course-search/GradeDistributionBars.svelte';
   import CoursePicker from './CoursePicker.svelte';
   import GpaScale from './GpaScale.svelte';
   import GradeDistribution from './GradeDistribution.svelte';
   import GradeTrend from './GradeTrend.svelte';
   import ReviewForm from './ReviewForm.svelte';
   import ReviewList from './ReviewList.svelte';
+  import StarRating from './StarRating.svelte';
 
   interface Props {
     data: ProfessorData;
     /** Renders the name as an h1 on the route, an h2 inside the modal. */
     headingLevel?: 1 | 2;
+    initialCourse?: string | null;
+    onCourseChange?: (code: string | null) => void;
   }
 
-  let { data, headingLevel = 1 }: Props = $props();
+  let { data, headingLevel = 1, initialCourse = null, onCourseChange }: Props = $props();
 
   let rating = $derived(ratingBreakdown(data.instructor));
   let overall = $derived(data.overall);
@@ -36,10 +39,48 @@ renders it.
 
   let pickableCourses = $derived(courses.filter((course) => hasEnoughForGpa(course.distribution)));
 
-  let selectedCode = $state<string | null>(null);
+  let allCourseCodes = $derived([
+    ...new Set([...data.currentCourseCodes, ...data.courses.map((course) => course.courseCode)]),
+  ]);
+
+  let selectedCode = $state<string | null>(
+    untrack(() =>
+      initialCourse !== null && pickableCourses.some((course) => course.courseCode === initialCourse)
+        ? initialCourse
+        : null
+    )
+  );
+
+  let courseChangeReady = false;
+  $effect(() => {
+    const code = selectedCode;
+    if (!courseChangeReady) {
+      courseChangeReady = true;
+      return;
+    }
+    untrack(() => onCourseChange?.(code));
+  });
+
   let selectedCourse = $derived(courses.find((course) => course.courseCode === selectedCode) ?? null);
   let scoped = $derived(selectedCourse?.distribution ?? overall);
   let showScopedGpa = $derived(scoped !== null && hasEnoughForGpa(scoped));
+
+  let pickerBar: HTMLDivElement | undefined = $state();
+  let stuck = $state(false);
+
+  $effect(() => {
+    if (!pickerBar) return;
+    let root: HTMLElement | null = pickerBar.parentElement;
+    while (root && !/(auto|scroll)/.test(getComputedStyle(root).overflowY)) root = root.parentElement;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        stuck = entry.intersectionRatio < 1 && entry.boundingClientRect.top <= (entry.rootBounds?.top ?? 0);
+      },
+      { root, threshold: 1 }
+    );
+    observer.observe(pickerBar);
+    return () => observer.disconnect();
+  });
 
   let showForm = $state(false);
 </script>
@@ -69,9 +110,12 @@ renders it.
        explanation invites the reader to trust it more than it deserves. -->
   <section aria-label="Rating" class="flex flex-col gap-1">
     {#if rating.displayable && rating.combined !== null}
-      <div class="flex flex-row items-baseline gap-2">
-        <span class="text-orange text-3xl font-bold">{rating.combined.toFixed(1)}</span>
-        <span class="text-text-secondary text-sm">out of 5</span>
+      <div class="flex flex-row items-center gap-3">
+        <StarRating value={rating.combined} size="text-2xl" />
+        <div class="flex flex-row items-baseline gap-2">
+          <span class="text-orange text-3xl font-bold">{rating.combined.toFixed(1)}</span>
+          <span class="text-text-secondary text-sm">out of 5</span>
+        </div>
       </div>
     {:else}
       <p class="text-text-secondary text-sm">Not enough reviews yet.</p>
@@ -79,8 +123,23 @@ renders it.
   </section>
 
   {#if pickableCourses.length > 1}
-    <div class="bg-bg-primary sticky top-0 z-10 -mx-4 px-4 py-3" role="group" aria-label="Scope grades to a course">
-      <CoursePicker courses={pickableCourses} bind:selected={selectedCode} />
+    <div
+      bind:this={pickerBar}
+      class="sticky -top-px z-10 mx-[calc(50%-50cqw)] py-3 transition-colors duration-200"
+      class:bg-orange={stuck}
+      class:shadow-md={stuck}
+      class:bg-bg-primary={!stuck}
+      role="group"
+      aria-label="Scope grades and reviews to a course"
+    >
+      <div class="mx-auto max-w-3xl px-4">
+        <CoursePicker
+          id="grades-course"
+          codes={pickableCourses.map((course) => course.courseCode)}
+          bind:selected={selectedCode}
+          onAccent={stuck}
+        />
+      </div>
     </div>
   {/if}
 
@@ -125,53 +184,22 @@ renders it.
   <!-- Trend -->
   {#if data.terms.length > 1}
     <section aria-label="Grades over time" class="flex flex-col gap-2">
-      <h3 class="text-lg font-bold">Over time</h3>
+      <h3 class="py-8 text-lg font-bold">GPA Over time (All courses)</h3>
       <GradeTrend terms={data.terms} />
     </section>
   {/if}
 
-  <!-- Per course -->
-  {#if courses.length > 0}
-    <section aria-label="Grades by course" class="flex flex-col gap-2">
-      <h3 class="text-lg font-bold">By course</h3>
-      <ul class="flex flex-col gap-3">
-        {#each courses as course (course.courseCode)}
-          <li class="border-outline rounded-lg border p-2">
-            <div class="flex flex-row flex-wrap items-baseline gap-2">
-              <span class="font-bold">{course.courseCode}</span>
-              {#if hasEnoughForGpa(course.distribution) && course.distribution.gpa !== null}
-                <span class="font-bold">
-                  {course.distribution.gpa.toFixed(2)}
-                </span>
-              {:else}
-                <span class="text-text-secondary text-xs">Limited data</span>
-              {/if}
-              <span class="text-text-secondary text-xs">
-                {course.distribution.graded.toLocaleString()} graded &middot;
-                {course.distribution.sectionCount}
-                {course.distribution.sectionCount === 1 ? 'section' : 'sections'}
-              </span>
-            </div>
-            <div class="max-w-md pt-1">
-              <GradeDistributionBars distribution={course.distribution} />
-            </div>
-          </li>
-        {/each}
-      </ul>
-    </section>
-  {/if}
-
   <!-- Reviews -->
-  <ReviewList instructorSlug={data.instructor.slug} />
+  <ReviewList instructorSlug={data.instructor.slug} courseCode={selectedCode} />
 
   <section aria-label="Write a review" class="flex flex-col gap-2">
     {#if showForm}
       <ReviewForm
         instructorSlug={data.instructor.slug}
         instructorName={data.instructor.name}
-        courseCodes={[...new Set([...data.currentCourseCodes, ...data.courses.map((course) => course.courseCode)])]}
+        courseCodes={allCourseCodes}
       />
-      <button class="text-text-secondary self-start text-sm underline" onclick={() => (showForm = false)}>
+      <button class="text-orange self-start text-sm font-bold underline" onclick={() => (showForm = false)}>
         Cancel
       </button>
     {:else}
@@ -182,7 +210,8 @@ renders it.
         Write a review
       </button>
       <p class="text-text-secondary text-xs">
-        Requires a UMD email address. Every review is read by a moderator before it appears.
+        Requires a UMD email address <b>(cannot be seen by anyone)</b>. Every review is read by a moderator before it
+        appears.
       </p>
     {/if}
   </section>
@@ -192,7 +221,7 @@ renders it.
   <footer class="text-text-secondary flex flex-col gap-1 text-xs">
     <p>
       Grade data comes from the University of Maryland's Office of the Registrar, obtained by public records request. It
-      covers <b>Fall and Spring terms only</b> — Winter and Summer are not included.
+      covers <b>Fall and Spring terms only</b> - Winter and Summer are not included.
     </p>
     <p>
       About a quarter of sections carry no instructor name in the registrar's records. Those are attributed to the

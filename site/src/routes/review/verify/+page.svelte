@@ -66,7 +66,7 @@ one browser session.
       <p class="my-3">{message}</p>
       <a href={resolve('/professors')} class="text-orange underline">Back to professors</a>
     {:else}
-      <h1 class="text-2xl font-bold">Thanks — your review is in the queue</h1>
+      <h1 class="text-2xl font-bold">Thanks, your review is in the queue</h1>
       <p class="my-3">{message}</p>
 
       {#if manageKey}
@@ -80,7 +80,7 @@ one browser session.
           <p class="my-2 text-sm">
             It is the only way to
             <a href={resolve('/review/withdraw')} class="text-orange underline">withdraw your review</a>
-            later. We cannot recover it for you — by design, nothing links it back to you. We've emailed a copy too.
+            later. We cannot recover it for you. By design, nothing links it back to you. We've emailed a copy too.
           </p>
           <code class="bg-bg-secondary block break-all rounded-md p-2 text-sm">{manageKey}</code>
           <button

@@ -114,7 +114,7 @@ through a queue without reaching for the mouse.
       return;
     }
     if (action === 'reject' && rejectReason.trim() === '') {
-      errorMessage = 'A rejection needs a reason — it is emailed to the reviewer.';
+      errorMessage = 'A rejection needs a reason. It is emailed to the reviewer.';
       return;
     }
 
@@ -193,143 +193,143 @@ through a queue without reaching for the mouse.
 -->
 <main class="custom-scrollbar fixed inset-x-0 bottom-0 top-12 overflow-y-auto">
   <div class="mx-auto w-full max-w-5xl px-4 py-6">
-  <h1 class="text-2xl font-bold">Moderation queue</h1>
+    <h1 class="text-2xl font-bold">Moderation queue</h1>
 
-  {#if !authed}
-    <form
-      class="border-outline my-4 flex max-w-md flex-col gap-3 rounded-lg border-2 p-4"
-      onsubmit={(event) => {
-        event.preventDefault();
-        void load();
-      }}
-    >
-      <label class="flex flex-col gap-1">
-        <span class="text-sm font-bold">Moderator key</span>
-        <input
-          type="password"
-          bind:value={adminKey}
-          autocomplete="off"
-          class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1"
-        />
-      </label>
-      <label class="flex flex-row items-center gap-2 text-sm">
-        <input type="checkbox" bind:checked={remember} class="accent-orange" />
-        Keep it for this tab
-      </label>
-      {#if errorMessage}
-        <p class="text-danger text-sm" role="alert">{errorMessage}</p>
-      {/if}
-      <button class="bg-orange text-bg-primary rounded-lg px-4 py-2 font-bold" type="submit">
-        {status === 'loading' ? 'Checking…' : 'Open queue'}
-      </button>
-    </form>
-  {:else}
-    <div class="text-text-secondary my-2 flex flex-row flex-wrap gap-3 text-sm">
-      <span>{rows.length} awaiting a decision</span>
-      <span><kbd>j</kbd>/<kbd>k</kbd> move · <kbd>a</kbd> approve · <kbd>r</kbd> reject · <kbd>e</kbd> escalate</span>
-      <button class="text-orange underline" onclick={() => load()}>Reload</button>
-    </div>
-
-    {#if errorMessage}
-      <p class="text-danger my-2 text-sm" role="alert">{errorMessage}</p>
-    {/if}
-
-    {#if rows.length === 0}
-      <p class="my-6">Nothing to moderate.</p>
+    {#if !authed}
+      <form
+        class="border-outline my-4 flex max-w-md flex-col gap-3 rounded-lg border-2 p-4"
+        onsubmit={(event) => {
+          event.preventDefault();
+          void load();
+        }}
+      >
+        <label class="flex flex-col gap-1">
+          <span class="text-sm font-bold">Moderator key</span>
+          <input
+            type="password"
+            bind:value={adminKey}
+            autocomplete="off"
+            class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1"
+          />
+        </label>
+        <label class="flex flex-row items-center gap-2 text-sm">
+          <input type="checkbox" bind:checked={remember} class="accent-orange" />
+          Keep it for this tab
+        </label>
+        {#if errorMessage}
+          <p class="text-danger text-sm" role="alert">{errorMessage}</p>
+        {/if}
+        <button class="bg-orange text-bg-primary rounded-lg px-4 py-2 font-bold" type="submit">
+          {status === 'loading' ? 'Checking…' : 'Open queue'}
+        </button>
+      </form>
     {:else}
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-[18rem_1fr]">
-        <!-- Queue -->
-        <ul class="border-outline max-h-[70vh] overflow-y-auto rounded-lg border">
-          {#each rows as row, index (row.id)}
-            <li>
-              <button
-                class="w-full border-b px-3 py-2 text-left {index === selected ? 'bg-hover' : ''} border-border"
-                onclick={() => (selected = index)}
-              >
-                <div class="flex flex-row justify-between text-sm">
-                  <span class="font-bold">{row.instructor}</span>
-                  <span class="text-orange">{row.rating.toFixed(1)}</span>
-                </div>
-                <div class="text-text-secondary truncate text-xs">
-                  {row.course_code ?? 'no course'} · {row.status}
-                </div>
-              </button>
-            </li>
-          {/each}
-        </ul>
+      <div class="text-text-secondary my-2 flex flex-row flex-wrap gap-3 text-sm">
+        <span>{rows.length} awaiting a decision</span>
+        <span><kbd>j</kbd>/<kbd>k</kbd> move · <kbd>a</kbd> approve · <kbd>r</kbd> reject · <kbd>e</kbd> escalate</span>
+        <button class="text-orange underline" onclick={() => load()}>Reload</button>
+      </div>
 
-        <!-- Detail -->
-        {#if current}
-          <article class="border-outline rounded-lg border p-4">
-            <header class="flex flex-row flex-wrap items-baseline gap-2">
-              <h2 class="text-lg font-bold">{current.instructor}</h2>
-              <span class="text-orange font-bold">{current.rating.toFixed(1)}</span>
-              <span class="text-text-secondary text-xs">
-                {current.course_code ?? 'no course'}
-                {#if current.term}· {formatSemester(current.term)}{/if}
-                {#if current.expected_grade}· grade {current.expected_grade}{/if}
-                · {current.email_domain}
-              </span>
-            </header>
+      {#if errorMessage}
+        <p class="text-danger my-2 text-sm" role="alert">{errorMessage}</p>
+      {/if}
 
-            {#if current.last_decision}
-              <!-- The classifier's opinion, shown alongside rather than
+      {#if rows.length === 0}
+        <p class="my-6">Nothing to moderate.</p>
+      {:else}
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-[18rem_1fr]">
+          <!-- Queue -->
+          <ul class="border-outline max-h-[70vh] overflow-y-auto rounded-lg border">
+            {#each rows as row, index (row.id)}
+              <li>
+                <button
+                  class="w-full border-b px-3 py-2 text-left {index === selected ? 'bg-hover' : ''} border-border"
+                  onclick={() => (selected = index)}
+                >
+                  <div class="flex flex-row justify-between text-sm">
+                    <span class="font-bold">{row.instructor}</span>
+                    <span class="text-orange">{row.rating.toFixed(1)}</span>
+                  </div>
+                  <div class="text-text-secondary truncate text-xs">
+                    {row.course_code ?? 'no course'} · {row.status}
+                  </div>
+                </button>
+              </li>
+            {/each}
+          </ul>
+
+          <!-- Detail -->
+          {#if current}
+            <article class="border-outline rounded-lg border p-4">
+              <header class="flex flex-row flex-wrap items-baseline gap-2">
+                <h2 class="text-lg font-bold">{current.instructor}</h2>
+                <span class="text-orange font-bold">{current.rating.toFixed(1)}</span>
+                <span class="text-text-secondary text-xs">
+                  {current.course_code ?? 'no course'}
+                  {#if current.term}· {formatSemester(current.term)}{/if}
+                  {#if current.expected_grade}· grade {current.expected_grade}{/if}
+                  · {current.email_domain}
+                </span>
+              </header>
+
+              {#if current.last_decision}
+                <!-- The classifier's opinion, shown alongside rather than
                    instead of the content. During shadow mode this is how
                    disagreements become visible while they still cost nothing. -->
-              <div class="border-outline my-3 rounded-md border border-dashed p-2 text-xs">
-                <b>Automated:</b>
-                {current.last_decision.decision}
-                {#if current.last_decision.confidence}
-                  · confidence {current.last_decision.confidence.toFixed(2)}
-                {/if}
-                · by {current.last_decision.decided_by}
-                {#if !current.last_decision.applied}<span class="text-text-secondary"> (recorded only)</span>{/if}
-                {#if current.last_decision.categories?.length}
-                  <div>Flags: {current.last_decision.categories.join(', ')}</div>
-                {/if}
-                {#if current.last_decision.reason}
-                  <div>{current.last_decision.reason}</div>
-                {/if}
+                <div class="border-outline my-3 rounded-md border border-dashed p-2 text-xs">
+                  <b>Automated:</b>
+                  {current.last_decision.decision}
+                  {#if current.last_decision.confidence}
+                    · confidence {current.last_decision.confidence.toFixed(2)}
+                  {/if}
+                  · by {current.last_decision.decided_by}
+                  {#if !current.last_decision.applied}<span class="text-text-secondary"> (recorded only)</span>{/if}
+                  {#if current.last_decision.categories?.length}
+                    <div>Flags: {current.last_decision.categories.join(', ')}</div>
+                  {/if}
+                  {#if current.last_decision.reason}
+                    <div>{current.last_decision.reason}</div>
+                  {/if}
+                </div>
+              {/if}
+
+              {#if current.title}
+                <h3 class="mt-3 font-bold">{current.title}</h3>
+              {/if}
+              <p class="my-2 whitespace-pre-wrap text-sm leading-6">{current.body ?? '(no text)'}</p>
+
+              <label class="my-3 flex flex-col gap-1">
+                <span class="text-sm font-bold">Reason (emailed to the reviewer on rejection)</span>
+                <input
+                  bind:value={rejectReason}
+                  class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1 text-sm"
+                />
+              </label>
+
+              <div class="flex flex-row flex-wrap gap-2">
+                <button
+                  class="bg-success text-bg-primary rounded-md px-3 py-2 text-sm font-bold"
+                  onclick={() => decide('approve')}
+                >
+                  Approve (a)
+                </button>
+                <button
+                  class="bg-danger text-bg-primary rounded-md px-3 py-2 text-sm font-bold"
+                  onclick={() => decide('reject')}
+                >
+                  Reject (r)
+                </button>
+                <button
+                  class="border-outline rounded-md border px-3 py-2 text-sm font-bold"
+                  onclick={() => decide('escalate')}
+                >
+                  Leave for later (e)
+                </button>
               </div>
-            {/if}
-
-            {#if current.title}
-              <h3 class="mt-3 font-bold">{current.title}</h3>
-            {/if}
-            <p class="my-2 whitespace-pre-wrap text-sm leading-6">{current.body ?? '(no text)'}</p>
-
-            <label class="my-3 flex flex-col gap-1">
-              <span class="text-sm font-bold">Reason (emailed to the reviewer on rejection)</span>
-              <input
-                bind:value={rejectReason}
-                class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1 text-sm"
-              />
-            </label>
-
-            <div class="flex flex-row flex-wrap gap-2">
-              <button
-                class="bg-success text-bg-primary rounded-md px-3 py-2 text-sm font-bold"
-                onclick={() => decide('approve')}
-              >
-                Approve (a)
-              </button>
-              <button
-                class="bg-danger text-bg-primary rounded-md px-3 py-2 text-sm font-bold"
-                onclick={() => decide('reject')}
-              >
-                Reject (r)
-              </button>
-              <button
-                class="border-outline rounded-md border px-3 py-2 text-sm font-bold"
-                onclick={() => decide('escalate')}
-              >
-                Leave for later (e)
-              </button>
-            </div>
-          </article>
-        {/if}
-      </div>
+            </article>
+          {/if}
+        </div>
+      {/if}
     {/if}
-  {/if}
   </div>
 </main>

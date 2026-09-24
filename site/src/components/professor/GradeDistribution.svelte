@@ -96,8 +96,9 @@ W sits apart in grey because a withdrawal is not a grade.
           {#each BUCKET_LETTERS[bucket] as letter (letter)}
             <div
               style="flex: {distribution.letters[letter]}"
-              class="{FILL[letter]} cursor-default transition-opacity"
-              class:opacity-40={hoveredHere !== null && hoveredHere !== letter}
+              class="{FILL[letter]} cursor-default transition-[opacity,filter]"
+              class:grayscale={hoveredHere !== null && hoveredHere !== letter}
+              class:opacity-50={hoveredHere !== null && hoveredHere !== letter}
               role="presentation"
               onmouseenter={(event) => showTip(letter, event.currentTarget)}
             ></div>

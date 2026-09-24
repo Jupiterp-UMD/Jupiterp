@@ -175,7 +175,7 @@ instructor set.
         type="search"
         bind:value={query}
         oninput={onInput}
-        placeholder="e.g. Walsh"
+        placeholder="e.g. Mohe"
         autocomplete="off"
         class="border-outline bg-bg-primary text-text-primary w-full flex-1 rounded-lg border-2 px-4 py-3 text-base"
       />
