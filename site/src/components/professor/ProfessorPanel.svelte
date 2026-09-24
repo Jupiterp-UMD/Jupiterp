@@ -10,9 +10,10 @@ Neither knows about the other -- this takes a fully-loaded data object and
 renders it.
 -->
 <script lang="ts">
-  import { formatSemester, hasEnoughForGpa } from '../../lib/course-planner/Grades';
+  import { bucketPercent, formatSemester, hasEnoughForGpa } from '../../lib/course-planner/Grades';
   import { ratingBreakdown, type ProfessorData } from '../../lib/professor/ProfessorData';
   import GradeDistributionBars from '../course-planner/course-search/GradeDistributionBars.svelte';
+  import GpaScale from './GpaScale.svelte';
   import GradeTrend from './GradeTrend.svelte';
   import ReviewForm from './ReviewForm.svelte';
   import ReviewList from './ReviewList.svelte';
@@ -102,10 +103,7 @@ renders it.
 
   <!-- Grade data for the selected scope -->
   <section aria-label="Grade distribution" class="flex flex-col gap-2">
-    <h3 class="text-lg font-bold">
-      Grades
-      <span class="text-text-secondary text-base font-normal">· {selectedCode ?? 'All'}</span>
-    </h3>
+    <h3 class="text-lg font-bold">Grades</h3>
 
     {#if scoped === null}
       <p class="text-text-secondary text-sm">
@@ -114,21 +112,27 @@ renders it.
         Winter, or whose sections were never attributed, will have none.
       </p>
     {:else}
-      <div class="flex flex-row flex-wrap items-baseline gap-3">
+      <div class="grid grid-cols-1 items-end gap-8 sm:grid-cols-[3fr_2fr]">
         {#if showScopedGpa && scoped.gpa !== null}
-          <span class="text-3xl font-bold">
-            {scoped.gpa.toFixed(2)}
-          </span>
-          <span class="text-text-secondary text-sm">
-            Average GPA across {scoped.graded.toLocaleString()} graded students
-            {#if selectedCourse === null && data.courses.length > 0}
-              in {data.courses.length}
-              {data.courses.length === 1 ? 'course' : 'courses'}
-            {/if}
-          </span>
+          <GpaScale gpa={scoped.gpa} instructorSlug={data.instructor.slug} courseCode={selectedCode} />
         {:else}
-          <span class="text-text-secondary text-sm"> Not enough data. </span>
+          <span class="text-text-secondary"> Not enough data for an average GPA. </span>
         {/if}
+
+        <dl class="flex flex-col gap-3 text-lg">
+          <div class="flex flex-row items-baseline justify-between gap-4">
+            <dt>Got an A</dt>
+            <dd class="text-3xl font-semibold">{bucketPercent(scoped, 'A')}%</dd>
+          </div>
+          <div class="flex flex-row items-baseline justify-between gap-4">
+            <dt>Withdrew</dt>
+            <dd class="text-3xl font-semibold">{bucketPercent(scoped, 'W')}%</dd>
+          </div>
+          <div class="flex flex-row items-baseline justify-between gap-4">
+            <dt>Students taught</dt>
+            <dd class="text-3xl font-semibold">{scoped.barTotal.toLocaleString()}</dd>
+          </div>
+        </dl>
       </div>
 
       <div class="max-w-md">

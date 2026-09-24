@@ -123,6 +123,8 @@ the professor is in the panel, which the planner's modal shows too.
       <a href={resolve('/professors')} class="text-orange underline">All professors</a>
     </nav>
 
-    <ProfessorPanel data={professor} headingLevel={1} />
+    {#key professor.instructor.slug}
+      <ProfessorPanel data={professor} headingLevel={1} />
+    {/key}
   </div>
 </main>
