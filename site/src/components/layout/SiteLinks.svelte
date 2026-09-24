@@ -20,7 +20,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <!-- For larger screens -->
 <div class="hidden grow justify-end self-center lg:flex">
   <NavBarElement link={resolve('/')} text="Course Planner" isOnPage={currentPage == '/'} />
-  <NavBarElement link={resolve('/professors')} text="Professors List" isOnPage={currentPage == '/professors'} />
+  <NavBarElement link={resolve('/professors')} text="Professors" isOnPage={currentPage == '/professors'} />
   <NavBarElement link={resolve('/generate')} text="Schedule Generator" isOnPage={currentPage == '/generate'} />
   <NavBarElement link={resolve('/bugs')} text="Report an Issue" isOnPage={currentPage == '/bugs'} />
   <ExpandableNavBarElement link={resolve('/about')} text="About" isOnPage={currentPage == '/about'}>

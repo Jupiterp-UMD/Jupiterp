@@ -11,6 +11,7 @@ dot, and the course's overall GPA as a line.
 <script lang="ts">
   import { SvelteMap } from 'svelte/reactivity';
   import { courseGradeSummary, courseInstructorGradeSummary } from '../../lib/api/JupiterpApi';
+  import type { GradeSummary } from '../../lib/api/types';
   import { MIN_GRADED_FOR_GPA } from '../../lib/course-planner/Grades';
 
   interface Props {
@@ -30,14 +31,26 @@ dot, and the course's overall GPA as a line.
   let comparison = $state<Comparison | null>(null);
   let requestId = 0;
 
+  function calculateGpaWithoutActiveProf(
+    course: GradeSummary | undefined,
+    own: GradeSummary | undefined
+  ): number | null {
+    if (course?.gpa == null) return null;
+    if (own?.gpa == null) return Number(course.gpa);
+    const restGraded = course.graded - own.graded;
+    if (restGraded < MIN_GRADED_FOR_GPA) return null;
+    return (Number(course.gpa) * course.graded - Number(own.gpa) * own.graded) / restGraded;
+  }
+
   async function loadComparison(code: string): Promise<Comparison> {
     const [coursePage, instructorPage] = await Promise.all([
       courseGradeSummary({ courseCodes: code }),
       courseInstructorGradeSummary({ courseCodes: code }),
     ]);
     const courseRow = coursePage.data[0];
+    const own = instructorPage.data.find((row) => row.instructor_slug === instructorSlug);
     return {
-      courseGpa: courseRow?.gpa == null ? null : Number(courseRow.gpa),
+      courseGpa: calculateGpaWithoutActiveProf(courseRow, own),
       others: instructorPage.data
         .filter((row) => row.instructor_slug !== instructorSlug && row.gpa !== null && row.graded >= MIN_GRADED_FOR_GPA)
         .map((row) => Number(row.gpa)),
@@ -73,7 +86,9 @@ dot, and the course's overall GPA as a line.
     return Math.max(0, Math.min(100, ((value - MIN) / (MAX - MIN)) * 100));
   }
 
-  let delta = $derived(comparison?.courseGpa == null ? null : gpa - comparison.courseGpa);
+  let delta = $derived(
+    comparison?.courseGpa == null ? null : Math.round(((gpa - comparison.courseGpa) / comparison.courseGpa) * 100)
+  );
 </script>
 
 <div class="flex flex-col gap-5">
@@ -85,8 +100,12 @@ dot, and the course's overall GPA as a line.
     {#if comparison !== null && comparison.others.length > 0}
       <div class="flex flex-row flex-wrap gap-x-6 pb-1 text-lg">
         {#if delta !== null}
-          <span class:text-success={delta >= 0} class:text-warning={delta < 0}>
-            {delta >= 0 ? '+' : '−'}{Math.abs(delta).toFixed(2)} vs. Overall Course GPA
+          <span class:text-success={delta > 0} class:text-warning={delta < 0}>
+            {#if delta === 0}
+              Same as other professors
+            {:else}
+              {Math.abs(delta)}% {delta > 0 ? 'higher' : 'lower'} than other professors
+            {/if}
           </span>
         {/if}
       </div>
@@ -108,7 +127,7 @@ dot, and the course's overall GPA as a line.
           <div
             style="left: {pos(comparison.courseGpa)}%"
             class="bg-text-primary absolute top-0.5 -ml-px h-6 w-0.5"
-            title="Course average: {comparison.courseGpa.toFixed(2)}"
+            title="Other instructors' average: {comparison.courseGpa.toFixed(2)}"
           ></div>
         {/if}
       {/if}

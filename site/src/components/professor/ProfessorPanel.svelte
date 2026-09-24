@@ -10,10 +10,12 @@ Neither knows about the other -- this takes a fully-loaded data object and
 renders it.
 -->
 <script lang="ts">
-  import { bucketPercent, formatSemester, hasEnoughForGpa } from '../../lib/course-planner/Grades';
+  import { bucketPercent, hasEnoughForGpa } from '../../lib/course-planner/Grades';
   import { ratingBreakdown, type ProfessorData } from '../../lib/professor/ProfessorData';
   import GradeDistributionBars from '../course-planner/course-search/GradeDistributionBars.svelte';
+  import CoursePicker from './CoursePicker.svelte';
   import GpaScale from './GpaScale.svelte';
+  import GradeDistribution from './GradeDistribution.svelte';
   import GradeTrend from './GradeTrend.svelte';
   import ReviewForm from './ReviewForm.svelte';
   import ReviewList from './ReviewList.svelte';
@@ -77,34 +79,13 @@ renders it.
   </section>
 
   {#if pickableCourses.length > 1}
-    <div
-      class="bg-bg-primary sticky top-0 z-10 -mx-4 flex flex-row items-center gap-3 px-4 py-3"
-      role="group"
-      aria-label="Scope grades to a course"
-    >
-      <div class="flex flex-row flex-wrap gap-1.5">
-        {#each [null, ...pickableCourses.map((course) => course.courseCode)] as code (code ?? 'all')}
-          <button
-            class="rounded-full border px-3 py-1 text-sm font-medium transition-colors"
-            class:bg-orange={selectedCode === code}
-            class:border-orange={selectedCode === code}
-            class:text-bg-primary={selectedCode === code}
-            class:border-outline={selectedCode !== code}
-            class:hover:bg-hover={selectedCode !== code}
-            aria-pressed={selectedCode === code}
-            onclick={() => (selectedCode = code)}
-          >
-            {code ?? 'All'}
-          </button>
-        {/each}
-      </div>
+    <div class="bg-bg-primary sticky top-0 z-10 -mx-4 px-4 py-3" role="group" aria-label="Scope grades to a course">
+      <CoursePicker courses={pickableCourses} bind:selected={selectedCode} />
     </div>
   {/if}
 
   <!-- Grade data for the selected scope -->
   <section aria-label="Grade distribution" class="flex flex-col gap-2">
-    <h3 class="text-lg font-bold">Grades</h3>
-
     {#if scoped === null}
       <p class="text-text-secondary text-sm">
         No grade data is linked to this instructor. Jupiterp's grade records cover Fall and Spring terms from 2010
@@ -135,17 +116,9 @@ renders it.
         </dl>
       </div>
 
-      <div class="max-w-md">
-        <GradeDistributionBars distribution={scoped} />
+      <div class="pt-6">
+        <GradeDistribution distribution={scoped} />
       </div>
-
-      <p class="text-text-secondary text-xs">
-        {#if scoped.firstTerm !== null && scoped.lastTerm !== null}
-          {formatSemester(scoped.firstTerm)} – {formatSemester(scoped.lastTerm)}
-          <br />
-        {/if}
-        {scoped.barTotal.toLocaleString()} students
-      </p>
     {/if}
   </section>
 
