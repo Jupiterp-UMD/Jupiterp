@@ -152,17 +152,29 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   <div
     bind:this={elt}
     style="height:calc(100% - 1.5rem)"
-    class="relative grid grow pl-9 2xl:pl-11"
+    class="relative grid grow pl-9 [--gutter:2.25rem] 2xl:pl-11 2xl:[--gutter:2.75rem]"
     class:grid-cols-5={schedule.other.length == 0}
     class:grid-cols-6={schedule.other.length > 0}
   >
     <!-- Background lines for the schedule -->
     <!-- format-check exempt 2 -->
     <div
-      style="width: {schedule.other.length == 0 ? 'calc(100% - 8px)' : '83.3%'};"
-      class="absolute bottom-0 left-1 top-6 z-0"
+      style="width: {schedule.other.length == 0 ? '100%' : 'calc(var(--gutter) + (100% - var(--gutter)) * 5 / 6)'};"
+      class="absolute bottom-0 left-0 top-6 z-0"
     >
       <ScheduleBackground bind:earliest={earliestClassStart} bind:latest={latestClassEnd} bind:h={bgHeight} />
+    </div>
+
+    <!-- Vertical lines delimiting each day column -->
+    <div
+      style="height: {bgHeight}px;"
+      class="border-border top-9.5 pointer-events-none absolute left-9 z-0 grid w-[calc(100%-2.25rem)] 2xl:left-11 2xl:w-[calc(100%-2.75rem)]"
+      class:grid-cols-5={schedule.other.length == 0}
+      class:grid-cols-6={schedule.other.length > 0}
+    >
+      {#each Array.from({ length: schedule.other.length > 0 ? 6 : 5 }, (_, i) => i) as columnIndex (columnIndex)}
+        <div class="border-border border-l" class:border-r={columnIndex === 4 && schedule.other.length == 0}></div>
+      {/each}
     </div>
 
     <!-- ClassTimes by day -->
