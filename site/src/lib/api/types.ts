@@ -184,12 +184,12 @@ export interface Review {
 /** What the review form sends. */
 export interface ReviewSubmission {
   instructor_slug: string;
-  course_code?: string;
-  term?: number;
+  course_code: string;
+  term: number;
   rating: number;
-  expected_grade?: string;
-  title?: string;
-  body?: string;
+  expected_grade: string;
+  title: string;
+  body: string;
   email: string;
   captcha_token?: string;
 }

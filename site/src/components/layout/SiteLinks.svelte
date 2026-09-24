@@ -7,6 +7,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <script lang="ts">
   import { fade } from 'svelte/transition';
   import { page } from '$app/state';
+  import { resolve } from '$app/paths';
   import NavBarElement from './NavBarElement.svelte';
   import DarkModeToggle from './DarkModeToggle.svelte';
   import ExpandableNavBarElement from './ExpandableNavBarElement.svelte';
@@ -18,23 +19,29 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
 <!-- For larger screens -->
 <div class="hidden grow justify-end self-center lg:flex">
-  <NavBarElement link="./" text="Course Planner" isOnPage={currentPage == '/'} />
-  <NavBarElement link="./generate" text="Schedule Generator" isOnPage={currentPage == '/generate'} />
-  <NavBarElement link="./bugs" text="Report an Issue" isOnPage={currentPage == '/bugs'} />
-  <ExpandableNavBarElement link="./about" text="About" isOnPage={currentPage == '/about'}>
+  <NavBarElement link={resolve('/')} text="Course Planner" isOnPage={currentPage == '/'} />
+  <NavBarElement link={resolve('/professors')} text="Professors" isOnPage={currentPage == '/professors'} />
+  <NavBarElement link={resolve('/generate')} text="Schedule Generator" isOnPage={currentPage == '/generate'} />
+  <NavBarElement link={resolve('/bugs')} text="Report an Issue" isOnPage={currentPage == '/bugs'} />
+  <ExpandableNavBarElement link={resolve('/about')} text="About" isOnPage={currentPage == '/about'}>
     <NavBarElement
-      link="./terms-of-use"
+      link={resolve('/terms-of-use')}
       text="Terms of Use"
       reduceXMargin={true}
       isOnPage={currentPage == '/terms-of-use'}
     />
     <NavBarElement
-      link="./privacy-policy"
+      link={resolve('/privacy-policy')}
       text="Privacy Policy"
       reduceXMargin={true}
       isOnPage={currentPage == '/privacy-policy'}
     />
-    <NavBarElement link="./changelog" text="Changelog" reduceXMargin={true} isOnPage={currentPage == '/changelog'} />
+    <NavBarElement
+      link={resolve('/changelog')}
+      text="Changelog"
+      reduceXMargin={true}
+      isOnPage={currentPage == '/changelog'}
+    />
   </ExpandableNavBarElement>
   <NavBarElement link="https://github.com/atcupps/Jupiterp" text="GitHub" target="_blank" />
   <DarkModeToggle />
@@ -90,22 +97,22 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   class:shadow-lg={siteLinksSelected}
 >
   <div class="my-2 w-full text-lg">
-    <NavBarElement link="./" text="Course Planner" />
+    <NavBarElement link={resolve('/')} text="Course Planner" />
   </div>
   <div class="my-2 w-full text-lg">
-    <NavBarElement link="./generate" text="Schedule Generator" />
+    <NavBarElement link={resolve('/generate')} text="Schedule Generator" />
   </div>
   <div class="my-2 w-full text-lg">
-    <NavBarElement link="./bugs" text="Report an Issue" />
+    <NavBarElement link={resolve('/bugs')} text="Report an Issue" />
   </div>
   <div class="my-2 w-full text-lg">
-    <NavBarElement link="./about" text="About" />
+    <NavBarElement link={resolve('/about')} text="About" />
   </div>
   <div class="my-2 w-full text-lg">
-    <NavBarElement link="./terms-of-use" text="Terms of Use" />
+    <NavBarElement link={resolve('/terms-of-use')} text="Terms of Use" />
   </div>
   <div class="my-2 w-full text-lg">
-    <NavBarElement link="./privacy-policy" text="Privacy Policy" />
+    <NavBarElement link={resolve('/privacy-policy')} text="Privacy Policy" />
   </div>
   <div class="my-2 w-full text-lg">
     <NavBarElement link="https://github.com/atcupps/Jupiterp" text="GitHub" target="_blank" />

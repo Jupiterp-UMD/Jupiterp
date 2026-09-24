@@ -24,6 +24,12 @@ import { toDistribution, type GradeDistribution } from '../course-planner/Grades
 
 type Fetch = typeof globalThis.fetch;
 
+export const COURSE_PARAM = 'course';
+
+export function courseQuery(courseCode?: string | null): string {
+  return courseCode ? `?${COURSE_PARAM}=${encodeURIComponent(courseCode)}` : '';
+}
+
 /** One course a professor has taught, with their grade distribution in it. */
 export interface ProfessorCourse {
   courseCode: string;

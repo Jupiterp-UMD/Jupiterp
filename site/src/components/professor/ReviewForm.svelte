@@ -162,9 +162,17 @@ Copyright (C) 2026 Andrew Cupps
   /** A token is only required when a site key is actually configured. */
   let captchaReady = $derived(siteKey === '' || captchaToken !== '');
 
+  const MIN_BODY = 10;
+
+  const visibleLength = (text: string) => [...text.replace(/\s/g, '')].length;
+
   let bodyLength = $derived([...body].length);
   let titleLength = $derived([...title].length);
-  let canSubmit = $derived(status !== 'sending' && email.trim() !== '' && agreed && captchaReady);
+  let bodyVisible = $derived(visibleLength(body));
+  let fieldsComplete = $derived(
+    courseCode !== '' && term !== '' && expectedGrade !== '' && visibleLength(title) > 0 && bodyVisible >= MIN_BODY
+  );
+  let canSubmit = $derived(status !== 'sending' && fieldsComplete && email.trim() !== '' && agreed && captchaReady);
 
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
@@ -176,12 +184,12 @@ Copyright (C) 2026 Andrew Cupps
 
     const result = await submitReview({
       instructor_slug: instructorSlug,
-      course_code: courseCode || undefined,
-      term: term ? Number(term) : undefined,
+      course_code: courseCode,
+      term: Number(term),
       rating,
-      expected_grade: expectedGrade || undefined,
-      title: title.trim() || undefined,
-      body: body.trim() || undefined,
+      expected_grade: expectedGrade,
+      title: title.trim(),
+      body: body.trim(),
       email: email.trim(),
       // Held in state by the widget's callback rather than scraped out of the
       // DOM. Undefined only when no site key is configured, which is the case
@@ -218,7 +226,7 @@ Copyright (C) 2026 Andrew Cupps
       click it.
     </p>
     <p class="text-text-secondary my-2 text-sm">
-      The link expires in 48 hours. Check your spam folder — university mail filters are aggressive.
+      The link expires in 48 hours. Check your spam folder - university mail filters are aggressive.
     </p>
   </div>
 {:else}
@@ -232,21 +240,19 @@ Copyright (C) 2026 Andrew Cupps
 
     <div class="flex flex-row flex-wrap gap-3">
       <label class="flex flex-col gap-1">
-        <span class="text-sm font-bold">Course <span class="text-text-secondary">(optional)</span></span>
+        <span class="text-sm font-bold">Course</span>
         <!--
           A select, matching Term and Grade beside it. This was an input with a
           datalist, which renders as a text box with a browser-drawn suggestion
           popup: a different height, a different control, and a dropdown that
           floats away from the field rather than under it.
 
-          Nothing is lost by closing the list. The options are every course this
-          professor is teaching now plus every one they have grade history for,
-          so a student reviewing a course they took has it; and the field is
-          optional, so a course that is somehow missing is left blank rather
-          than blocking the review.
+          The options are every course this professor is teaching now plus
+          every one they have grade history for, so a student reviewing a
+          course they took has it.
         -->
-        <select bind:value={courseCode} class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1">
-          <option value="">—</option>
+        <select bind:value={courseCode} required class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1">
+          <option value="" disabled>Select</option>
           {#each courseCodes as code (code)}
             <option value={code}>{code}</option>
           {/each}
@@ -254,9 +260,9 @@ Copyright (C) 2026 Andrew Cupps
       </label>
 
       <label class="flex flex-col gap-1">
-        <span class="text-sm font-bold">Term <span class="text-text-secondary">(optional)</span></span>
-        <select bind:value={term} class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1">
-          <option value="">—</option>
+        <span class="text-sm font-bold">Term</span>
+        <select bind:value={term} required class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1">
+          <option value="" disabled>Select</option>
           {#each TERMS as option (option.value)}
             <option value={option.value}>{option.label}</option>
           {/each}
@@ -264,9 +270,9 @@ Copyright (C) 2026 Andrew Cupps
       </label>
 
       <label class="flex flex-col gap-1">
-        <span class="text-sm font-bold">Your grade <span class="text-text-secondary">(optional)</span></span>
-        <select bind:value={expectedGrade} class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1">
-          <option value="">—</option>
+        <span class="text-sm font-bold">Your grade</span>
+        <select bind:value={expectedGrade} required class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1">
+          <option value="" disabled>Select</option>
           {#each GRADES as grade (grade)}
             <option value={grade}>{grade}</option>
           {/each}
@@ -275,18 +281,32 @@ Copyright (C) 2026 Andrew Cupps
     </div>
 
     <label class="flex flex-col gap-1">
-      <span class="text-sm font-bold">
-        Title <span class="text-text-secondary">(optional, {titleLength}/120)</span>
+      <span class="flex flex-row justify-between text-sm">
+        <span class="font-bold">Title</span>
+        <span class="text-text-secondary">{titleLength}/120</span>
       </span>
-      <input bind:value={title} maxlength="120" class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1" />
+      <input
+        bind:value={title}
+        required
+        maxlength="120"
+        class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1"
+      />
     </label>
 
     <label class="flex flex-col gap-1">
-      <span class="text-sm font-bold">
-        Review <span class="text-text-secondary">(optional, {bodyLength}/5000)</span>
+      <span class="flex flex-row justify-between text-sm">
+        <span class="font-bold">Review</span>
+        <span class="text-text-secondary">
+          {#if bodyVisible < MIN_BODY}
+            {bodyVisible}/{MIN_BODY} characters minimum
+          {:else}
+            {bodyLength}/5000
+          {/if}
+        </span>
       </span>
       <textarea
         bind:value={body}
+        required
         maxlength="5000"
         rows="6"
         placeholder="What was the course actually like? Workload, grading, whether the lectures helped."
@@ -306,8 +326,9 @@ Copyright (C) 2026 Andrew Cupps
       <!-- Explaining this inline rather than in a policy nobody opens is the
            difference between a form people complete and one they abandon. -->
       <span class="text-text-secondary text-xs">
-        Used once to check you're at UMD and to stop duplicate reviews. Stored only as an irreversible hash — never
-        shown to anyone, including the professor.
+        Your Terpmail is used only to verify that you’re a UMD student and prevent duplicate reviews. We <b
+          ><u>CANNOT</u></b
+        > see your email after verification or link it to your review, and neither can professors or other users.
       </span>
     </label>
 
@@ -317,7 +338,7 @@ Copyright (C) 2026 Andrew Cupps
       <div bind:this={captchaEl}></div>
       {#if captchaFailed}
         <p class="text-danger text-sm" role="alert">
-          The human check could not load. Reload the page and try again — reviews cannot be submitted without it.
+          The human check could not load. Reload the page and try again - reviews cannot be submitted without it.
         </p>
       {/if}
     {/if}

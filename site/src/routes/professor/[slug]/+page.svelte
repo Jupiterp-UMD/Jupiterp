@@ -10,9 +10,23 @@ the professor is in the panel, which the planner's modal shows too.
 <script lang="ts">
   import ProfessorPanel from '../../../components/professor/ProfessorPanel.svelte';
   import { hasEnoughForGpa } from '../../../lib/course-planner/Grades';
-  import { ratingBreakdown } from '../../../lib/professor/ProfessorData';
+  import { COURSE_PARAM, ratingBreakdown } from '../../../lib/professor/ProfessorData';
   import { resolve } from '$app/paths';
+  import { page } from '$app/state';
+  import { replaceState } from '$app/navigation';
   import type { PageData } from './$types';
+
+  function syncCourseParam(code: string | null) {
+    const url = new URL(page.url);
+    if (code === null) {
+      url.searchParams.delete(COURSE_PARAM);
+    } else {
+      url.searchParams.set(COURSE_PARAM, code);
+    }
+
+    // eslint-disable-next-line svelte/no-navigation-without-resolve
+    replaceState(url, page.state);
+  }
 
   interface Props {
     data: PageData;
@@ -23,7 +37,7 @@ the professor is in the panel, which the planner's modal shows too.
   let professor = $derived(data.professor);
   let rating = $derived(ratingBreakdown(professor.instructor));
 
-  let title = $derived(`${professor.instructor.name} — UMD grades and ratings | Jupiterp`);
+  let title = $derived(`${professor.instructor.name} - Grades and Ratings`);
 
   let description = $derived.by(() => {
     const parts: string[] = [];
@@ -117,12 +131,27 @@ the professor is in the panel, which the planner's modal shows too.
   unreachable -- and `top-12` is what keeps the first line out from under the
   fixed header.
 -->
-<main class="custom-scrollbar fixed inset-x-0 bottom-0 top-12 overflow-y-auto">
+<!-- A size container so the panel's full-width course bar can span exactly
+     this area (cqw) rather than the viewport (vw), which includes the
+     scrollbar and would overflow sideways. -->
+<main class="custom-scrollbar @container fixed inset-x-0 bottom-0 top-12 overflow-y-auto">
   <div class="mx-auto w-full max-w-3xl px-4 py-6">
-    <nav class="text-text-secondary pb-4 text-sm">
-      <a href={resolve('/professors')} class="text-orange underline">All professors</a>
+    <nav class="pb-4">
+      <a
+        href={resolve('/professors')}
+        class="text-orange hover:bg-orange/10 group -ml-3 inline-flex flex-row items-center gap-2 rounded-lg px-3 py-1.5 font-medium transition-colors"
+      >
+        <u>All professors</u>
+      </a>
     </nav>
 
-    <ProfessorPanel data={professor} headingLevel={1} />
+    {#key professor.instructor.slug}
+      <ProfessorPanel
+        data={professor}
+        headingLevel={1}
+        initialCourse={page.url.searchParams.get(COURSE_PARAM)}
+        onCourseChange={syncCourseParam}
+      />
+    {/key}
   </div>
 </main>

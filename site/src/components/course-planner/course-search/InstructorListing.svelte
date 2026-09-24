@@ -7,6 +7,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <script lang="ts">
   import { clickoutside } from '@svelte-put/clickoutside';
   import { resolve } from '$app/paths';
+  import { courseQuery } from '../../../lib/professor/ProfessorData';
   import { CourseGradesStore, ProfsLookupStore } from '../../../stores/CoursePlannerStores';
   import { hasEnoughForGpa } from '../../../lib/course-planner/Grades';
   import GradesPopover from './GradesPopover.svelte';
@@ -139,7 +140,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   {#if currentProf}
     <!-- Internal professor page, not an outbound PlanetTerp link. -->
     <a
-      href={resolve('/professor/[slug]', { slug: currentProf.slug })}
+      href="{resolve('/professor/[slug]', { slug: currentProf.slug })}{courseQuery(courseCode)}"
       class="text-orange hover:bg-hover inline-flex flex-wrap rounded-md underline"
       onmouseenter={() => {
         profsHover = true; // Mutating properties directly updates parent binding
@@ -198,7 +199,13 @@ https://github.com/atcupps/Jupiterp/LICENSE).
         {profDist.gpa.toFixed(2)}
       </span>
       {#if gpaOpen}
-        <GradesPopover heading={instructor} distribution={profDist} slug={profSlug} onclose={() => (gpaOpen = false)} />
+        <GradesPopover
+          heading={instructor}
+          distribution={profDist}
+          slug={profSlug}
+          {courseCode}
+          onclose={() => (gpaOpen = false)}
+        />
       {/if}
     </span>
   {/if}

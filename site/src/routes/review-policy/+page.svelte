@@ -45,7 +45,7 @@ old decisions become unreproducible.
     <h2 class={h2Classes}>Who can write a review</h2>
     <p class={pClasses}>
       Anyone with a working <b>@terpmail.umd.edu</b> or <b>@umd.edu</b> address. That includes faculty and staff, and it includes
-      alumni for as long as their address still works — we do not have a separate mechanism for that, and there is no point
+      alumni for as long as their address still works. We do not have a separate mechanism for that, and there is no point
       pretending otherwise.
     </p>
     <p class={pClasses}>
@@ -66,8 +66,8 @@ old decisions become unreproducible.
         Office of Student Conduct exist for it, and they can act where we cannot.
       </li>
       <li>
-        <b>Comments about protected characteristics</b> — race, religion, sex, gender identity, sexual orientation, disability,
-        national origin, age — including remarks about someone's accent or how they speak.
+        <b>Comments about protected characteristics</b> (race, religion, sex, gender identity, sexual orientation, disability,
+        national origin, age), including remarks about someone's accent or how they speak.
       </li>
       <li>
         <b>Contact details.</b> No email addresses, phone numbers, office numbers, home addresses, or social media handles,
@@ -78,7 +78,9 @@ old decisions become unreproducible.
       <li>
         <b>Other students, TAs, or classmates by name.</b> They did not sign up to be reviewed.
       </li>
-      <li><b>Content that is not a review</b> — advertising, jokes about unrelated people, test submissions.</li>
+      <li>
+        <b>Content that is not a review</b>, such as advertising, jokes about unrelated people, or test submissions.
+      </li>
     </ul>
 
     <h2 class={h2Classes}>What we are happy to publish</h2>
@@ -92,7 +94,7 @@ old decisions become unreproducible.
     <p class={pClasses}>Every review is checked before it appears. Nothing is published automatically on submission.</p>
     <p class={pClasses}>
       Some checks are mechanical: reviews containing links or contact details are rejected without a person seeing them.
-      Beyond that, reviews may be classified by an automated system to sort out the ones needing closer attention — see
+      Beyond that, reviews may be classified by an automated system to sort out the ones needing closer attention. See
       the <a href={resolve('/privacy-policy')} class="text-orange underline">privacy policy</a> for what that involves. Anything
       that looks like an allegation about a specific person is always read by a human, whatever the automated system concludes.
     </p>
@@ -111,7 +113,7 @@ old decisions become unreproducible.
     <h2 class={h2Classes}>Withdrawing your own review</h2>
     <p class={pClasses}>
       When you confirm your review we give you a management key, once. Keep it: it is the only way to withdraw the
-      review later, and we cannot recover it for you — by design, there is nothing linking it back to you. Withdrawing
+      review later, and we cannot recover it for you. By design, there is nothing linking it back to you. Withdrawing
       deletes the text rather than hiding it, and cannot be undone; you are free to write a new review afterwards.
     </p>
     <p class={pClasses}>
@@ -126,17 +128,17 @@ old decisions become unreproducible.
       it. We aim to respond within <b>five working days during term</b>.
     </p>
     <p class={pClasses}>
-      We will not remove a review for being unflattering, and we do not currently offer a right of reply — verifying
-      that someone is who they say they are is a harder problem than it sounds, and replies would themselves need
-      moderating. Reporting is the whole of the process for now, which is why the response time above matters.
+      We will not remove a review for being unflattering, and we do not currently offer a right of reply. Verifying that
+      someone is who they say they are is a harder problem than it sounds, and replies would themselves need moderating.
+      Reporting is the whole of the process for now, which is why the response time above matters.
     </p>
 
     <h2 class={h2Classes}>Your email address</h2>
     <p class={pClasses}>
       We ask for it to check you are at UMD and to stop the same person reviewing the same course repeatedly. It is
-      stored only as an irreversible hash — we cannot read it back, we never display it, and the professor never sees
-      it. Reviews are not anonymous to us in the sense that we could not tell two of them apart; they are anonymous in
-      that we cannot tell you who wrote one.
+      stored only as an irreversible hash: we cannot read it back, we never display it, and the professor never sees it.
+      Reviews are not anonymous to us in the sense that we could not tell two of them apart; they are anonymous in that
+      we cannot tell you who wrote one.
     </p>
   </article>
 </main>

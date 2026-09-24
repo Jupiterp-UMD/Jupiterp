@@ -13,6 +13,7 @@ Copyright (C) 2026 Andrew Cupps
   } from '../../../lib/course-planner/Grades';
   import GradeDistributionBars from './GradeDistributionBars.svelte';
   import { resolve } from '$app/paths';
+  import { courseQuery } from '../../../lib/professor/ProfessorData';
 
   interface Props {
     /** Professor name or course code shown at the top of the popover */
@@ -20,11 +21,13 @@ Copyright (C) 2026 Andrew Cupps
     distribution: GradeDistribution;
     /** Instructor slug; when given, the heading links to their page */
     slug?: string;
+    /** Course the popover is about; the professor link opens scoped to it */
+    courseCode?: string;
     /** Called when the popover should close, e.g. on Escape */
     onclose?: () => void;
   }
 
-  let { heading, distribution, slug = undefined, onclose = undefined }: Props = $props();
+  let { heading, distribution, slug = undefined, courseCode = undefined, onclose = undefined }: Props = $props();
 
   /**
    * Where the popover sits horizontally.
@@ -147,7 +150,7 @@ Copyright (C) 2026 Andrew Cupps
   <div class="truncate text-xs font-bold">
     {#if slug}
       <a
-        href={resolve('/professor/[slug]', { slug })}
+        href="{resolve('/professor/[slug]', { slug })}{courseQuery(courseCode)}"
         class="hover:underline"
         onclick={(event) => event.stopPropagation()}>{heading}</a
       >
