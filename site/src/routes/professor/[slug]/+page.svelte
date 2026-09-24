@@ -23,7 +23,7 @@ the professor is in the panel, which the planner's modal shows too.
   let professor = $derived(data.professor);
   let rating = $derived(ratingBreakdown(professor.instructor));
 
-  let title = $derived(`${professor.instructor.name} — UMD grades and ratings | Jupiterp`);
+  let title = $derived(`${professor.instructor.name} - Grades and Ratings`);
 
   let description = $derived.by(() => {
     const parts: string[] = [];
