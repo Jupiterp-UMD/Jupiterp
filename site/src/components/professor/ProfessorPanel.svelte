@@ -27,10 +27,16 @@ renders it.
 
   let rating = $derived(ratingBreakdown(data.instructor));
   let overall = $derived(data.overall);
-  let showOverallGpa = $derived(overall !== null && hasEnoughForGpa(overall));
 
   /** Courses worth showing a GPA for, largest first. */
   let courses = $derived(data.courses);
+
+  let pickableCourses = $derived(courses.filter((course) => hasEnoughForGpa(course.distribution)));
+
+  let selectedCode = $state<string | null>(null);
+  let selectedCourse = $derived(courses.find((course) => course.courseCode === selectedCode) ?? null);
+  let scoped = $derived(selectedCourse?.distribution ?? overall);
+  let showScopedGpa = $derived(scoped !== null && hasEnoughForGpa(scoped));
 
   let showForm = $state(false);
 </script>
@@ -69,11 +75,39 @@ renders it.
     {/if}
   </section>
 
-  <!-- Overall grade data -->
-  <section aria-label="Grade distribution" class="flex flex-col gap-2">
-    <h3 class="text-lg font-bold">Grades</h3>
+  {#if pickableCourses.length > 1}
+    <div
+      class="bg-bg-primary sticky top-0 z-10 -mx-4 flex flex-row items-center gap-3 px-4 py-3"
+      role="group"
+      aria-label="Scope grades to a course"
+    >
+      <div class="flex flex-row flex-wrap gap-1.5">
+        {#each [null, ...pickableCourses.map((course) => course.courseCode)] as code (code ?? 'all')}
+          <button
+            class="rounded-full border px-3 py-1 text-sm font-medium transition-colors"
+            class:bg-orange={selectedCode === code}
+            class:border-orange={selectedCode === code}
+            class:text-bg-primary={selectedCode === code}
+            class:border-outline={selectedCode !== code}
+            class:hover:bg-hover={selectedCode !== code}
+            aria-pressed={selectedCode === code}
+            onclick={() => (selectedCode = code)}
+          >
+            {code ?? 'All'}
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
 
-    {#if overall === null}
+  <!-- Grade data for the selected scope -->
+  <section aria-label="Grade distribution" class="flex flex-col gap-2">
+    <h3 class="text-lg font-bold">
+      Grades
+      <span class="text-text-secondary text-base font-normal">· {selectedCode ?? 'All'}</span>
+    </h3>
+
+    {#if scoped === null}
       <p class="text-text-secondary text-sm">
         No grade data is linked to this instructor. Jupiterp's grade records cover Fall and Spring terms from 2010
         onward and name an instructor for about three quarters of sections, so a professor who teaches only in Summer or
@@ -81,33 +115,32 @@ renders it.
       </p>
     {:else}
       <div class="flex flex-row flex-wrap items-baseline gap-3">
-        {#if showOverallGpa && overall.gpa !== null}
+        {#if showScopedGpa && scoped.gpa !== null}
           <span class="text-3xl font-bold">
-            {overall.gpa.toFixed(2)}
+            {scoped.gpa.toFixed(2)}
           </span>
           <span class="text-text-secondary text-sm">
-            average GPA across {overall.graded.toLocaleString()} graded students
-            {#if data.courses.length > 0}
+            Average GPA across {scoped.graded.toLocaleString()} graded students
+            {#if selectedCourse === null && data.courses.length > 0}
               in {data.courses.length}
               {data.courses.length === 1 ? 'course' : 'courses'}
             {/if}
           </span>
         {:else}
-          <span class="text-text-secondary text-sm">
-            Limited data &middot; {overall.graded.toLocaleString()} graded students. Too few to show an average GPA.
-          </span>
+          <span class="text-text-secondary text-sm"> Not enough data. </span>
         {/if}
       </div>
 
       <div class="max-w-md">
-        <GradeDistributionBars distribution={overall} />
+        <GradeDistributionBars distribution={scoped} />
       </div>
 
       <p class="text-text-secondary text-xs">
-        {#if overall.firstTerm !== null && overall.lastTerm !== null}
-          {formatSemester(overall.firstTerm)} – {formatSemester(overall.lastTerm)} &middot;
+        {#if scoped.firstTerm !== null && scoped.lastTerm !== null}
+          {formatSemester(scoped.firstTerm)} – {formatSemester(scoped.lastTerm)}
+          <br />
         {/if}
-        {overall.barTotal.toLocaleString()} students
+        {scoped.barTotal.toLocaleString()} students
       </p>
     {/if}
   </section>
@@ -159,9 +192,7 @@ renders it.
       <ReviewForm
         instructorSlug={data.instructor.slug}
         instructorName={data.instructor.name}
-        courseCodes={[
-          ...new Set([...data.currentCourseCodes, ...data.courses.map((course) => course.courseCode)]),
-        ]}
+        courseCodes={[...new Set([...data.currentCourseCodes, ...data.courses.map((course) => course.courseCode)])]}
       />
       <button class="text-text-secondary self-start text-sm underline" onclick={() => (showForm = false)}>
         Cancel
