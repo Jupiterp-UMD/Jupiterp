@@ -8,6 +8,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import { getClasstimeBounds, schedulify, appendHoveredSection } from '../../../lib/course-planner/Schedule';
   import ScheduleDay from './ScheduleDay.svelte';
   import ScheduleBackground from './ScheduleBackground.svelte';
+  import CurrentTimeLine from './CurrentTimeLine.svelte';
   import { formatCredits, testudoLink } from '../../../lib/course-planner/Formatting';
   import InstructorListing from '../course-search/InstructorListing.svelte';
   import { HoveredSectionStore, CurrentScheduleStore, CourseInfoPairStore } from '../../../stores/CoursePlannerStores';
@@ -176,6 +177,9 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     {#if schedule.other.length > 0}
       <ScheduleDay name="Other" classes={schedule.other} type="Other" {bgHeight} />
     {/if}
+
+    <!-- Current time indicator; last so it paints over the class blocks -->
+    <CurrentTimeLine {earliestClassStart} {latestClassEnd} {bgHeight} {schedule} hasOther={schedule.other.length > 0} />
   </div>
 
   <!-- Course info panel -->
