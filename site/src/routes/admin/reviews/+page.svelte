@@ -45,9 +45,65 @@ through a queue without reaching for the mouse.
     last_decision: Decision | null;
   }
 
+  interface ReportRow {
+    id: number;
+    review_id: string;
+    reason: string;
+    detail: string | null;
+    created_at: string;
+    instructor: string;
+    review: {
+      course_code: string | null;
+      term: number | null;
+      rating: number;
+      title: string | null;
+      body: string | null;
+      status: string;
+      submitted_at: string;
+    } | null;
+  }
+
+  /** Every open report about one review, shown together. */
+  interface ReportedReview {
+    reviewId: string;
+    instructor: string;
+    review: ReportRow['review'];
+    reports: ReportRow[];
+  }
+
   let adminKey = $state('');
   let remember = $state(false);
   let authed = $state(false);
+
+  let tab = $state<'queue' | 'reports'>('queue');
+  let reports = $state<ReportRow[]>([]);
+  let reportsError = $state('');
+  let removeReason = $state<Record<string, string>>({});
+
+  /**
+   * Reports grouped by review, oldest report first. Two people reporting the
+   * same review should be read as one case, not two, but each keeps its own
+   * dismiss button: they may have had different reasons.
+   */
+  let reportedReviews = $derived.by(() => {
+    const grouped: ReportedReview[] = [];
+    const byReview: Record<string, ReportedReview> = {};
+    for (const report of reports) {
+      const existing = byReview[report.review_id];
+      if (existing) {
+        existing.reports.push(report);
+      } else {
+        byReview[report.review_id] = {
+          reviewId: report.review_id,
+          instructor: report.instructor,
+          review: report.review,
+          reports: [report],
+        };
+        grouped.push(byReview[report.review_id]);
+      }
+    }
+    return grouped;
+  });
 
   let rows = $state<QueueRow[]>([]);
   let selected = $state(0);
@@ -101,10 +157,73 @@ through a queue without reaching for the mouse.
       if (remember) {
         sessionStorage.setItem(STORAGE_KEY, adminKey);
       }
+      void loadReports();
     } catch (error) {
       console.error(error);
       status = 'error';
       errorMessage = 'Could not load the queue.';
+    }
+  }
+
+  async function loadReports() {
+    reportsError = '';
+    try {
+      const response = await call('/v1/admin/reports');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const payload = await response.json();
+      reports = payload.reports ?? [];
+    } catch (error) {
+      console.error(error);
+      reportsError = 'Could not load reports.';
+    }
+  }
+
+  /**
+   * Take a published review down. Resolves every open report against it.
+   *
+   * Deliberately has no keyboard shortcut, unlike the queue: this reverses a
+   * decision to publish something about a named person, and a stray keypress
+   * should not be able to do it.
+   */
+  async function removeReview(reviewId: string) {
+    const reason = (removeReason[reviewId] ?? '').trim();
+    if (reason === '') {
+      reportsError = 'Removing a review needs a reason — it is kept in the audit trail.';
+      return;
+    }
+    try {
+      const response = await call(`/v1/admin/reviews/${reviewId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ action: 'remove', reason }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        reportsError = payload.error ?? `Could not remove that (HTTP ${response.status}).`;
+        return;
+      }
+      reports = reports.filter((r) => r.review_id !== reviewId);
+      reportsError = '';
+    } catch (error) {
+      console.error(error);
+      reportsError = 'Could not reach the API.';
+    }
+  }
+
+  /** Close one report and leave the review up. */
+  async function dismissReport(reportId: number) {
+    try {
+      const response = await call(`/v1/admin/reports/${reportId}`, { method: 'POST' });
+      if (!response.ok) {
+        reportsError = `Could not dismiss that (HTTP ${response.status}).`;
+        return;
+      }
+      reports = reports.filter((r) => r.id !== reportId);
+      reportsError = '';
+    } catch (error) {
+      console.error(error);
+      reportsError = 'Could not reach the API.';
     }
   }
 
@@ -142,7 +261,7 @@ through a queue without reaching for the mouse.
   }
 
   function handleKeydown(event: KeyboardEvent) {
-    if (!authed || rows.length === 0) {
+    if (!authed || tab !== 'queue' || rows.length === 0) {
       return;
     }
     // Not while typing a rejection reason.
@@ -224,6 +343,26 @@ through a queue without reaching for the mouse.
       </button>
     </form>
   {:else}
+    <div class="my-3 flex flex-row gap-2 text-sm" role="tablist">
+      <button
+        role="tab"
+        aria-selected={tab === 'queue'}
+        class="rounded-md border px-3 py-1 font-bold {tab === 'queue' ? 'border-orange text-orange' : 'border-outline'}"
+        onclick={() => (tab = 'queue')}
+      >
+        Queue ({rows.length})
+      </button>
+      <button
+        role="tab"
+        aria-selected={tab === 'reports'}
+        class="rounded-md border px-3 py-1 font-bold {tab === 'reports' ? 'border-orange text-orange' : 'border-outline'}"
+        onclick={() => (tab = 'reports')}
+      >
+        Reports ({reportedReviews.length})
+      </button>
+    </div>
+
+    {#if tab === 'queue'}
     <div class="text-text-secondary my-2 flex flex-row flex-wrap gap-3 text-sm">
       <span>{rows.length} awaiting a decision</span>
       <span><kbd>j</kbd>/<kbd>k</kbd> move · <kbd>a</kbd> approve · <kbd>r</kbd> reject · <kbd>e</kbd> escalate</span>
@@ -329,6 +468,84 @@ through a queue without reaching for the mouse.
           </article>
         {/if}
       </div>
+    {/if}
+    {:else}
+      <!-- Reports against published reviews: a professor's only recourse, so
+           each one gets an answer -- the review comes down, or the report is
+           dismissed. -->
+      <div class="text-text-secondary my-2 flex flex-row flex-wrap gap-3 text-sm">
+        <span>{reports.length} open {reports.length === 1 ? 'report' : 'reports'}</span>
+        <button class="text-orange underline" onclick={() => loadReports()}>Reload</button>
+      </div>
+
+      {#if reportsError}
+        <p class="text-danger my-2 text-sm" role="alert">{reportsError}</p>
+      {/if}
+
+      {#if reportedReviews.length === 0}
+        <p class="my-6">No open reports.</p>
+      {:else}
+        <div class="flex flex-col gap-4">
+          {#each reportedReviews as item (item.reviewId)}
+            <article class="border-outline rounded-lg border p-4">
+              <header class="flex flex-row flex-wrap items-baseline gap-2">
+                <h2 class="text-lg font-bold">{item.instructor || 'Unknown professor'}</h2>
+                {#if item.review}
+                  <span class="text-orange font-bold">{item.review.rating.toFixed(1)}</span>
+                  <span class="text-text-secondary text-xs">
+                    {item.review.course_code ?? 'no course'}
+                    {#if item.review.term}· {formatSemester(item.review.term)}{/if}
+                    · {item.review.status}
+                  </span>
+                {/if}
+              </header>
+
+              {#if item.review}
+                {#if item.review.title}
+                  <h3 class="mt-3 font-bold">{item.review.title}</h3>
+                {/if}
+                <p class="my-2 whitespace-pre-wrap text-sm leading-6">{item.review.body ?? '(no text)'}</p>
+              {:else}
+                <p class="text-text-secondary my-2 text-sm">The review this report is about no longer exists.</p>
+              {/if}
+
+              <ul class="border-outline my-3 flex flex-col gap-2 rounded-md border border-dashed p-2 text-xs">
+                {#each item.reports as report (report.id)}
+                  <li class="flex flex-row items-start justify-between gap-3">
+                    <div>
+                      <b>{report.reason}</b>
+                      {#if report.detail}<span> — {report.detail}</span>{/if}
+                      <div class="text-text-secondary">{new Date(report.created_at).toLocaleString()}</div>
+                    </div>
+                    <button
+                      class="border-outline shrink-0 rounded-md border px-2 py-1 font-bold"
+                      onclick={() => dismissReport(report.id)}
+                    >
+                      Dismiss
+                    </button>
+                  </li>
+                {/each}
+              </ul>
+
+              {#if item.review?.status === 'approved'}
+                <label class="my-3 flex flex-col gap-1">
+                  <span class="text-sm font-bold">Reason for removal (kept in the audit trail)</span>
+                  <input
+                    bind:value={removeReason[item.reviewId]}
+                    class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1 text-sm"
+                  />
+                </label>
+                <button
+                  class="bg-danger text-bg-primary rounded-md px-3 py-2 text-sm font-bold"
+                  onclick={() => removeReview(item.reviewId)}
+                >
+                  Remove review
+                </button>
+              {/if}
+            </article>
+          {/each}
+        </div>
+      {/if}
     {/if}
   {/if}
   </div>
