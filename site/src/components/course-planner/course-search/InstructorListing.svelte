@@ -135,7 +135,10 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   }
 </script>
 
-<div class="text-sm xl:text-base">
+<!-- `relative` anchors the absolutely positioned `sr-only` rating label. Without
+     it that label is placed against a distant ancestor, outside the search
+     results' scroll container, and overflows it while searching. -->
+<div class="relative text-sm xl:text-base">
   {#if currentProf}
     <!-- Internal professor page, not an outbound PlanetTerp link. -->
     <a
