@@ -34,7 +34,7 @@ Submits the decimal, not an index: the API takes 4.5, not 9.
   <div class="flex flex-row gap-0.5" aria-hidden="true">
     {#each [1, 2, 3, 4, 5] as position (position)}
       <span class="relative inline-block text-2xl leading-none">
-        <span class="text-border">★</span>
+        <span class="text-outline">★</span>
         <span style="width: {fillOf(position) * 100}%" class="text-orange absolute left-0 top-0 overflow-hidden">
           ★
         </span>

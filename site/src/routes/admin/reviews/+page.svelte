@@ -233,7 +233,7 @@ through a queue without reaching for the mouse.
       return;
     }
     if (action === 'reject' && rejectReason.trim() === '') {
-      errorMessage = 'A rejection needs a reason — it is emailed to the reviewer.';
+      errorMessage = 'A rejection needs a reason. It is emailed to the reviewer.';
       return;
     }
 

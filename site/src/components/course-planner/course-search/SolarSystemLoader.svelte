@@ -12,9 +12,10 @@ https://github.com/atcupps/Jupiterp/LICENSE).
      * based on Marvin Rudolph's Orbit Loader
      */
     size?: number; // Default size in pixels
+    label?: string;
   }
 
-  let { size = 120 }: Props = $props();
+  let { size = 120, label = 'Loading courses' }: Props = $props();
 </script>
 
 <div
@@ -24,7 +25,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   "
   class="solar-system-wrapper"
   role="status"
-  aria-label="Loading courses"
+  aria-label={label}
 >
   <div class="solar-system">
     <!-- The Central Moon -->

@@ -40,8 +40,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     <h2>Grade Data</h2>
     <p>
       Grade distributions come from the University of Maryland's Office of the Registrar, obtained by public records
-      request. They cover <b>Fall and Spring terms only</b>, from 2010 onward — Winter and Summer terms are not
-      included, so a course taught only in the summer will show no grade data at all.
+      request. They cover <b>Fall and Spring terms only</b>, from 2010 onward. Winter and Summer terms are not included,
+      so a course taught only in the summer will show no grade data at all.
     </p>
     <p>
       Average GPAs are calculated over students who received a letter grade, which excludes withdrawals, matching how a
