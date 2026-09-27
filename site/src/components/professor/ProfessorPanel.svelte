@@ -104,12 +104,13 @@ renders it.
   let showForm = $state(false);
   let reviewSent = $state(false);
 
-  // For the hero section wrapping
+  // For the hero section wrapping (68px + 2 error margins)
   let heroSectionHeight = $state(0);
-  let isWrapped = $derived(heroSectionHeight > 80);
+  let isWrapped = $derived(heroSectionHeight > 70);
 </script>
 
 <section bind:clientHeight={heroSectionHeight} class="flex flex-row flex-wrap items-center justify-between">
+  <!-- div has a height of 68px -->
   <div class="min-w-fit flex-1">
     <h1 class="wrap-break-word text-2xl font-bold">{data.instructor.name}</h1>
     <div class="text-text-secondary mr-8 h-9 min-w-fit gap-2 py-2 text-sm">
@@ -147,6 +148,7 @@ renders it.
         </div>
       </div>
     {:else}
+      <span></span>
       <p class="text-text-secondary whitespace-nowrap py-2 text-sm">Not enough reviews yet.</p>
     {/if}
   </button>
