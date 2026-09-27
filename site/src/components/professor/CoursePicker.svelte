@@ -28,7 +28,6 @@ stopped scaling once a professor had taught more than a handful.
   let button: HTMLButtonElement | undefined = $state();
   let input: HTMLInputElement | undefined = $state();
   let listElement: HTMLUListElement | undefined = $state();
-  let nativeSelect: HTMLSelectElement | undefined = $state();
 
   const normalize = (text: string) => text.toLowerCase().trim();
 
@@ -50,10 +49,6 @@ stopped scaling once a professor had taught more than a handful.
   });
 
   function openList() {
-    if (window.matchMedia('(pointer: coarse)').matches && nativeSelect) {
-      nativeSelect.showPicker();
-      return;
-    }
     // Reset search query when opening so the full list (sorted) displays
     query = '';
     const index = options.indexOf(selected);
@@ -65,11 +60,6 @@ stopped scaling once a professor had taught more than a handful.
     selected = code;
     open = false;
     button?.focus();
-  }
-
-  function handleNativeChange(event: Event) {
-    const val = (event.target as HTMLSelectElement).value;
-    selected = val === '' ? null : val;
   }
 
   function onKeydown(event: KeyboardEvent) {
@@ -126,20 +116,6 @@ stopped scaling once a professor had taught more than a handful.
 
 <div bind:this={root} class="relative flex flex-row items-center gap-3">
   <div class="relative w-40 sm:w-56">
-    <select
-      bind:this={nativeSelect}
-      value={selected ?? ''}
-      onchange={handleNativeChange}
-      class="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-0"
-      tabindex="-1"
-      aria-hidden="true"
-    >
-      <option value="">All courses</option>
-      {#each codes as code (code)}
-        <option value={code}>{code}</option>
-      {/each}
-    </select>
-
     <!-- The trigger element functions directly as the search input when open -->
     <div class="relative z-10 w-full">
       {#if !open}
