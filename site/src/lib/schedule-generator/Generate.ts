@@ -49,25 +49,38 @@ async function fetchFullCourses(courseCodes: Set<string>): Promise<Record<string
   return record;
 }
 
-/** Build a name -> average-rating map from the loaded instructor lookup. */
+/**
+ * Build a name -> average-rating map from the loaded instructor lookup.
+ *
+ * Keyed by name because that is what the engine matches sections on, but
+ * *resolved* by slug: `section.instructorSlugs[i]` is the instructor the API
+ * resolved for slot i, so a professor whose Testudo spelling differs from
+ * their canonical record still gets their rating, and two professors sharing
+ * a name are no longer both dropped.
+ */
 function buildRatings(requests: CourseRequest[]): Map<string, number> {
   const lookup = get(ProfsLookupStore);
   const ratings = new Map<string, number>();
   for (const request of requests) {
     for (const section of request.course.sections ?? []) {
-      for (const name of section.instructors) {
+      section.instructors.forEach((name, index) => {
         if (ratings.has(name)) {
-          continue;
+          return;
         }
-        const instructor = lookup[name];
-        // `average_rating` is a JSON number, not a string. It was typed
-        // `string | null` through 0.8.5 and `parseFloat` hid the mismatch; the
-        // 1.0.0 types declare what the API actually sends.
-        const value = instructor?.average_rating;
-        if (value != null && !Number.isNaN(value)) {
-          ratings.set(name, value);
+        const slug = section.instructorSlugs?.[index];
+        if (!slug) {
+          return;
         }
-      }
+        // `average_rating` is a number: the column is a Postgres `real` and
+        // PostgREST sends it as JSON. It was declared `string` in the client
+        // until now, so this used to go through parseFloat, which coerced it
+        // and hid the mismatch. The finite check stays -- a null or a NaN
+        // should leave the professor unrated rather than poison the sort.
+        const raw = lookup[slug]?.average_rating;
+        if (raw != null && Number.isFinite(raw)) {
+          ratings.set(name, raw);
+        }
+      });
     }
   }
   return ratings;

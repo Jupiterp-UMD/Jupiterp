@@ -1,0 +1,245 @@
+<!--
+This file is part of Jupiterp. For terms of use, please see the file
+called LICENSE at the top level of the Jupiterp source tree (online at
+https://github.com/atcupps/Jupiterp/LICENSE).
+Copyright (C) 2026 Andrew Cupps
+
+The whole professor page, rendered two ways. The `/professor/[slug]` route
+server-renders it for SEO; the planner opens the same component in a modal.
+Neither knows about the other -- this takes a fully-loaded data object and
+renders it.
+-->
+<script lang="ts">
+  import { untrack } from 'svelte';
+  import { fade } from 'svelte/transition';
+  import { hasEnoughForGpa } from '../../lib/course-planner/Grades';
+  import { ratingBreakdown, type ProfessorData } from '../../lib/professor/ProfessorData';
+  import CoursePicker from './CoursePicker.svelte';
+  import GpaScale from './GpaScale.svelte';
+  import GradeDistribution from './GradeDistribution.svelte';
+  import GradeTrend from './GradeTrend.svelte';
+  import ReviewForm from './ReviewForm.svelte';
+  import ReviewList from './ReviewList.svelte';
+  import StarRating from './StarRating.svelte';
+
+  interface Props {
+    data: ProfessorData;
+    /** Renders the name as an h1 on the route, an h2 inside the modal. */
+    headingLevel?: 1 | 2;
+    initialCourse?: string | null;
+    onCourseChange?: (code: string | null) => void;
+  }
+
+  let { data, headingLevel = 1, initialCourse = null, onCourseChange }: Props = $props();
+
+  let rating = $derived(ratingBreakdown(data.instructor));
+  let overall = $derived(data.overall);
+
+  /** Courses worth showing a GPA for, largest first. */
+  let courses = $derived(data.courses);
+
+  let pickableCourses = $derived(courses.filter((course) => hasEnoughForGpa(course.distribution)));
+
+  let allCourseCodes = $derived([
+    ...new Set([...data.currentCourseCodes, ...data.courses.map((course) => course.courseCode)]),
+  ]);
+
+  let selectedCode = $state<string | null>(
+    untrack(() =>
+      initialCourse !== null &&
+      pickableCourses.length > 1 &&
+      pickableCourses.some((course) => course.courseCode === initialCourse)
+        ? initialCourse
+        : null
+    )
+  );
+
+  let courseChangeReady = false;
+  $effect(() => {
+    const code = selectedCode;
+    if (!courseChangeReady) {
+      courseChangeReady = true;
+      return;
+    }
+    untrack(() => onCourseChange?.(code));
+  });
+
+  let selectedCourse = $derived(courses.find((course) => course.courseCode === selectedCode) ?? null);
+  let scoped = $derived(selectedCourse?.distribution ?? overall);
+  let showScopedGpa = $derived(scoped !== null && hasEnoughForGpa(scoped));
+
+  let pickerBar: HTMLDivElement | undefined = $state();
+  let stuck = $state(false);
+
+  $effect(() => {
+    if (!pickerBar) return;
+    let root: HTMLElement | null = pickerBar.parentElement;
+    while (root && !/(auto|scroll)/.test(getComputedStyle(root).overflowY)) root = root.parentElement;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        stuck = entry.intersectionRatio < 1 && entry.boundingClientRect.top <= (entry.rootBounds?.top ?? 0);
+      },
+      { root, threshold: 1 }
+    );
+    observer.observe(pickerBar);
+    return () => observer.disconnect();
+  });
+
+  let showForm = $state(false);
+</script>
+
+<article class="flex flex-col gap-4">
+  <!-- Header -->
+  <header class="flex flex-col gap-1">
+    {#if headingLevel === 1}
+      <h1 class="text-2xl font-bold">{data.instructor.name}</h1>
+    {:else}
+      <h2 class="text-xl font-bold">{data.instructor.name}</h2>
+    {/if}
+
+    <div class="text-text-secondary flex flex-row flex-wrap items-center gap-2 text-sm">
+      {#if data.departments.length > 0}
+        <span>{data.departments.slice(0, 3).join(', ')}</span>
+      {/if}
+      {#if data.instructor.is_active}
+        <span class="border-orange text-orange rounded-xl border px-2 text-xs font-bold"> Currently teaching </span>
+      {:else}
+        <span class="border-outline rounded-xl border px-2 text-xs">Not teaching this term</span>
+      {/if}
+    </div>
+  </header>
+
+  <!-- Rating, with the split always visible. A single blended number with no
+       explanation invites the reader to trust it more than it deserves. -->
+  <section aria-label="Rating" class="flex flex-col gap-1">
+    {#if rating.displayable && rating.combined !== null}
+      <div class="flex flex-row items-center gap-3">
+        <StarRating value={rating.combined} size="text-2xl" />
+        <div class="flex flex-row items-baseline gap-2">
+          <span class="text-orange text-3xl font-bold">{rating.combined.toFixed(1)}</span>
+          <span class="text-text-secondary text-sm">out of 5</span>
+        </div>
+      </div>
+    {:else}
+      <p class="text-text-secondary text-sm">Not enough reviews yet.</p>
+    {/if}
+  </section>
+
+  {#if pickableCourses.length > 0}
+    <div
+      bind:this={pickerBar}
+      class="bg-bg-primary sticky -top-px z-10 mx-[calc(50%-50cqw)] border-b-2 py-5 transition-[border-color,box-shadow] duration-200"
+      class:border-orange={stuck}
+      class:shadow-md={stuck}
+      class:border-transparent={!stuck}
+      role={pickableCourses.length > 1 ? 'group' : undefined}
+      aria-label={pickableCourses.length > 1 ? 'Scope grades and reviews to a course' : undefined}
+    >
+      <!-- Once the bar sticks, the header has scrolled away, so the bar carries
+           the name and rating to keep the reader oriented. -->
+      <div class="mx-auto flex max-w-3xl flex-row items-center gap-4 px-4">
+        {#if stuck}
+          <span class="hidden min-w-0 flex-row items-center gap-6 pr-2 sm:flex" transition:fade={{ duration: 150 }}>
+            <span class="truncate text-lg font-bold">{data.instructor.name}</span>
+            <span class="bg-outline h-8 w-px shrink-0" aria-hidden="true"></span>
+          </span>
+        {/if}
+        <div class="shrink-0">
+          {#if pickableCourses.length > 1}
+            <CoursePicker
+              id="grades-course"
+              codes={pickableCourses.map((course) => course.courseCode)}
+              bind:selected={selectedCode}
+            />
+          {:else}
+            <div class="flex flex-row items-center gap-3">
+              <span class="font-medium">Course</span>
+              <span class="border-outline rounded-lg border-2 px-4 py-2 font-semibold">
+                {pickableCourses[0].courseCode}
+              </span>
+            </div>
+          {/if}
+        </div>
+        {#if stuck && rating.displayable && rating.combined !== null}
+          <span
+            class="ml-auto flex shrink-0 flex-row items-center gap-1 text-lg font-bold"
+            transition:fade={{ duration: 150 }}
+          >
+            <span class="text-orange" aria-hidden="true">★</span>
+            {rating.combined.toFixed(1)}
+          </span>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
+  <!-- Grade data for the selected scope -->
+  <section aria-label="Grade distribution" class="flex flex-col gap-2">
+    {#if scoped === null}
+      <p class="text-text-secondary text-sm">
+        No grade data is linked to this instructor. Jupiterp's grade records cover Fall and Spring terms from 2010
+        onward and name an instructor for about three quarters of sections, so a professor who teaches only in Summer or
+        Winter, or whose sections were never attributed, will have none.
+      </p>
+    {:else}
+      {#if showScopedGpa && scoped.gpa !== null}
+        <GpaScale gpa={scoped.gpa} instructorSlug={data.instructor.slug} courseCode={selectedCode} />
+      {:else}
+        <span class="text-text-secondary"> Not enough data for an average GPA. </span>
+      {/if}
+
+      <div class="pt-6">
+        <GradeDistribution distribution={scoped} />
+      </div>
+    {/if}
+  </section>
+
+  <!-- Trend -->
+  {#if data.terms.length > 1}
+    <section aria-label="Grades over time" class="flex flex-col gap-2">
+      <h3 class="py-8 text-lg font-bold">GPA Over time (All courses)</h3>
+      <GradeTrend terms={data.terms} />
+    </section>
+  {/if}
+
+  <!-- Reviews -->
+  <ReviewList instructorSlug={data.instructor.slug} courseCode={selectedCode} />
+
+  <section aria-label="Write a review" class="flex flex-col gap-2">
+    {#if showForm}
+      <ReviewForm
+        instructorSlug={data.instructor.slug}
+        instructorName={data.instructor.name}
+        courseCodes={allCourseCodes}
+      />
+      <button class="text-orange self-start text-sm font-bold underline" onclick={() => (showForm = false)}>
+        Cancel
+      </button>
+    {:else}
+      <button
+        class="bg-orange text-bg-primary self-start rounded-lg px-4 py-2 font-bold"
+        onclick={() => (showForm = true)}
+      >
+        Write a review
+      </button>
+      <p class="text-text-secondary text-xs">
+        Requires a UMD email address <b>(cannot be seen by anyone)</b>. Every review is read by a moderator before it
+        appears.
+      </p>
+    {/if}
+  </section>
+
+  <!-- Caveats. These generate "your numbers are wrong" reports if left
+       implicit, because every one of them is invisible in the figures. -->
+  <footer class="text-text-secondary flex flex-col gap-1 text-xs">
+    <p>
+      Grade data comes from the University of Maryland's Office of the Registrar, obtained by public records request. It
+      covers <b>Fall and Spring terms only</b>. Winter and Summer are not included.
+    </p>
+    <p>
+      About a quarter of sections carry no instructor name in the registrar's records. Those are attributed to the
+      instructor of the lecture they belong to where that is unambiguous, and left unattributed otherwise, so a
+      professor's totals here may not cover everything they taught.
+    </p>
+  </footer>
+</article>

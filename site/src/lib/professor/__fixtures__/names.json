@@ -1,0 +1,324 @@
+{
+  "_comment": [
+    "COPY. The canonical file is scraper/tests/fixtures/names.json in the",
+    "Jupiterp scraper repository, where the SQL and Python implementations are",
+    "tested against it. It is duplicated here because the site is a separate",
+    "repository and Jest cannot reach across one.",
+    "",
+    "The two must stay SEMANTICALLY identical: same groups, same inputs, same",
+    "expected outputs. They are deliberately NOT byte-identical -- each repo",
+    "formats JSON with its own tooling, and this file is Prettier-formatted --",
+    "so never compare them with a plain diff.",
+    "",
+    "Enforced by scripts/check_fixture_parity.py in the scraper repository,",
+    "which runs on every push there and fetches this file from GitHub. If you",
+    "change one copy, change the other in the same PR or that check fails.",
+    "",
+    "This is the contract between three implementations of normalize_name(); a",
+    "drift between any two produces duplicate instructor records and, once",
+    "professor pages are indexed, permanently broken URLs."
+  ],
+  "normalize": [
+    {
+      "input": "Shane Walsh",
+      "expected": "shane walsh",
+      "why": "the ordinary case"
+    },
+    {
+      "input": "Shane Bolles Walsh",
+      "expected": "shane bolles walsh",
+      "why": "middle names are kept; dropping them is a matching step, not a normalization step"
+    },
+    {
+      "input": "Walsh, Shane Bolles",
+      "expected": "walsh shane bolles",
+      "why": "registrar order is NOT reordered here - natural_name() does that first"
+    },
+    {
+      "input": "  Shane   Walsh  ",
+      "expected": "shane walsh",
+      "why": "runs of whitespace collapse, ends trim"
+    },
+    {
+      "input": "SHANE WALSH",
+      "expected": "shane walsh",
+      "why": "case folds"
+    },
+    {
+      "input": "Erin O'Brien",
+      "expected": "erin o brien",
+      "why": "apostrophe splits rather than deletes, so O'Brien and O Brien agree"
+    },
+    {
+      "input": "Erin O’Brien",
+      "expected": "erin o brien",
+      "why": "typographic apostrophe behaves as the ASCII one"
+    },
+    {
+      "input": "Alice Smith-Jones",
+      "expected": "alice smith jones",
+      "why": "hyphenated surnames keep both tokens"
+    },
+    {
+      "input": "José García",
+      "expected": "jose garcia",
+      "why": "accents strip"
+    },
+    {
+      "input": "Zoë Müller",
+      "expected": "zoe muller",
+      "why": "diaeresis and umlaut strip"
+    },
+    {
+      "input": "Ana Peña",
+      "expected": "ana pena",
+      "why": "tilde strips"
+    },
+    {
+      "input": "Åke Öberg",
+      "expected": "ake oberg",
+      "why": "Nordic letters strip"
+    },
+    {
+      "input": "John Smith Jr.",
+      "expected": "john smith jr",
+      "why": "suffixes are kept - two people in a family differ by exactly this token"
+    },
+    {
+      "input": "John Smith III",
+      "expected": "john smith iii",
+      "why": "as above"
+    },
+    {
+      "input": "R. J. Smith",
+      "expected": "r j smith",
+      "why": "initials survive as separate tokens"
+    },
+    {
+      "input": "Smith, R.J.",
+      "expected": "smith r j",
+      "why": "unspaced initials still split"
+    },
+    {
+      "input": "Mary Jane Watson-Parker",
+      "expected": "mary jane watson parker",
+      "why": "combined middle name and hyphenated surname"
+    },
+    {
+      "input": "de la Cruz, María",
+      "expected": "de la cruz maria",
+      "why": "particles are kept as tokens"
+    },
+    {
+      "input": "Anne-Marie D'Angelo",
+      "expected": "anne marie d angelo",
+      "why": "punctuation on both sides"
+    },
+    {
+      "input": "  ",
+      "expected": null,
+      "why": "blank normalizes to null, never to an empty-string instructor"
+    },
+    {
+      "input": "",
+      "expected": null,
+      "why": "as above"
+    },
+    {
+      "input": "...",
+      "expected": null,
+      "why": "punctuation only collapses to nothing, which is null and not a match"
+    },
+    {
+      "input": "TBA",
+      "expected": "tba",
+      "why": "normalizes normally; the denylist is a separate check applied after"
+    },
+    {
+      "input": "Instructor: TBA",
+      "expected": "instructor tba",
+      "why": "as above - the colon collapses so all spellings hit one denylist entry"
+    }
+  ],
+  "slugify": [
+    {
+      "input": "Shane Walsh",
+      "expected": "shane-walsh"
+    },
+    {
+      "input": "Shane Bolles Walsh",
+      "expected": "shane-bolles-walsh"
+    },
+    {
+      "input": "Erin O'Brien",
+      "expected": "erin-o-brien"
+    },
+    {
+      "input": "José García",
+      "expected": "jose-garcia"
+    },
+    {
+      "input": "Alice Smith-Jones",
+      "expected": "alice-smith-jones"
+    },
+    {
+      "input": "John Smith Jr.",
+      "expected": "john-smith-jr"
+    },
+    {
+      "input": "  Shane   Walsh  ",
+      "expected": "shane-walsh"
+    },
+    {
+      "input": "R. J. Smith",
+      "expected": "r-j-smith"
+    },
+    {
+      "input": "de la Cruz, María",
+      "expected": "de-la-cruz-maria"
+    },
+    {
+      "input": "",
+      "expected": null
+    },
+    {
+      "input": "...",
+      "expected": null
+    }
+  ],
+  "denylisted": [
+    {
+      "input": "TBA",
+      "expected": true
+    },
+    {
+      "input": "tba",
+      "expected": true
+    },
+    {
+      "input": "TBD",
+      "expected": true
+    },
+    {
+      "input": "Staff",
+      "expected": true
+    },
+    {
+      "input": "STAFF",
+      "expected": true
+    },
+    {
+      "input": "Instructor: TBA",
+      "expected": true
+    },
+    {
+      "input": "Instructor",
+      "expected": true
+    },
+    {
+      "input": "",
+      "expected": true
+    },
+    {
+      "input": "   ",
+      "expected": true
+    },
+    {
+      "input": "Shane Walsh",
+      "expected": false
+    },
+    {
+      "input": "Stafford Jones",
+      "expected": false,
+      "why": "a surname that merely starts with 'staff' is a real person"
+    },
+    {
+      "input": "Tabatha Bacon",
+      "expected": false,
+      "why": "must not be caught by a substring test for 'tba'"
+    }
+  ],
+  "first_last": [
+    {
+      "input": "shane bolles walsh",
+      "expected": "shane walsh"
+    },
+    {
+      "input": "shane walsh",
+      "expected": "shane walsh"
+    },
+    {
+      "input": "walsh",
+      "expected": "walsh",
+      "why": "a bare surname is returned unchanged"
+    },
+    {
+      "input": "mary jane watson parker",
+      "expected": "mary parker"
+    }
+  ],
+  "surname": [
+    {
+      "input": "shane bolles walsh",
+      "expected": "walsh"
+    },
+    {
+      "input": "walsh",
+      "expected": "walsh"
+    },
+    {
+      "input": "de la cruz maria",
+      "expected": "maria",
+      "why": "known-wrong for reordered particle names; documented because it makes the resolver more conservative, never less"
+    }
+  ],
+  "natural_name": [
+    {
+      "input": "Walsh, Shane Bolles",
+      "expected": "Shane Bolles Walsh"
+    },
+    {
+      "input": "Koppel",
+      "expected": "Koppel",
+      "why": "no comma, returned unchanged"
+    },
+    {
+      "input": "  Walsh,   Shane  ",
+      "expected": "Shane Walsh",
+      "why": "surrounding and inner padding collapse"
+    },
+    {
+      "input": "",
+      "expected": null,
+      "why": "blank is None, not an empty string"
+    },
+    {
+      "input": "   ",
+      "expected": null
+    },
+    {
+      "input": "O'Brien, Erin",
+      "expected": "Erin O'Brien",
+      "why": "punctuation is untouched here; normalization happens after"
+    },
+    {
+      "input": "Garcia, Jose Luis",
+      "expected": "Jose Luis Garcia"
+    },
+    {
+      "input": "Smith Jr., John",
+      "expected": "John Smith Jr.",
+      "why": "only the FIRST comma splits, so a suffix on the surname survives"
+    },
+    {
+      "input": "Walsh,",
+      "expected": "Walsh",
+      "why": "trailing comma with no given name"
+    },
+    {
+      "input": ", Shane",
+      "expected": "Shane",
+      "why": "leading comma with no surname"
+    }
+  ]
+}

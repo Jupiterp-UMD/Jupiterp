@@ -1,0 +1,13 @@
+# Jupiterp
+#
+# Professor pages are the point of this file: they are server-rendered and
+# meant to be indexed. Everything below is either private or has no standalone
+# content worth a search result.
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /review/verify
+Disallow: /review/withdraw
+
+Sitemap: https://www.jupiterp.com/sitemap.xml

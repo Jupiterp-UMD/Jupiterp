@@ -35,22 +35,20 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     isDesktop = $bindable(false),
   }: Props = $props();
 
-  let hoveredSection: ScheduleSelection | null;
-  HoveredSectionStore.subscribe((store) => {
-    hoveredSection = store;
-  });
-
-  let selectionsList: ScheduleBlock[];
-  let scheduleName: string;
-  CurrentScheduleStore.subscribe((stored) => {
-    selectionsList = stored.selections;
-    scheduleName = stored.scheduleName;
-  });
-
-  let onlyShowingOpen = false;
-  CourseSearchFilterStore.subscribe((store) => {
-    onlyShowingOpen = store.clientSideFilters.onlyOpen === true;
-  });
+  // Auto-subscribed with `$store`, not `Store.subscribe(...)`.
+  //
+  // A manual `.subscribe()` in a component body is never cleaned up: Svelte
+  // only unsubscribes for the `$store` form. This component is instantiated
+  // once per section, so a search returning 451 sections registered 1,353
+  // callbacks -- and kept every one of them after the results were replaced,
+  // along with the detached component state each closure captured. Browsing a
+  // few filters left thousands of dead subscribers, and every subsequent store
+  // update had to walk all of them. That is what made the filters feel like
+  // they were getting slower the longer the page stayed open.
+  let hoveredSection = $derived($HoveredSectionStore);
+  let selectionsList = $derived($CurrentScheduleStore.selections);
+  let scheduleName = $derived($CurrentScheduleStore.scheduleName);
+  let onlyShowingOpen = $derived($CourseSearchFilterStore.clientSideFilters.onlyOpen === true);
 
   let newSelection: ScheduleSelection = {
     course,
@@ -216,7 +214,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
            a section (e.g. PSYC100 0201 lists "OnlineAsync" twice), and a
            duplicate key is a fatal runtime error in Svelte 5. -->
       {#each section.instructors as instructor, i (i)}
-        <InstructorListing {instructor} bind:profsHover {removeHoverSection} />
+        <InstructorListing {instructor} slug={section.instructorSlugs?.[i]} {courseCode} bind:profsHover {removeHoverSection} />
       {/each}
 
       <!-- Seats info -->
