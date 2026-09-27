@@ -7,6 +7,10 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <script lang="ts">
   import ChangelogItem from '../../components/changelog/ChangelogItem.svelte';
   import changelog from './changelog.json';
+
+  let lastUpdated: string = $derived(
+    changelog.map((item) => item.date).find((date) => date !== 'UPCOMING') ?? 'UPCOMING'
+  );
 </script>
 
 <svelte:head>
@@ -16,7 +20,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <main class="prose">
   <article>
     <h1>Changelog</h1>
-    <p class="subtitle">Last Updated: {changelog[0]?.date || 'Unknown'}</p>
+    <p class="subtitle">Last Updated: {lastUpdated}</p>
 
     {#each changelog as item, i (i)}
       <ChangelogItem title={item.title} version={item.version} date={item.date} index={i}>
