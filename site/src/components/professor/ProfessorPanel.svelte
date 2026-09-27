@@ -126,9 +126,10 @@ renders it.
   </section>
 
   {#if pickableCourses.length > 0}
+    <!-- TODO: NEED TO EXTRACT OUTSIDE OF THIS COMPONENT -->
     <div
       bind:this={pickerBar}
-      class="bg-bg-primary sticky -top-px z-10 mx-[calc(50%-50cqw)] border-b-2 py-5 transition-[border-color,box-shadow] duration-200"
+      class="bg-bg-primary sticky -top-px z-10 border-b-2 py-5 transition-[border-color,box-shadow] duration-200"
       class:border-orange={stuck}
       class:shadow-md={stuck}
       class:border-transparent={!stuck}

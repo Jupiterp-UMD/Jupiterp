@@ -136,7 +136,7 @@ instructor set.
           class="border-outline hover:bg-hover flex shrink-0 cursor-pointer items-center gap-3 self-start whitespace-nowrap rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors sm:self-auto"
         >
           <span
-            class="border-outline has-checked:border-orange has-checked:bg-orange has-[:focus-visible]:ring-orange relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border-2 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-offset-2"
+            class="border-outline has-checked:border-orange has-checked:bg-orange has-focus-visible:ring-orange has-focus-visible:ring-2 has-focus-visible:ring-offset-2 relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border-2 transition-colors"
           >
             <input type="checkbox" bind:checked={activeOnly} onchange={() => void run(false)} class="peer sr-only" />
             <span

@@ -135,6 +135,7 @@ the professor is in the panel, which the planner's modal shows too.
      this area (cqw) rather than the viewport (vw), which includes the
      scrollbar and would overflow sideways. -->
 <main class="custom-scrollbar @container fixed inset-x-0 bottom-0 top-12 overflow-y-auto">
+  <!-- TODO: NEED TO EXTRACT FROM PROFESSOR PANEL (rewrite layout) -->
   <div class="mx-auto w-full max-w-3xl px-4 py-6">
     <nav class="pb-4">
       <a

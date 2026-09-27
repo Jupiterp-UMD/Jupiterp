@@ -89,7 +89,7 @@ W sits apart in grey because a withdrawal is not a grade.
         <span class="text-center font-semibold">{bucketPercent(distribution, bucket)}%</span>
         <div
           style="height: {height(bucket)}%"
-          class="flex min-h-[3px] flex-col overflow-hidden rounded-t-md transition-[height] duration-300"
+          class="min-h-0.75 flex flex-col overflow-hidden rounded-t-md transition-[height] duration-300"
           role="presentation"
           onmouseleave={() => (tip = null)}
         >
