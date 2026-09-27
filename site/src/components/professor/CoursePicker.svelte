@@ -150,7 +150,7 @@ stopped scaling once a professor had taught more than a handful.
             aria-controls={LIST_ID}
             aria-haspopup="listbox"
             aria-activedescendant={options.length > 0 ? `${LIST_ID}-${active}` : undefined}
-            class="placeholder:text-primary text-text w-full border-0 bg-transparent p-0 text-sm font-semibold [outline:none] focus:ring-0"
+            class="placeholder:text-primary text-text w-full origin-left scale-[0.875] border-0 bg-transparent p-0 text-base font-semibold [outline:none] focus:ring-0"
           />
           <AngleDownOutline class="h-4 w-4 rotate-180 transition-transform" />
         </div>
