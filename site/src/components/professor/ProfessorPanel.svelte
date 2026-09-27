@@ -86,6 +86,7 @@ renders it.
   });
 
   let showForm = $state(false);
+  let reviewSent = $state(false);
 </script>
 
 <article class="flex flex-col gap-4">
@@ -212,10 +213,13 @@ renders it.
         instructorSlug={data.instructor.slug}
         instructorName={data.instructor.name}
         courseCodes={allCourseCodes}
+        onsent={() => (reviewSent = true)}
       />
-      <button class="text-orange self-start text-sm font-bold underline" onclick={() => (showForm = false)}>
-        Cancel
-      </button>
+      {#if !reviewSent}
+        <button class="text-orange self-start text-sm font-bold underline" onclick={() => (showForm = false)}>
+          Cancel
+        </button>
+      {/if}
     {:else}
       <button
         class="bg-orange text-bg-primary self-start rounded-lg px-4 py-2 font-bold"
