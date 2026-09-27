@@ -18,14 +18,6 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   let resolvedHomeLink = $derived(resolve('/'));
 </script>
 
-<svelte:head>
-  <title>Jupiterp Course Planner</title>
-  <meta
-    name="description"
-    content="Jupiterp, a free, open-source, web-based program to assist students at the University of Maryland - College Park in planning their schedules."
-  />
-</svelte:head>
-
 <Analytics />
 
 <header class="fixed z-50 flex h-12 w-full flex-row justify-between border-b-2 px-4">

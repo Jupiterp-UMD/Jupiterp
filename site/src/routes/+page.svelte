@@ -133,6 +133,14 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   }
 </script>
 
+<svelte:head>
+  <title>Jupiterp Course Planner</title>
+  <meta
+    name="description"
+    content="Jupiterp, a free, open-source, web-based program to assist students at the University of Maryland - College Park in planning their schedules."
+  />
+</svelte:head>
+
 <IsDesktop bind:isDesktop />
 
 <svelte:window onkeydown={handlePlannerKeydown} />
