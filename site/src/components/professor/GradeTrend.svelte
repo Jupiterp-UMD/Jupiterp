@@ -99,7 +99,7 @@ visually-hidden table so the trend is not conveyed by shape alone.
     </div>
 
     <!-- Hover columns for each point: Clip the absolute hover elements to prevent them from causing overflow-x. -->
-    <div class="-mx-4 flex min-w-0 flex-1 flex-col gap-2 overflow-x-hidden px-4">
+    <div class="-mx-4 -mt-2 flex min-w-0 flex-1 flex-col gap-2 overflow-x-hidden px-4 pt-2">
       <div
         class="focus-visible:ring-orange relative h-52 rounded-sm focus:outline-none focus-visible:ring-2"
         role="slider"

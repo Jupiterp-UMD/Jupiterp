@@ -93,46 +93,69 @@ renders it.
     return () => observer.disconnect();
   });
 
+  // Scroll to the reviews section when the user clicks the "reviews" link in the header.
+  let reviewsEl = $state<HTMLElement | null>(null);
+
+  function scrollToReviews() {
+    if (!reviewsEl) return;
+    reviewsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   let showForm = $state(false);
   let reviewSent = $state(false);
+
+  // For the hero section wrapping
+  let heroSectionHeight = $state(0);
+  let isWrapped = $derived(heroSectionHeight > 80);
 </script>
 
-<h1 class="wrap-break-word text-2xl font-bold">{data.instructor.name}</h1>
-
-<section class="flex flex-row flex-wrap items-center justify-between gap-x-4">
-  <div class="text-text-secondary mr-8 h-9 min-w-fit flex-1 gap-2 py-2 text-sm">
-    {#if data.departments.length > 0}
-      <span>{data.departments.slice(0, 3).join(', ')}</span>
-    {/if}
-    {#if data.instructor.is_active}
-      <span class="border-orange text-orange shrink-0 rounded-xl border px-2 text-xs font-bold">
-        Currently teaching
-      </span>
-    {:else}
-      <span class="border-outline shrink-0 rounded-xl border px-2 text-xs">Not teaching this term</span>
-    {/if}
+<section bind:clientHeight={heroSectionHeight} class="flex flex-row flex-wrap items-center justify-between">
+  <div class="min-w-fit flex-1">
+    <h1 class="wrap-break-word text-2xl font-bold">{data.instructor.name}</h1>
+    <div class="text-text-secondary mr-8 h-9 min-w-fit gap-2 py-2 text-sm">
+      {#if data.departments.length > 0}
+        <span>{data.departments.slice(0, 3).join(', ')}</span>
+      {/if}
+      {#if data.instructor.is_active}
+        <span class="border-orange text-orange shrink-0 rounded-xl border px-2 text-xs font-bold">
+          Currently teaching
+        </span>
+      {:else}
+        <span class="border-outline shrink-0 rounded-xl border px-2 text-xs">Not teaching this term</span>
+      {/if}
+    </div>
   </div>
 
-  <!-- Rating will wrap underneath when the container runs out of horizontal space -->
-  <section aria-label="Rating" class="flex h-9 shrink-0 flex-col gap-1">
+  <!-- Dynamic padding and item placement toggled exactly by the wrap state -->
+  <button
+    onclick={scrollToReviews}
+    aria-label="Rating"
+    class="flex shrink-0 flex-col items-end gap-x-2 sm:w-auto"
+    class:w-full={isWrapped}
+    class:justify-between={isWrapped}
+    class:flex-row-reverse={isWrapped}
+  >
     {#if rating.displayable && rating.combined !== null}
+      <span class="whitespace-nowrap pb-0.5 pt-2.5 text-sm"
+        >{rating.jupiterpCount + rating.planetterpCount} reviews</span
+      >
       <div class="flex flex-row items-center gap-3">
         <StarRating value={rating.combined} size="text-2xl" />
-        <div class="flex flex-row items-baseline gap-2">
-          <span class="text-orange whitespace-nowrap text-3xl font-bold">{rating.combined.toFixed(1)}</span>
+        <div class="flex flex-row items-baseline gap-1.5">
+          <span class="text-orange whitespace-nowrap text-2xl font-bold">{rating.combined.toFixed(1)}</span>
           <span class="text-text-secondary whitespace-nowrap text-sm">out of 5</span>
         </div>
       </div>
     {:else}
       <p class="text-text-secondary whitespace-nowrap py-2 text-sm">Not enough reviews yet.</p>
     {/if}
-  </section>
+  </button>
 </section>
 
 {#if totalCourses.length > 0}
   <div
     bind:this={pickerBar}
-    class="bg-bg-primary mx-0! max-w-full! sticky -top-6 z-10 border-b-2 py-2 transition-[border-color,box-shadow] duration-200"
+    class="bg-bg-primary mx-0! max-w-full! sticky -top-6 z-10 mt-8 border-b-2 py-2 transition-[border-color,box-shadow] duration-200"
     class:border-orange={stuck}
     class:shadow-md={stuck}
     class:border-transparent={!stuck}
@@ -159,7 +182,11 @@ renders it.
         <div class="flex min-w-0 flex-1 flex-row items-center justify-end gap-2" transition:fade={{ duration: 150 }}>
           <span class="min-w-0 truncate text-lg font-bold max-sm:hidden">{data.instructor.name}</span>
           <span class="bg-outline h-8 w-px shrink-0 max-sm:hidden" aria-hidden="true"></span>
-          <span class="text-orange shrink-0 text-lg font-bold" aria-hidden="true">★ {rating.combined.toFixed(1)}</span>
+          <button
+            onclick={scrollToReviews}
+            class="text-orange hover:text-orange/80 shrink-0 text-lg font-bold"
+            aria-hidden="true">★ {rating.combined.toFixed(1)}</button
+          >
         </div>
       {/if}
     </div>
@@ -167,7 +194,7 @@ renders it.
 {/if}
 
 <!-- Grade data for the selected scope -->
-<section aria-label="Grade distribution" class="flex flex-col gap-2">
+<section aria-label="Grade distribution" class="mt-4 flex flex-col">
   {#if scoped === null}
     <p class="text-text-secondary text-sm">
       No grade data is linked to this instructor. Jupiterp's grade records cover Fall and Spring terms from 2010 onward
@@ -181,7 +208,7 @@ renders it.
       <span class="text-text-secondary"> Not enough data for an average GPA. </span>
     {/if}
 
-    <div class="pt-6">
+    <div class="mt-8">
       <GradeDistribution distribution={scoped} />
     </div>
   {/if}
@@ -189,14 +216,14 @@ renders it.
 
 <!-- Trend -->
 {#if data.terms.length > 1}
-  <section aria-label="Grades over time" class="flex flex-col gap-2">
-    <h3 class="py-8 text-lg font-bold">GPA Over time (All courses)</h3>
+  <section aria-label="Grades over time" class="mt-8 flex flex-col gap-4">
+    <h3 class="mb-2 text-lg font-bold">GPA Over time (All courses)</h3>
     <GradeTrend terms={data.terms} />
   </section>
 {/if}
 
 <!-- Reviews -->
-<ReviewList instructorSlug={data.instructor.slug} courseCode={selectedCode} />
+<ReviewList instructorSlug={data.instructor.slug} courseCode={selectedCode} bind:reviewsEl />
 
 <section aria-label="Write a review" class="mt-4 flex flex-col gap-2">
   {#if showForm}
@@ -223,7 +250,7 @@ renders it.
 
 <!-- Caveats. These generate "your numbers are wrong" reports if left
        implicit, because every one of them is invisible in the figures. -->
-<footer class="text-text-secondary mt-4 flex flex-col gap-2 text-xs">
+<footer class="text-text-secondary mt-8 flex flex-col gap-2 text-justify text-sm">
   <p>
     <b>Privacy & Moderation:</b> Requires a UMD email address to submit a review <b>(it cannot be seen by anyone)</b>.
     Every review is manually approved by a moderator before publishing.

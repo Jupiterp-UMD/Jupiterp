@@ -73,7 +73,7 @@ W sits apart in grey because a withdrawal is not a grade.
   }
 </script>
 
-<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-2">
   <h4 class="text-lg font-bold">Grade Distribution</h4>
 
   <div
@@ -125,7 +125,7 @@ W sits apart in grey because a withdrawal is not a grade.
       {#if bucket === 'W'}
         <div></div>
       {/if}
-      <span class="text-center text-lg font-semibold">{bucket}</span>
+      <span class="text-text-secondary text-center text-sm">{bucket}</span>
     {/each}
   </div>
 </div>
