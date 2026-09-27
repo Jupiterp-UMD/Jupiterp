@@ -18,6 +18,7 @@
 
 import { client } from '../client';
 import { normalizeName } from '../professor/Names';
+import { sendSafely, UNREACHABLE_MESSAGE } from './SafeFetch';
 import type {
   CourseGradeSummary,
   CourseInstructorGradeSummary,
@@ -319,12 +320,15 @@ export interface SubmitResult {
  * interpret the response as anything finer than "accepted".
  */
 export async function submitReview(review: ReviewSubmission, fetchFn: Fetch = fetch): Promise<SubmitResult> {
-  const response = await fetchFn(`${client.dbUrl}/v1/reviews`, {
+  const response = await sendSafely(fetchFn, `${client.dbUrl}/v1/reviews`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(review),
   });
 
+  if (response === null) {
+    return { ok: false, error: UNREACHABLE_MESSAGE };
+  }
   if (response.ok) {
     return { ok: true };
   }
@@ -341,7 +345,10 @@ export async function verifyReview(
   token: string,
   fetchFn: Fetch = fetch
 ): Promise<{ ok: boolean; manageKey?: string; message: string }> {
-  const response = await fetchFn(`${client.dbUrl}/v1/reviews/verify/${encodeURIComponent(token)}`);
+  const response = await sendSafely(fetchFn, `${client.dbUrl}/v1/reviews/verify/${encodeURIComponent(token)}`);
+  if (response === null) {
+    return { ok: false, message: UNREACHABLE_MESSAGE };
+  }
   const payload = await response.json().catch(() => ({}));
   return {
     ok: response.ok,
@@ -388,11 +395,11 @@ export async function manageReview(manageKey: string, fetchFn: Fetch = fetch): P
 
 /** Withdraw a review using its manage key. */
 export async function withdrawReview(id: string, manageKey: string, fetchFn: Fetch = fetch): Promise<boolean> {
-  const response = await fetchFn(`${client.dbUrl}/v1/reviews/${encodeURIComponent(id)}`, {
+  const response = await sendSafely(fetchFn, `${client.dbUrl}/v1/reviews/${encodeURIComponent(id)}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${manageKey}` },
   });
-  return response.ok;
+  return response?.ok ?? false;
 }
 
 /** Report a published review for breaching the content policy. */
@@ -402,10 +409,10 @@ export async function reportReview(
   detail: string,
   fetchFn: Fetch = fetch
 ): Promise<boolean> {
-  const response = await fetchFn(`${client.dbUrl}/v1/reviews/${encodeURIComponent(id)}/report`, {
+  const response = await sendSafely(fetchFn, `${client.dbUrl}/v1/reviews/${encodeURIComponent(id)}/report`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ reason, detail }),
   });
-  return response.ok;
+  return response?.ok ?? false;
 }
