@@ -147,7 +147,7 @@
     </p>
 
     <button
-      class="bg-outline hover:bg-hover flex w-full items-center justify-center rounded-md px-4 py-3 font-medium disabled:cursor-not-allowed disabled:opacity-50"
+      class="bg-outline hover:bg-hover disabled:text-text-secondary disabled:bg-outline/50 flex w-full items-center justify-center rounded-md px-4 py-3 font-medium disabled:cursor-not-allowed"
       disabled={isScheduleEmptyCustom}
       onclick={exportCalender}
     >
@@ -157,7 +157,7 @@
     </button>
 
     <button
-      class="bg-outline hover:bg-hover flex w-full items-center justify-center rounded-md px-4 py-3 font-medium disabled:cursor-not-allowed disabled:opacity-50"
+      class="bg-outline hover:bg-hover disabled:text-text-secondary disabled:bg-outline/50 flex w-full items-center justify-center rounded-md px-4 py-3 font-medium disabled:cursor-not-allowed"
       disabled={isScheduleEmpty}
       title={linkCopied ? 'Link copied!' : 'Copy shareable link'}
       onclick={copyShareLink}

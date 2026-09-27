@@ -148,6 +148,7 @@ renders it.
         </div>
       </div>
     {:else}
+      <!-- Needs two elements to maintain the layout -->
       <span></span>
       <p class="text-text-secondary whitespace-nowrap py-2 text-sm">Not enough reviews yet.</p>
     {/if}

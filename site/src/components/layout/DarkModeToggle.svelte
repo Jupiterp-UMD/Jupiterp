@@ -32,7 +32,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       class="border-outline has-checked:border-orange has-checked:bg-orange has-focus-visible:ring-orange has-focus-visible:ring-2 has-focus-visible:ring-offset-2 relative inline-flex h-5 w-9 items-center rounded-full border-2 transition-colors"
     >
       <div
-        class="bg-bg-secondary dark:bg-hover absolute left-0.5 top-[50%] h-3 w-3 translate-y-[-50%] transform rounded-lg transition-transform duration-300 ease-in-out dark:translate-x-[1.05rem]"
+        class="bg-bg-secondary dark:bg-hover absolute left-0.5 top-[50%] h-3 w-3 translate-y-[-50%] transform overflow-clip rounded-lg transition-transform duration-300 ease-in-out dark:translate-x-[1.05rem]"
       >
         <SunOutline
           class="h-2.75 w-2.75 visible relative left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] dark:hidden"
