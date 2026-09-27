@@ -201,7 +201,7 @@ lookup runs from the browser.
         <div>
           <button
             type="submit"
-            class="border-orange text-orange disabled:text-text-secondary disabled:border-text-secondary rounded-md border-2 px-3 py-1 font-bold"
+            class="border-orange text-orange disabled:text-outline disabled:border-outline rounded-md border-2 px-3 py-1 font-bold"
             disabled={noKey || stageLooking}
           >
             {stageLooking ? 'Looking…' : 'Find my review'}
