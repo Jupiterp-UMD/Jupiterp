@@ -11,7 +11,8 @@ renders it.
 -->
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { bucketPercent, hasEnoughForGpa } from '../../lib/course-planner/Grades';
+  import { fade } from 'svelte/transition';
+  import { hasEnoughForGpa } from '../../lib/course-planner/Grades';
   import { ratingBreakdown, type ProfessorData } from '../../lib/professor/ProfessorData';
   import CoursePicker from './CoursePicker.svelte';
   import GpaScale from './GpaScale.svelte';
@@ -45,7 +46,9 @@ renders it.
 
   let selectedCode = $state<string | null>(
     untrack(() =>
-      initialCourse !== null && pickableCourses.some((course) => course.courseCode === initialCourse)
+      initialCourse !== null &&
+      pickableCourses.length > 1 &&
+      pickableCourses.some((course) => course.courseCode === initialCourse)
         ? initialCourse
         : null
     )
@@ -122,23 +125,50 @@ renders it.
     {/if}
   </section>
 
-  {#if pickableCourses.length > 1}
+  {#if pickableCourses.length > 0}
     <div
       bind:this={pickerBar}
-      class="sticky -top-px z-10 mx-[calc(50%-50cqw)] py-3 transition-colors duration-200"
-      class:bg-orange={stuck}
+      class="bg-bg-primary sticky -top-px z-10 mx-[calc(50%-50cqw)] border-b-2 py-5 transition-[border-color,box-shadow] duration-200"
+      class:border-orange={stuck}
       class:shadow-md={stuck}
-      class:bg-bg-primary={!stuck}
-      role="group"
-      aria-label="Scope grades and reviews to a course"
+      class:border-transparent={!stuck}
+      role={pickableCourses.length > 1 ? 'group' : undefined}
+      aria-label={pickableCourses.length > 1 ? 'Scope grades and reviews to a course' : undefined}
     >
-      <div class="mx-auto max-w-3xl px-4">
-        <CoursePicker
-          id="grades-course"
-          codes={pickableCourses.map((course) => course.courseCode)}
-          bind:selected={selectedCode}
-          onAccent={stuck}
-        />
+      <!-- Once the bar sticks, the header has scrolled away, so the bar carries
+           the name and rating to keep the reader oriented. -->
+      <div class="mx-auto flex max-w-3xl flex-row items-center gap-4 px-4">
+        {#if stuck}
+          <span class="hidden min-w-0 flex-row items-center gap-6 pr-2 sm:flex" transition:fade={{ duration: 150 }}>
+            <span class="truncate text-lg font-bold">{data.instructor.name}</span>
+            <span class="bg-outline h-8 w-px shrink-0" aria-hidden="true"></span>
+          </span>
+        {/if}
+        <div class="shrink-0">
+          {#if pickableCourses.length > 1}
+            <CoursePicker
+              id="grades-course"
+              codes={pickableCourses.map((course) => course.courseCode)}
+              bind:selected={selectedCode}
+            />
+          {:else}
+            <div class="flex flex-row items-center gap-3">
+              <span class="font-medium">Course</span>
+              <span class="border-outline rounded-lg border-2 px-4 py-2 font-semibold">
+                {pickableCourses[0].courseCode}
+              </span>
+            </div>
+          {/if}
+        </div>
+        {#if stuck && rating.displayable && rating.combined !== null}
+          <span
+            class="ml-auto flex shrink-0 flex-row items-center gap-1 text-lg font-bold"
+            transition:fade={{ duration: 150 }}
+          >
+            <span class="text-orange" aria-hidden="true">★</span>
+            {rating.combined.toFixed(1)}
+          </span>
+        {/if}
       </div>
     </div>
   {/if}
@@ -152,28 +182,11 @@ renders it.
         Winter, or whose sections were never attributed, will have none.
       </p>
     {:else}
-      <div class="grid grid-cols-1 items-end gap-8 sm:grid-cols-[3fr_2fr]">
-        {#if showScopedGpa && scoped.gpa !== null}
-          <GpaScale gpa={scoped.gpa} instructorSlug={data.instructor.slug} courseCode={selectedCode} />
-        {:else}
-          <span class="text-text-secondary"> Not enough data for an average GPA. </span>
-        {/if}
-
-        <dl class="flex flex-col gap-3 text-lg">
-          <div class="flex flex-row items-baseline justify-between gap-4">
-            <dt>Got an A</dt>
-            <dd class="text-3xl font-semibold">{bucketPercent(scoped, 'A')}%</dd>
-          </div>
-          <div class="flex flex-row items-baseline justify-between gap-4">
-            <dt>Withdrew</dt>
-            <dd class="text-3xl font-semibold">{bucketPercent(scoped, 'W')}%</dd>
-          </div>
-          <div class="flex flex-row items-baseline justify-between gap-4">
-            <dt>Students taught</dt>
-            <dd class="text-3xl font-semibold">{scoped.barTotal.toLocaleString()}</dd>
-          </div>
-        </dl>
-      </div>
+      {#if showScopedGpa && scoped.gpa !== null}
+        <GpaScale gpa={scoped.gpa} instructorSlug={data.instructor.slug} courseCode={selectedCode} />
+      {:else}
+        <span class="text-text-secondary"> Not enough data for an average GPA. </span>
+      {/if}
 
       <div class="pt-6">
         <GradeDistribution distribution={scoped} />
@@ -221,7 +234,7 @@ renders it.
   <footer class="text-text-secondary flex flex-col gap-1 text-xs">
     <p>
       Grade data comes from the University of Maryland's Office of the Registrar, obtained by public records request. It
-      covers <b>Fall and Spring terms only</b> - Winter and Summer are not included.
+      covers <b>Fall and Spring terms only</b>. Winter and Summer are not included.
     </p>
     <p>
       About a quarter of sections carry no instructor name in the registrar's records. Those are attributed to the

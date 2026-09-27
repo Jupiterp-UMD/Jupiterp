@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.jupiterp.jupiterpmobile",
+      "sha256_cert_fingerprints": ["09:B7:9E:24:FC:B7:00:B2:38:C6:43:B6:07:8A:8F:DB:A8:E7:06:A0:E2:03:CC:DC:6D:D3:98:B6:76:1D:07:62"]
+    }
+  }
+]

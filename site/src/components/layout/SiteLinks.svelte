@@ -100,6 +100,9 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     <NavBarElement link={resolve('/')} text="Course Planner" />
   </div>
   <div class="my-2 w-full text-lg">
+    <NavBarElement link={resolve('/professors')} text="Professors" />
+  </div>
+  <div class="my-2 w-full text-lg">
     <NavBarElement link={resolve('/generate')} text="Schedule Generator" />
   </div>
   <div class="my-2 w-full text-lg">

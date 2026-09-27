@@ -226,7 +226,7 @@ Copyright (C) 2026 Andrew Cupps
       click it.
     </p>
     <p class="text-text-secondary my-2 text-sm">
-      The link expires in 48 hours. Check your spam folder - university mail filters are aggressive.
+      The link expires in 48 hours. Check your spam folder too, since university mail filters are aggressive.
     </p>
   </div>
 {:else}
@@ -338,7 +338,7 @@ Copyright (C) 2026 Andrew Cupps
       <div bind:this={captchaEl}></div>
       {#if captchaFailed}
         <p class="text-danger text-sm" role="alert">
-          The human check could not load. Reload the page and try again - reviews cannot be submitted without it.
+          The human check could not load. Reload the page and try again. Reviews cannot be submitted without it.
         </p>
       {/if}
     {/if}

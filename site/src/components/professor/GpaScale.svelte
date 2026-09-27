@@ -9,7 +9,6 @@ scale carries the comparison: every other instructor who taught it as a grey
 dot, and the course's overall GPA as a line.
 -->
 <script lang="ts">
-  import { SvelteMap } from 'svelte/reactivity';
   import { courseGradeSummary, courseInstructorGradeSummary } from '../../lib/api/JupiterpApi';
   import type { GradeSummary } from '../../lib/api/types';
   import { MIN_GRADED_FOR_GPA } from '../../lib/course-planner/Grades';
@@ -27,7 +26,8 @@ dot, and the course's overall GPA as a line.
     others: number[];
   }
 
-  const cache = new SvelteMap<string, Comparison>();
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
+  const cache = new Map<string, Comparison>();
   let comparison = $state<Comparison | null>(null);
   let requestId = 0;
 
@@ -95,7 +95,10 @@ dot, and the course's overall GPA as a line.
   <div class="flex flex-row flex-wrap items-end gap-x-8 gap-y-2">
     <div class="flex flex-col gap-2">
       <span class="text-lg font-medium">Average GPA{courseCode === null ? '' : ` in ${courseCode}`}</span>
-      <span class="text-7xl font-semibold leading-none tracking-tight">{gpa.toFixed(2)}</span>
+      <span class="flex flex-row items-baseline gap-1.5 leading-none">
+        <span class="text-7xl font-semibold tracking-tight">{gpa.toFixed(2)}</span>
+        <span class="text-text-secondary text-3xl font-medium">/ 4.0</span>
+      </span>
     </div>
     {#if comparison !== null && comparison.others.length > 0}
       <div class="flex flex-row flex-wrap gap-x-6 pb-1 text-lg">
@@ -104,7 +107,7 @@ dot, and the course's overall GPA as a line.
             {#if delta === 0}
               Same as other professors
             {:else}
-              {Math.abs(delta)}% {delta > 0 ? 'higher' : 'lower'} than other professors
+              {Math.abs(delta)}% {delta > 0 ? 'higher' : 'lower'} than other {courseCode} professors
             {/if}
           </span>
         {/if}
@@ -133,7 +136,7 @@ dot, and the course's overall GPA as a line.
       {/if}
       <div
         style="left: {pos(gpa)}%"
-        class="bg-orange ring-orange/20 absolute top-[5px] -ml-[9px] h-[18px] w-[18px] rounded-full ring-4"
+        class="bg-orange ring-orange/20 absolute top-[5px] -ml-[9px] h-[18px] w-[18px] rounded-full"
       ></div>
     </div>
     <div class="text-text-secondary flex flex-row justify-between text-sm">

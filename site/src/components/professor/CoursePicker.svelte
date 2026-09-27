@@ -14,10 +14,9 @@ stopped scaling once a professor had taught more than a handful.
     codes: string[];
     selected: string | null;
     id: string;
-    onAccent?: boolean;
   }
 
-  let { codes, selected = $bindable(), id, onAccent = false }: Props = $props();
+  let { codes, selected = $bindable(), id }: Props = $props();
 
   let LIST_ID = $derived(`${id}-list`);
 
@@ -80,12 +79,10 @@ stopped scaling once a professor had taught more than a handful.
 />
 
 <div bind:this={root} class="relative flex flex-row items-center gap-3">
-  <span class="font-medium" class:text-bg-primary={onAccent}>Course</span>
+  <span class="font-medium">Course</span>
   <button
     bind:this={button}
-    class="flex w-56 flex-row items-center justify-between gap-2 rounded-lg border-2 px-4 py-2 font-semibold transition-colors {onAccent
-      ? 'border-bg-primary text-bg-primary hover:bg-bg-primary/15 focus-visible:outline-bg-primary'
-      : 'border-outline hover:bg-hover'}"
+    class="border-outline hover:bg-hover flex w-40 flex-row items-center justify-between gap-2 rounded-lg border-2 px-4 py-2 font-semibold transition-colors sm:w-56"
     aria-haspopup="listbox"
     aria-expanded={open}
     onclick={() => (open ? (open = false) : openList())}

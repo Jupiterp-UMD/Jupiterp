@@ -45,6 +45,15 @@ visually-hidden table so the trend is not conveyed by shape alone.
     return (1 - (clamped - MIN_GPA) / (MAX_GPA - MIN_GPA)) * 100;
   }
 
+  let average = $derived.by(() => {
+    const graded = points.reduce((sum, point) => sum + point.graded, 0);
+    return graded === 0 ? null : points.reduce((sum, point) => sum + point.gpa * point.graded, 0) / graded;
+  });
+
+  function tickHidden(tick: number): boolean {
+    return average !== null && Math.abs(y(tick) - y(average)) < 10;
+  }
+
   let linePoints = $derived(points.map((point, i) => `${x(i)},${y(point.gpa)}`).join(' '));
 
   let yearTicks = $derived.by(() => {
@@ -76,10 +85,17 @@ visually-hidden table so the trend is not conveyed by shape alone.
 
 {#if points.length > 1}
   <div class="flex flex-row gap-3">
-    <div class="text-text-secondary relative h-52 w-7 shrink-0 text-sm">
+    <div class="text-text-secondary relative h-52 w-9 shrink-0 text-sm">
       {#each Y_TICKS as tick (tick)}
-        <span style="top: {y(tick)}%" class="absolute right-0 -translate-y-1/2">{tick.toFixed(1)}</span>
+        {#if !tickHidden(tick)}
+          <span style="top: {y(tick)}%" class="absolute right-0 -translate-y-1/2">{tick.toFixed(1)}</span>
+        {/if}
       {/each}
+      {#if average !== null}
+        <span style="top: {y(average)}%" class="text-orange absolute right-0 -translate-y-1/2 font-semibold">
+          {average.toFixed(2)}
+        </span>
+      {/if}
     </div>
 
     <div class="flex min-w-0 flex-1 flex-col gap-2">
@@ -101,6 +117,14 @@ visually-hidden table so the trend is not conveyed by shape alone.
         {#each Y_TICKS as tick (tick)}
           <div style="top: {y(tick)}%" class="bg-outline absolute inset-x-0 h-px opacity-60"></div>
         {/each}
+
+        {#if average !== null}
+          <div
+            style="top: {y(average)}%"
+            class="border-orange absolute inset-x-0 -translate-y-1/2 border-t-2 border-dashed"
+            aria-hidden="true"
+          ></div>
+        {/if}
 
         {#if hoveredIndex !== null}
           <div style="left: {x(hoveredIndex)}%" class="bg-outline absolute inset-y-0 w-px"></div>
@@ -178,6 +202,11 @@ visually-hidden table so the trend is not conveyed by shape alone.
         </tr>
       {/each}
     </tbody>
+    {#if average !== null}
+      <tfoot>
+        <tr><th scope="row">Average</th><td>{average.toFixed(2)}</td><td></td></tr>
+      </tfoot>
+    {/if}
   </table>
 {:else}
   <p class="text-text-secondary">Not enough terms with grade data to show a trend.</p>
