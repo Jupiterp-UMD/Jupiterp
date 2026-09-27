@@ -29,16 +29,16 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     title="Switch to {isDark ? 'Light' : 'Dark'} Mode"
   >
     <div
-      class="border-outline hover:border-text-primary relative h-5 w-9 rounded-[10px] border border-solid bg-transparent transition-colors"
+      class="border-outline has-checked:border-orange has-checked:bg-orange has-focus-visible:ring-orange has-focus-visible:ring-2 has-focus-visible:ring-offset-2 relative inline-flex h-5 w-9 items-center rounded-full border-2 transition-colors"
     >
       <div
-        class="bg-bg-secondary dark:bg-hover absolute left-0.5 top-[50%] h-4 w-4 translate-y-[-50%] transform rounded-lg transition-transform duration-300 ease-in-out dark:translate-x-[1.05rem]"
+        class="bg-bg-secondary dark:bg-hover absolute left-0.5 top-[50%] h-3 w-3 translate-y-[-50%] transform rounded-lg transition-transform duration-300 ease-in-out dark:translate-x-[1.05rem]"
       >
         <SunOutline
-          class="visible relative left-[50%] top-[50%] h-3 w-3 translate-x-[-55%] translate-y-[-50%] dark:hidden"
+          class="h-2.75 w-2.75 visible relative left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] dark:hidden"
         />
         <MoonOutline
-          class="relative left-[50%] top-[50%] hidden h-3 w-3 translate-x-[-50%] translate-y-[-50%] dark:block"
+          class="h-2.75 w-2.75 relative left-[50%] top-[50%] hidden translate-x-[-50%] translate-y-[-50%] dark:block"
         />
       </div>
     </div>

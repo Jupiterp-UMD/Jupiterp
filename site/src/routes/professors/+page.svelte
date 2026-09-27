@@ -144,11 +144,11 @@ instructor set.
             placeholder="Search professors by name, e.g. Mohe"
             aria-label="Search professors by name"
             autocomplete="off"
-            class="border-outline bg-bg-primary text-text-primary focus:border-orange w-full rounded-lg border-2 py-2 pl-11 pr-4 text-base outline-none transition-colors"
+            class="border-outline bg-bg-primary text-text-primary focus:border-orange w-full rounded-lg border-2 py-2 pl-11 pr-4 text-base outline-none"
           />
         </div>
         <label
-          class="hover:bg-hover flex shrink-0 cursor-pointer items-center gap-3 self-start whitespace-nowrap rounded-lg border-2 px-4 py-2 text-sm font-medium transition-colors max-sm:w-full sm:self-auto"
+          class="hover:bg-hover flex shrink-0 cursor-pointer items-center gap-3 self-start whitespace-nowrap rounded-lg border-2 px-4 py-2 text-sm font-medium max-sm:w-full sm:self-auto"
         >
           <span
             class="border-outline has-checked:border-orange has-checked:bg-orange has-focus-visible:ring-orange has-focus-visible:ring-2 has-focus-visible:ring-offset-2 relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border-2 transition-colors"

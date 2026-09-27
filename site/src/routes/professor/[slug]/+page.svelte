@@ -141,7 +141,7 @@ the professor is in the panel, which the planner's modal shows too.
   <nav class="pb-4">
     <a
       href={resolve('/professors')}
-      class="text-orange bg-orange/10 hover:bg-orange/20 group inline-flex flex-row items-center rounded-lg px-4 py-1.5 font-medium transition-colors"
+      class="text-orange bg-orange/10 hover:bg-orange/20 group inline-flex flex-row items-center rounded-lg px-4 py-1.5 font-medium"
     >
       <AngleDownOutline class="-ml-0.75 mr-1 h-4 w-4 rotate-90" />
       All professors
