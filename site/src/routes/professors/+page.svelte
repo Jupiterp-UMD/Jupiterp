@@ -17,6 +17,7 @@ instructor set.
   import type { InstructorFull } from '../../lib/api/types';
   import { resolve } from '$app/paths';
   import SolarSystemLoader from '../../components/course-planner/course-search/SolarSystemLoader.svelte';
+  import { TERM_NAME } from '../../lib/term';
 
   const PAGE_SIZE = 50;
   const DEBOUNCE_MS = 250;
@@ -92,6 +93,20 @@ instructor set.
     return instructor.average_rating;
   }
 
+  // Shortcut "/" for searching
+  onMount(() => {
+    const input = document.querySelector<HTMLInputElement>('input[type="search"]');
+    if (!input) return;
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === '/' && event.target === document.body) {
+        event.preventDefault();
+        input.focus();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  });
+
   let hasMore = $derived(total !== null && offset < total);
 </script>
 
@@ -103,9 +118,9 @@ instructor set.
   />
 </svelte:head>
 
-<div class="fixed inset-x-0 bottom-0 top-12 flex flex-col">
-  <div class="bg-bg-primary relative z-10 shrink-0 shadow-[0_4px_16px_rgba(0,0,0,0.12)]">
-    <div class="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-5">
+<div class="custom-scrollbar fixed inset-x-0 bottom-0 top-12 flex flex-col overflow-y-auto">
+  <div class="bg-bg-primary relative z-10 shrink-0">
+    <div class="mx-auto flex w-full max-w-3xl flex-col gap-4 border-b-2 p-4 pb-2">
       <div>
         <h1 class="text-2xl font-bold">Professors</h1>
         <p class="text-text-secondary text-sm">See grade distributions and ratings for UMD professors.</p>
@@ -129,11 +144,11 @@ instructor set.
             placeholder="Search professors by name, e.g. Mohe"
             aria-label="Search professors by name"
             autocomplete="off"
-            class="border-outline bg-bg-primary text-text-primary focus:border-orange w-full rounded-lg border-2 py-3 pl-11 pr-4 text-base outline-none transition-colors"
+            class="border-outline bg-bg-primary text-text-primary focus:border-orange w-full rounded-lg border-2 py-2 pl-11 pr-4 text-base outline-none transition-colors"
           />
         </div>
         <label
-          class="border-outline hover:bg-hover flex shrink-0 cursor-pointer items-center gap-3 self-start whitespace-nowrap rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors sm:self-auto"
+          class="hover:bg-hover flex shrink-0 cursor-pointer items-center gap-3 self-start whitespace-nowrap rounded-lg border-2 px-4 py-2 text-sm font-medium transition-colors max-sm:w-full sm:self-auto"
         >
           <span
             class="border-outline has-checked:border-orange has-checked:bg-orange has-focus-visible:ring-orange has-focus-visible:ring-2 has-focus-visible:ring-offset-2 relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border-2 transition-colors"
@@ -143,14 +158,14 @@ instructor set.
               class="bg-text-secondary peer-checked:bg-bg-primary absolute left-0.5 h-3 w-3 rounded-full transition-transform peer-checked:translate-x-4"
             ></span>
           </span>
-          Only teaching this term
+          Only <span class="-mx-2 sm:hidden">show professors </span> for {TERM_NAME}
         </label>
       </div>
     </div>
   </div>
 
-  <main class="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
-    <div class="mx-auto w-full max-w-3xl px-4 py-6">
+  <main class="flex-1">
+    <div class="mx-auto w-full max-w-3xl px-4 py-4">
       <!-- Announced politely so a screen reader hears the result count change
          without the list stealing focus on every keystroke. -->
       <p class="text-text-secondary text-sm" aria-live="polite">

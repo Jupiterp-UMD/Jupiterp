@@ -168,7 +168,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     onblur={onBlur}
     oninput={() => setSearchResults(searchInput)}
     onkeydown={handleKeydown}
-    class="border-outline w-full rounded-lg border-2 border-solid bg-transparent px-2 py-0 text-xl placeholder:text-base lg:text-base lg:placeholder:text-sm"
+    class="border-outline w-full rounded-lg border-2 border-solid bg-transparent px-2 py-0.5 text-xl placeholder:text-base lg:text-base lg:placeholder:text-sm"
     autocomplete="off"
     {placeholder}
   />
