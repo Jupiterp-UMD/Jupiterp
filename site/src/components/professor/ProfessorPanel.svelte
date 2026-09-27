@@ -100,19 +100,17 @@ renders it.
 <h1 class="wrap-break-word text-2xl font-bold">{data.instructor.name}</h1>
 
 <section class="flex flex-row flex-wrap items-center justify-between gap-x-4">
-  <div class="min-w-40 flex-1">
-    <div class="text-text-secondary flex h-9 flex-wrap items-center gap-2 text-sm">
-      {#if data.departments.length > 0}
-        <span>{data.departments.slice(0, 3).join(', ')}</span>
-      {/if}
-      {#if data.instructor.is_active}
-        <span class="border-orange text-orange shrink-0 rounded-xl border px-2 text-xs font-bold">
-          Currently teaching
-        </span>
-      {:else}
-        <span class="border-outline shrink-0 rounded-xl border px-2 text-xs">Not teaching this term</span>
-      {/if}
-    </div>
+  <div class="text-text-secondary mr-8 h-9 min-w-fit flex-1 gap-2 py-2 text-sm">
+    {#if data.departments.length > 0}
+      <span>{data.departments.slice(0, 3).join(', ')}</span>
+    {/if}
+    {#if data.instructor.is_active}
+      <span class="border-orange text-orange shrink-0 rounded-xl border px-2 text-xs font-bold">
+        Currently teaching
+      </span>
+    {:else}
+      <span class="border-outline shrink-0 rounded-xl border px-2 text-xs">Not teaching this term</span>
+    {/if}
   </div>
 
   <!-- Rating will wrap underneath when the container runs out of horizontal space -->
@@ -126,7 +124,7 @@ renders it.
         </div>
       </div>
     {:else}
-      <p class="text-text-secondary whitespace-nowrap text-sm">Not enough reviews yet.</p>
+      <p class="text-text-secondary whitespace-nowrap py-2 text-sm">Not enough reviews yet.</p>
     {/if}
   </section>
 </section>
