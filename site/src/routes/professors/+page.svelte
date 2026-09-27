@@ -12,25 +12,38 @@ starts -- which does not survive a directory over the full historical
 instructor set.
 -->
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { searchInstructors } from '../../lib/api/JupiterpApi';
   import type { InstructorFull } from '../../lib/api/types';
   import { resolve } from '$app/paths';
+  import SolarSystemLoader from '../../components/course-planner/course-search/SolarSystemLoader.svelte';
 
   const PAGE_SIZE = 50;
   const DEBOUNCE_MS = 250;
+  const LOADING_DELAY_MS = 200;
 
   let query = $state('');
   let activeOnly = $state(true);
   let results = $state<InstructorFull[]>([]);
   let total = $state<number | null>(null);
   let offset = $state(0);
-  let status = $state<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  let status = $state<'loading' | 'loaded' | 'error'>('loading');
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Guards against a slow earlier request landing after a faster later one and
   // overwriting the results the user is actually looking at.
   let requestId = 0;
+
+  let showLoading = $state(true);
+  $effect(() => {
+    if (status !== 'loading') {
+      showLoading = false;
+      return;
+    }
+    const timer = setTimeout(() => (showLoading = true), LOADING_DELAY_MS);
+    return () => clearTimeout(timer);
+  });
 
   async function run(append: boolean) {
     const id = ++requestId;
@@ -67,6 +80,8 @@ instructor set.
     debounceTimer = setTimeout(() => void run(false), DEBOUNCE_MS);
   }
 
+  onMount(() => void run(false));
+
   function ratingOf(instructor: InstructorFull): number | null {
     if (instructor.combined_rating !== null && instructor.combined_rating !== undefined) {
       return instructor.combined_rating;
@@ -88,89 +103,109 @@ instructor set.
   />
 </svelte:head>
 
-<!--
-  `fixed top-12 bottom-0` with its own scroll container, matching the other
-  document pages -- see the note on the professor route. Without it the search
-  heading runs through the fixed header's rule and long result lists are
-  clipped at the fold with no way to scroll.
--->
-<main class="custom-scrollbar fixed inset-x-0 bottom-0 top-12 overflow-y-auto">
-  <div class="mx-auto w-full max-w-3xl px-4 py-6">
-  <h1 class="text-2xl font-bold">Professors</h1>
-  <p class="text-text-secondary pt-1 text-sm">Search by name to see grade distributions and ratings.</p>
-
-  <div class="flex flex-col gap-2 py-4">
-    <label class="flex flex-col gap-1">
-      <span class="text-sm font-bold">Search</span>
-      <input
-        type="search"
-        bind:value={query}
-        oninput={onInput}
-        placeholder="e.g. Walsh"
-        autocomplete="off"
-        class="border-outline bg-bg-primary text-text-primary rounded-md border-2 px-2 py-1"
-      />
-    </label>
-
-    <label class="flex flex-row items-center gap-2 text-sm">
-      <input type="checkbox" bind:checked={activeOnly} onchange={() => void run(false)} class="accent-orange" />
-      Only professors teaching this term
-    </label>
-  </div>
-
-  <!-- Announced politely so a screen reader hears the result count change
-       without the list stealing focus on every keystroke. -->
-  <p class="text-text-secondary text-sm" aria-live="polite">
-    {#if status === 'loading'}
-      Searching&hellip;
-    {:else if status === 'error'}
-      Search failed. Try again in a moment.
-    {:else if status === 'loaded'}
-      {#if total !== null}
-        {total.toLocaleString()}
-        {total === 1 ? 'professor' : 'professors'}
-      {:else}
-        {results.length} shown
-      {/if}
-    {:else}
-      Start typing to search.
-    {/if}
-  </p>
-
-  {#if results.length > 0}
-    <ul class="flex flex-col gap-1 pt-3">
-      {#each results as instructor (instructor.slug)}
-        <li>
-          <a
-            href={resolve('/professor/[slug]', { slug: instructor.slug })}
-            class="border-outline hover:bg-hover flex flex-row items-baseline justify-between gap-2 rounded-lg border px-3 py-2"
+<div class="fixed inset-x-0 bottom-0 top-12 flex flex-col">
+  <div class="bg-bg-primary relative z-10 shrink-0 shadow-[0_4px_16px_rgba(0,0,0,0.12)]">
+    <div class="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-5">
+      <div>
+        <h1 class="text-2xl font-bold">Professors</h1>
+        <p class="text-text-secondary text-sm">See grade distributions and ratings for UMD professors.</p>
+      </div>
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+        <div class="relative flex-1">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 512 512"
+            aria-hidden="true"
+            class="fill-text-secondary pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2"
           >
-            <span class="font-bold">{instructor.name}</span>
-            <span class="text-text-secondary text-sm">
-              {#if ratingOf(instructor) !== null}
-                {ratingOf(instructor)?.toFixed(1)} ★
-              {:else}
-                No rating yet
-              {/if}
-            </span>
-          </a>
-        </li>
-      {/each}
-    </ul>
-
-    {#if hasMore}
-      <button
-        class="border-orange text-orange hover:bg-orange hover:text-bg-primary mt-3 w-full rounded-lg border px-3 py-2 font-bold"
-        onclick={() => void run(true)}
-        disabled={status === 'loading'}
-      >
-        Show more
-      </button>
-    {/if}
-  {:else if status === 'loaded'}
-    <p class="text-text-secondary pt-3 text-sm">
-      No professors matched. Names are matched without accents or punctuation, so "obrien" finds "O'Brien".
-    </p>
-  {/if}
+            <!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path
+              d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"
+            /></svg
+          >
+          <input
+            type="search"
+            bind:value={query}
+            oninput={onInput}
+            placeholder="Search professors by name, e.g. Mohe"
+            aria-label="Search professors by name"
+            autocomplete="off"
+            class="border-outline bg-bg-primary text-text-primary focus:border-orange w-full rounded-lg border-2 py-3 pl-11 pr-4 text-base outline-none transition-colors"
+          />
+        </div>
+        <label
+          class="border-outline hover:bg-hover flex shrink-0 cursor-pointer items-center gap-3 self-start whitespace-nowrap rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors sm:self-auto"
+        >
+          <span
+            class="border-outline has-checked:border-orange has-checked:bg-orange has-[:focus-visible]:ring-orange relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border-2 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-offset-2"
+          >
+            <input type="checkbox" bind:checked={activeOnly} onchange={() => void run(false)} class="peer sr-only" />
+            <span
+              class="bg-text-secondary peer-checked:bg-bg-primary absolute left-0.5 h-3 w-3 rounded-full transition-transform peer-checked:translate-x-4"
+            ></span>
+          </span>
+          Only teaching this term
+        </label>
+      </div>
+    </div>
   </div>
-</main>
+
+  <main class="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
+    <div class="mx-auto w-full max-w-3xl px-4 py-6">
+      <!-- Announced politely so a screen reader hears the result count change
+         without the list stealing focus on every keystroke. -->
+      <p class="text-text-secondary text-sm" aria-live="polite">
+        {#if showLoading}
+          Searching&hellip;
+        {:else if status === 'error'}
+          Search failed. Try again in a moment.
+        {:else if total !== null}
+          {total.toLocaleString()}
+          {total === 1 ? 'professor' : 'professors'}
+        {:else if status === 'loaded'}
+          {results.length} shown
+        {/if}
+      </p>
+
+      {#if results.length > 0}
+        <ul class="flex flex-col gap-1 pt-3">
+          {#each results as instructor (instructor.slug)}
+            <li>
+              <a
+                href={resolve('/professor/[slug]', { slug: instructor.slug })}
+                class="border-outline hover:bg-hover flex flex-row items-baseline justify-between gap-2 rounded-lg border px-3 py-2"
+              >
+                <span class="font-bold">{instructor.name}</span>
+                <span class="text-text-secondary text-sm">
+                  {#if ratingOf(instructor) !== null}
+                    <span class="text-text-primary">{ratingOf(instructor)?.toFixed(1)}</span>
+                    <span class="text-orange">★</span>
+                  {:else}
+                    No rating yet
+                  {/if}
+                </span>
+              </a>
+            </li>
+          {/each}
+        </ul>
+
+        {#if hasMore}
+          <button
+            class="border-orange text-orange hover:bg-orange hover:text-bg-primary mt-3 w-full rounded-lg border px-3 py-2 font-bold"
+            onclick={() => void run(true)}
+            disabled={status === 'loading'}
+          >
+            Show more
+          </button>
+        {/if}
+      {:else if showLoading}
+        <div class="flex items-center justify-center py-8">
+          <SolarSystemLoader size={120} label="Loading professors" />
+        </div>
+      {:else if status === 'loaded'}
+        <p class="text-text-secondary pt-3 text-sm">
+          No professors matched. Names are matched without accents or punctuation, so "obrien" finds "O'Brien".
+        </p>
+      {/if}
+    </div>
+  </main>
+</div>

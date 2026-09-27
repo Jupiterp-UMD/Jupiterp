@@ -168,7 +168,7 @@ lookup runs from the browser.
           </div>
         {:else}
           <p class="my-2 text-sm">
-            There is nothing to withdraw — this review is {STATUS_LABELS[review.status] ?? review.status}.
+            There is nothing to withdraw. This review is {STATUS_LABELS[review.status] ?? review.status}.
           </p>
         {/if}
       {/if}
@@ -211,7 +211,7 @@ lookup runs from the browser.
       {/if}
 
       <p class="text-text-secondary mt-6 text-sm">
-        Lost the key? We cannot recover it — by design, nothing in our database links a review back to you, which is the
+        Lost the key? We cannot recover it. By design, nothing in our database links a review back to you, which is the
         same property that keeps your review anonymous. If your review is already published and you need it taken down,
         use the report link on the review itself and a moderator will read it.
       </p>

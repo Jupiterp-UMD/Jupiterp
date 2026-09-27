@@ -72,7 +72,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
         course repeatedly.
       </li>
       <li>
-        <b>The review itself</b> — your rating, and whatever you write. This is published if it is approved.
+        <b>The review itself</b>: your rating, and whatever you write. This is published if it is approved.
       </li>
       <li>
         <b>Your IP address and browser user-agent</b>, also stored only as hashes, and only to investigate abuse. These
@@ -90,7 +90,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       <a href={resolve('/review-policy')} class="text-orange underline">review policy</a>, so that the ones needing a
       closer look are identified. What is sent is the review text, the rating, and the course and instructor it
       concerns.
-      <b>No identifying information is sent</b> — not your email address, not its hash, not your IP address.
+      <b>No identifying information is sent</b>: not your email address, not its hash, not your IP address.
     </p>
     <p class={pClasses}>
       We use Gemini's free tier. <b

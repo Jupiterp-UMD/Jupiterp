@@ -78,7 +78,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       person. Instructors who believe a review breaches the policy can report it through the site.
     </p>
     <p class={pClasses}>
-      Do not attempt to manipulate ratings — submitting reviews for courses you did not take, using multiple addresses,
+      Do not attempt to manipulate ratings by submitting reviews for courses you did not take, using multiple addresses,
       or coordinating with others to raise or lower a professor's rating. We may remove reviews and block addresses for
       this.
     </p>
