@@ -125,7 +125,6 @@ stopped scaling once a professor had taught more than a handful.
 />
 
 <div bind:this={root} class="relative flex flex-row items-center gap-3">
-  <span class="font-medium">Course</span>
   <div class="relative w-40 sm:w-56">
     <select
       bind:this={nativeSelect}

@@ -15,6 +15,7 @@ the professor is in the panel, which the planner's modal shows too.
   import { page } from '$app/state';
   import { replaceState } from '$app/navigation';
   import type { PageData } from './$types';
+  import { AngleDownOutline } from 'flowbite-svelte-icons';
 
   function syncCourseParam(code: string | null) {
     const url = new URL(page.url);
@@ -140,16 +141,16 @@ the professor is in the panel, which the planner's modal shows too.
   <nav class="pb-4">
     <a
       href={resolve('/professors')}
-      class="text-orange hover:bg-orange/10 group -ml-3 inline-flex flex-row items-center gap-2 rounded-lg px-3 py-1.5 font-medium transition-colors"
+      class="text-orange bg-orange/10 hover:bg-orange/20 group inline-flex flex-row items-center rounded-lg px-4 py-1.5 font-medium transition-colors"
     >
-      <u>All professors</u>
+      <AngleDownOutline class="-ml-0.75 mr-1 h-4 w-4 rotate-90" />
+      All professors
     </a>
   </nav>
 
   {#key professor.instructor.slug}
     <ProfessorPanel
       data={professor}
-      headingLevel={1}
       initialCourse={page.url.searchParams.get(COURSE_PARAM)}
       onCourseChange={syncCourseParam}
     />

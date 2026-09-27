@@ -74,7 +74,7 @@ Copyright (C) 2026 Andrew Cupps
   let hasMore = $derived(total !== null && reviews.length < total);
 </script>
 
-<section aria-label="Student reviews" class="flex flex-col gap-3">
+<section aria-label="Student reviews" class="mt-8 flex flex-col gap-3">
   <div class="flex flex-row items-baseline justify-between">
     <h3 class="text-lg font-bold">Reviews{courseCode === null ? '' : ` for ${courseCode}`}</h3>
     {#if total !== null && total > 0}
@@ -90,8 +90,7 @@ Copyright (C) 2026 Andrew Cupps
     <p class="text-text-secondary text-sm">No reviews for {courseCode} yet.</p>
   {:else if reviews.length === 0}
     <p class="text-text-secondary text-sm">
-      No reviews yet. Jupiterp reviews are new, so if you've taken a course with this professor, yours would be the
-      first!
+      No reviews yet. If you've taken a course with this professor, be the first to review them!
     </p>
   {:else}
     <ul class="flex flex-col gap-3">
