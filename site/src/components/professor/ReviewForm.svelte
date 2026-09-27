@@ -16,9 +16,10 @@ Copyright (C) 2026 Andrew Cupps
     instructorName: string;
     /** Courses this professor has taught, for the course picker. */
     courseCodes?: string[];
+    onsent?: () => void;
   }
 
-  let { instructorSlug, instructorName, courseCodes = [] }: Props = $props();
+  let { instructorSlug, instructorName, courseCodes = [], onsent }: Props = $props();
 
   const GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'F', 'W', 'Other'];
 
@@ -199,6 +200,7 @@ Copyright (C) 2026 Andrew Cupps
 
     if (result.ok) {
       status = 'sent';
+      onsent?.();
       return;
     }
     status = 'error';
