@@ -134,25 +134,24 @@ the professor is in the panel, which the planner's modal shows too.
 <!-- A size container so the panel's full-width course bar can span exactly
      this area (cqw) rather than the viewport (vw), which includes the
      scrollbar and would overflow sideways. -->
-<main class="custom-scrollbar @container fixed inset-x-0 bottom-0 top-12 overflow-y-auto">
-  <!-- TODO: NEED TO EXTRACT FROM PROFESSOR PANEL (rewrite layout) -->
-  <div class="mx-auto w-full max-w-3xl px-4 py-6">
-    <nav class="pb-4">
-      <a
-        href={resolve('/professors')}
-        class="text-orange hover:bg-orange/10 group -ml-3 inline-flex flex-row items-center gap-2 rounded-lg px-3 py-1.5 font-medium transition-colors"
-      >
-        <u>All professors</u>
-      </a>
-    </nav>
+<main
+  class="custom-scrollbar @container *:max-w-200 fixed inset-x-0 bottom-0 top-12 overflow-y-auto py-6 *:mx-auto *:px-4"
+>
+  <nav class="pb-4">
+    <a
+      href={resolve('/professors')}
+      class="text-orange hover:bg-orange/10 group -ml-3 inline-flex flex-row items-center gap-2 rounded-lg px-3 py-1.5 font-medium transition-colors"
+    >
+      <u>All professors</u>
+    </a>
+  </nav>
 
-    {#key professor.instructor.slug}
-      <ProfessorPanel
-        data={professor}
-        headingLevel={1}
-        initialCourse={page.url.searchParams.get(COURSE_PARAM)}
-        onCourseChange={syncCourseParam}
-      />
-    {/key}
-  </div>
+  {#key professor.instructor.slug}
+    <ProfessorPanel
+      data={professor}
+      headingLevel={1}
+      initialCourse={page.url.searchParams.get(COURSE_PARAM)}
+      onCourseChange={syncCourseParam}
+    />
+  {/key}
 </main>
