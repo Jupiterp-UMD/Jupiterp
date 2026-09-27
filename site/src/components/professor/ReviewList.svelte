@@ -5,6 +5,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 Copyright (C) 2026 Andrew Cupps
 -->
 <script lang="ts">
+  import { GlobeOutline } from 'flowbite-svelte-icons';
   import { reportReview, reviewsFor } from '../../lib/api/JupiterpApi';
   import type { Review } from '../../lib/api/types';
   import { formatSemester } from '../../lib/course-planner/Grades';
@@ -119,7 +120,20 @@ Copyright (C) 2026 Andrew Cupps
               {:else}
                 <span class="text-text-secondary">{details.join(' · ')}</span>
               {/if}
-              <span class="text-text-secondary shrink-0 text-sm">{formatDate(review.submitted_at)}</span>
+              <span class="text-text-secondary flex shrink-0 flex-row items-center gap-1.5 text-sm">
+                {#if review.source === 'planetterp'}
+                  <span class="group relative inline-flex" role="img" aria-label="From PlanetTerp">
+                    <GlobeOutline class="h-4 w-4" />
+                    <span
+                      class="bg-bg-secondary border-outline text-text-primary pointer-events-none absolute bottom-full right-0 mb-1 whitespace-nowrap rounded-md border px-2 py-1 text-xs opacity-0 transition-opacity group-hover:opacity-100"
+                      aria-hidden="true"
+                    >
+                      From PlanetTerp
+                    </span>
+                  </span>
+                {/if}
+                {formatDate(review.submitted_at)}
+              </span>
             </div>
             {#if review.title && details.length > 0}
               <span class="text-text-secondary">{details.join(' · ')}</span>
@@ -131,7 +145,9 @@ Copyright (C) 2026 Andrew Cupps
 
             <!-- Reporting is the entirety of a professor's recourse, so it is a
                visible control on every review rather than a buried link. -->
-            {#if reportedIds.has(review.id)}
+            {#if review.source === 'planetterp'}
+              <!-- Imported, not submitted here: the report flow cannot reach it. -->
+            {:else if reportedIds.has(review.id)}
               <p class="text-text-secondary mt-2 self-end text-sm">Reported. A moderator will look at it.</p>
             {:else if reportingId === review.id}
               <div class="flex flex-col gap-2 pt-3">

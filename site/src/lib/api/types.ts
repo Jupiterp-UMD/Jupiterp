@@ -179,6 +179,12 @@ export interface Review {
   body: string | null;
   submitted_at: string;
   edited_at: string | null;
+  /**
+   * `planetterp` reviews were imported once from PlanetTerp. They are shown but
+   * not counted in ratings, which already include them via the PlanetTerp
+   * average, and they cannot be reported: the report flow targets `reviews`.
+   */
+  source: 'jupiterp' | 'planetterp';
 }
 
 /** What the review form sends. */
