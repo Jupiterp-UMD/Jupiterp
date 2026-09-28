@@ -36,7 +36,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
             v{version}
           </a>
         </h3>
-        <span class="subtitle mt-1 block w-fit text-right">
+        <span class="subtitle mt-1 block w-fit text-nowrap text-right">
           {date}
         </span>
       </div>
