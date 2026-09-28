@@ -158,7 +158,7 @@ renders it.
 {#if totalCourses.length > 0}
   <div
     bind:this={pickerBar}
-    class="bg-bg-primary mx-0! max-w-full! sticky -top-6 z-10 mt-8 border-b-2 py-2 transition-[border-color,box-shadow] duration-200"
+    class="bg-bg-primary mx-0! max-w-full! sticky -top-6 z-50 mt-8 border-b-2 py-2 transition-[border-color,box-shadow] duration-200"
     class:border-orange={stuck}
     class:shadow-md={stuck}
     class:border-transparent={!stuck}
@@ -220,7 +220,7 @@ renders it.
 <!-- Trend -->
 {#if data.terms.length > 1}
   <section aria-label="Grades over time" class="mt-8 flex flex-col gap-4">
-    <h3 class="mb-2 text-lg font-bold">GPA Over time (All courses)</h3>
+    <h3 class="mb-2 text-lg font-bold">GPA Over Time (All courses)</h3>
     <GradeTrend terms={data.terms} />
   </section>
 {/if}
@@ -260,7 +260,7 @@ renders it.
   </p>
   <p>
     <b>Grade Data Source:</b> Obtained via public records requests from the UMD Office of the Registrar. It covers
-    <b>Fall and Spring semesters only</b> (No Winter and Summer terms).
+    <b>Fall and Spring semesters only</b> (no Winter and Summer terms).
   </p>
   <p>
     <b>Instructor Discrepancy:</b> About a quarter of sections carry no instructor name in the registrar's records. Those
