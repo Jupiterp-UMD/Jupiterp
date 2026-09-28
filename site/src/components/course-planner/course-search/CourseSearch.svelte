@@ -180,12 +180,11 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       </CourseSearchBox>
     </div>
   </div>
-  <!-- Course search results & dept suggestions [min-height: 20rem - 7.75rem = 12.25rem]-->
-  <!-- IDK what but [height: min-height (12.25rem) - 1.5rem = 10.75rem] -->
+  <!-- Course search results & dept suggestions [min-height: 20rem - 9rem = 11rem]-->
   <div
     bind:this={searchResultsElement}
     id="planner-search-results"
-    class="chain-scroll-only custom-scrollbar min-h-49 focus:outline-hidden h-[calc(100svh-10.75rem)] overflow-y-scroll px-1 lg:h-auto lg:min-h-0"
+    class="chain-scroll-only custom-scrollbar min-h-49 focus:outline-hidden h-[calc(100svh-11rem)] overflow-y-scroll px-1 lg:h-auto lg:min-h-0"
     use:chainScroll={{
       parent: plannerState.chainScrollParent,
       enabled: !plannerState.isDesktop,

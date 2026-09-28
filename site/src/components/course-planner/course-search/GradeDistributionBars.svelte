@@ -83,7 +83,7 @@ Copyright (C) 2026 Andrew Cupps
   let segments = $derived(computeSegments(distribution));
 </script>
 
-<div class="flex flex-col gap-[3px]">
+<div class="gap-0.75 flex flex-col">
   {#each GRADE_BUCKETS as bucket (bucket)}
     <div class="flex flex-row items-center gap-1">
       <span class="w-4 text-xs font-bold 2xl:text-sm">

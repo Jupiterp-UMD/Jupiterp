@@ -18,26 +18,41 @@ stopped scaling once a professor had taught more than a handful.
 
   let { codes, selected = $bindable(), id }: Props = $props();
 
-  let LIST_ID = $derived(`${id}-list`);
+  const LIST_ID = $derived(`${id}-list`);
 
   let open = $state(false);
   let query = $state('');
   let active = $state(0);
+
   let root: HTMLDivElement | undefined = $state();
   let button: HTMLButtonElement | undefined = $state();
   let input: HTMLInputElement | undefined = $state();
+  let listElement: HTMLUListElement | undefined = $state();
 
-  const normalize = (text: string) => text.toLowerCase().replace(/\s+/g, '');
+  const normalize = (text: string) => text.toLowerCase().trim();
 
   let options = $derived.by(() => {
     const q = normalize(query);
-    const matches: (string | null)[] = codes.filter((code) => normalize(code).includes(q));
-    return q === '' ? [null, ...matches] : matches;
+    let baseOptions = [null, ...codes];
+
+    if (q) {
+      baseOptions = baseOptions.filter((code: string | null) =>
+        code === null ? 'all courses'.includes(q) : normalize(code).includes(q)
+      );
+    }
+
+    return baseOptions.sort((a, b) => {
+      if (a === selected) return -1;
+      if (b === selected) return 1;
+      return 0;
+    });
   });
 
   function openList() {
+    // Reset search query when opening so the full list (sorted) displays
     query = '';
-    active = Math.max(0, options.indexOf(selected));
+    const index = options.indexOf(selected);
+    active = index !== -1 ? index : 0;
     open = true;
   }
 
@@ -50,85 +65,126 @@ stopped scaling once a professor had taught more than a handful.
   function onKeydown(event: KeyboardEvent) {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      active = Math.min(options.length - 1, active + 1);
+      active = (active + 1) % options.length;
+      scrollActiveIntoView();
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
-      active = Math.max(0, active - 1);
+      active = (active - 1 + options.length) % options.length;
+      scrollActiveIntoView();
     } else if (event.key === 'Enter') {
       event.preventDefault();
-      if (active < options.length) choose(options[active]);
+      if (options.length > 0 && active < options.length) {
+        choose(options[active]);
+      }
     } else if (event.key === 'Escape') {
+      event.preventDefault();
       open = false;
       button?.focus();
     }
   }
 
-  $effect(() => {
-    if (open) input?.focus();
-  });
+  function scrollActiveIntoView() {
+    if (!listElement) return;
+    const activeEl = listElement.children[active] as HTMLElement;
+    if (!activeEl) return;
+
+    const { scrollTop, clientHeight } = listElement;
+    const { offsetTop, offsetHeight } = activeEl;
+
+    if (offsetTop < scrollTop) {
+      listElement.scrollTop = offsetTop;
+    } else if (offsetTop + offsetHeight > scrollTop + clientHeight) {
+      listElement.scrollTop = offsetTop + offsetHeight - clientHeight;
+    }
+  }
 
   $effect(() => {
-    if (open) document.getElementById(`${LIST_ID}-${active}`)?.scrollIntoView({ block: 'nearest' });
+    if (open) {
+      input?.focus();
+      scrollActiveIntoView();
+    }
   });
 </script>
 
 <svelte:window
   onpointerdown={(event) => {
-    if (open && root && !root.contains(event.target as Node)) open = false;
+    if (open && root && !root.contains(event.target as Node)) {
+      open = false;
+    }
   }}
 />
 
 <div bind:this={root} class="relative flex flex-row items-center gap-3">
-  <span class="font-medium">Course</span>
-  <button
-    bind:this={button}
-    class="border-outline hover:bg-hover flex w-40 flex-row items-center justify-between gap-2 rounded-lg border-2 px-4 py-2 font-semibold transition-colors sm:w-56"
-    aria-haspopup="listbox"
-    aria-expanded={open}
-    onclick={() => (open ? (open = false) : openList())}
-  >
-    {selected ?? 'All courses'}
-    <AngleDownOutline class="h-4 w-4 transition-transform {open ? 'rotate-180' : ''}" />
-  </button>
-
-  {#if open}
-    <div
-      class="border-outline bg-bg-primary absolute left-0 top-full z-20 mt-2 flex w-72 flex-col overflow-hidden rounded-lg border-2 shadow-lg"
-    >
-      <input
-        bind:this={input}
-        bind:value={query}
-        oninput={() => (active = 0)}
-        onkeydown={onKeydown}
-        type="text"
-        placeholder="Search courses"
-        autocomplete="off"
-        role="combobox"
-        aria-expanded="true"
-        aria-controls={LIST_ID}
-        aria-activedescendant={options.length > 0 ? `${LIST_ID}-${active}` : undefined}
-        class="border-outline bg-bg-primary text-text-primary border-0 border-b-2 px-4 py-3 focus:ring-0"
-      />
-      <ul id={LIST_ID} role="listbox" class="max-h-72 overflow-y-auto py-1">
-        {#each options as code, i (code ?? 'all')}
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <li
-            id="{LIST_ID}-{i}"
-            role="option"
-            aria-selected={code === selected}
-            class="cursor-pointer px-4 py-2"
-            class:bg-hover={i === active}
-            class:text-orange={code === selected}
-            class:font-semibold={code === selected}
-            onpointerenter={() => (active = i)}
-            onclick={() => choose(code)}
-          >
-            {code ?? 'All courses'}
-          </li>
-        {:else}
-          <li class="text-text-secondary px-4 py-2">No matching course</li>
-        {/each}
-      </ul>
+  <div class="relative w-40 sm:w-56">
+    <!-- The trigger element functions directly as the search input when open -->
+    <div class="relative z-10 w-full">
+      {#if !open}
+        <button
+          bind:this={button}
+          class="border-outline hover:bg-hover flex h-8 w-full flex-row items-center justify-between gap-2 rounded-lg border-2 px-4 py-1 font-semibold transition-colors"
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          aria-controls={undefined}
+          onclick={openList}
+          type="button"
+        >
+          <span class={selected ? 'text-orange font-semibold' : ''}>
+            {selected ?? 'All courses'}
+          </span>
+          <AngleDownOutline class="h-4 w-4 transition-transform" />
+        </button>
+      {:else}
+        <div
+          class="border-outline flex h-8 w-full flex-row items-center justify-between gap-2 rounded-t-lg border-2 px-4 py-1"
+        >
+          <input
+            bind:this={input}
+            bind:value={query}
+            oninput={() => (active = 0)}
+            onkeydown={onKeydown}
+            type="text"
+            placeholder={selected ?? 'All courses'}
+            autocomplete="off"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls={LIST_ID}
+            aria-haspopup="listbox"
+            aria-activedescendant={options.length > 0 ? `${LIST_ID}-${active}` : undefined}
+            class="placeholder:text-text-secondary w-full origin-left scale-[0.875] border-0 bg-transparent p-0 text-base font-semibold [outline:none] focus:ring-0"
+          />
+          <AngleDownOutline class="h-4 w-4 rotate-180 transition-transform" />
+        </div>
+      {/if}
     </div>
-  {/if}
+
+    {#if open}
+      <div
+        class="border-outline bg-bg-primary absolute left-0 top-full z-20 flex w-40 flex-col overflow-hidden rounded-b-lg border-2 border-t-0 shadow-lg sm:w-56"
+      >
+        <ul bind:this={listElement} id={LIST_ID} role="listbox" class="max-h-[calc(100vh-10rem)] overflow-y-auto">
+          {#each options as code, i (code ?? 'all')}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <li
+              id="{LIST_ID}-{i}"
+              role="option"
+              aria-selected={i === active}
+              class="cursor-pointer select-none px-4 py-1"
+              class:bg-hover={i === active || (code === selected && active === options.indexOf(selected))}
+              class:text-orange={code === selected}
+              class:font-semibold={code === selected}
+              class:underline={code === selected}
+              onpointermove={() => {
+                if (active !== i) active = i;
+              }}
+              onclick={() => choose(code)}
+            >
+              {code ?? 'All courses'}
+            </li>
+          {:else}
+            <li class="text-text-secondary px-4 py-2" role="presentation">No matching course</li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
+  </div>
 </div>

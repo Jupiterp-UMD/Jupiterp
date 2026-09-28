@@ -184,3 +184,72 @@
     background: rgba(0, 0, 0, 0);
   }
 }
+
+/* Recommended approach for easy overriding */
+@layer components {
+  .prose {
+    @apply custom-scrollbar fixed inset-0 top-12 overflow-y-auto scroll-smooth px-4 py-2 text-base;
+
+    & article {
+      @apply mx-auto max-w-3xl;
+    }
+
+    & p {
+      @apply mb-2;
+    }
+
+    & h1,
+    & h2,
+    & h3 {
+      @apply text-text-primary mb-2 mt-4 scroll-mt-16 font-bold;
+      line-height: 1.2;
+    }
+
+    & h1 {
+      @apply mt-0 text-2xl;
+      :where(&):not(:where(.not-prose &)) {
+        @apply border-b-border border-b-2 pb-1;
+      }
+    }
+
+    & h2 {
+      @apply text-xl;
+      :where(&):not(:where(.not-prose &)) {
+        @apply border-b-border border-b-2;
+      }
+    }
+
+    & h3 {
+      @apply text-lg;
+    }
+
+    & .subtitle {
+      @apply text-text-secondary -mt-1 text-sm italic;
+    }
+
+    & a {
+      @apply text-orange underline underline-offset-2;
+      &:hover {
+        @apply text-light-orange;
+      }
+    }
+
+    & ul,
+    & ol {
+      @apply mb-4 flex flex-col gap-1.5 pl-6;
+
+      ul,
+      ol {
+        @apply mb-0 pl-4;
+      }
+    }
+
+    & ol {
+      @apply list-decimal;
+    }
+
+    & ul {
+      @apply list-disc;
+    }
+  }
+}
