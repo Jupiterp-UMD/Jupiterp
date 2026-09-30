@@ -94,6 +94,9 @@ lookup runs from the browser.
     const year = Math.floor(term / 100);
     return `${term % 100 === 8 ? 'Fall' : 'Spring'} ${year}`;
   }
+
+  let noKey = $derived(manageKey.trim() === '');
+  let stageLooking = $derived(stage === 'looking');
 </script>
 
 <svelte:head>
@@ -198,10 +201,10 @@ lookup runs from the browser.
         <div>
           <button
             type="submit"
-            class="border-orange text-orange rounded-md border-2 px-3 py-1 font-bold"
-            disabled={manageKey.trim() === '' || stage === 'looking'}
+            class="border-orange text-orange disabled:text-outline disabled:border-outline rounded-md border-2 px-3 py-1 font-bold"
+            disabled={noKey || stageLooking}
           >
-            {stage === 'looking' ? 'Looking…' : 'Find my review'}
+            {stageLooking ? 'Looking…' : 'Find my review'}
           </button>
         </div>
       </form>

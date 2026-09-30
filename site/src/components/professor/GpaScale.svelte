@@ -91,33 +91,28 @@ dot, and the course's overall GPA as a line.
   );
 </script>
 
-<div class="flex flex-col gap-5">
-  <div class="flex flex-row flex-wrap items-end gap-x-8 gap-y-2">
-    <div class="flex flex-col gap-2">
-      <span class="text-lg font-medium">Average GPA{courseCode === null ? '' : ` in ${courseCode}`}</span>
-      <span class="flex flex-row items-baseline gap-1.5 leading-none">
-        <span class="text-7xl font-semibold tracking-tight">{gpa.toFixed(2)}</span>
-        <span class="text-text-secondary text-3xl font-medium">/ 4.0</span>
-      </span>
+<div class="flex flex-col gap-2">
+  <span class="text-lg font-medium">Average GPA{courseCode === null ? '' : ` in ${courseCode}`}</span>
+  <span class="flex flex-row items-baseline gap-1.5 leading-none">
+    <span class="text-orange text-4xl font-semibold tracking-tight">{gpa.toFixed(2)}</span>
+    <span class="text-text-secondary text-sm font-medium">out of 4.0</span>
+  </span>
+  {#if comparison !== null && comparison.others.length > 0}
+    <div class="flex flex-row flex-wrap gap-x-6 pb-1 text-lg">
+      {#if delta !== null}
+        <span class:text-success={delta > 0} class:text-warning={delta < 0}>
+          {#if delta === 0}
+            Same as other professors
+          {:else}
+            {Math.abs(delta)}% {delta > 0 ? 'higher' : 'lower'} than other {courseCode} professors
+          {/if}
+        </span>
+      {/if}
     </div>
-    {#if comparison !== null && comparison.others.length > 0}
-      <div class="flex flex-row flex-wrap gap-x-6 pb-1 text-lg">
-        {#if delta !== null}
-          <span class:text-success={delta > 0} class:text-warning={delta < 0}>
-            {#if delta === 0}
-              Same as other professors
-            {:else}
-              {Math.abs(delta)}% {delta > 0 ? 'higher' : 'lower'} than other {courseCode} professors
-            {/if}
-          </span>
-        {/if}
-      </div>
-    {/if}
-  </div>
-
-  <div class="flex flex-col gap-1.5">
+  {/if}
+  <div>
     <div class="relative h-7">
-      <div class="bg-outline absolute inset-x-0 top-[13px] h-0.5 rounded"></div>
+      <div class="bg-outline top-3.25 absolute inset-x-0 h-0.5 rounded"></div>
       {#if comparison !== null}
         {#each comparison.others as other, i (i)}
           <div
@@ -136,7 +131,7 @@ dot, and the course's overall GPA as a line.
       {/if}
       <div
         style="left: {pos(gpa)}%"
-        class="bg-orange ring-orange/20 absolute top-[5px] -ml-[9px] h-[18px] w-[18px] rounded-full"
+        class="bg-orange ring-orange/20 top-1.25 -ml-2.25 h-4.5 w-4.5 absolute rounded-full"
       ></div>
     </div>
     <div class="text-text-secondary flex flex-row justify-between text-sm">

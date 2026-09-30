@@ -91,9 +91,7 @@ never the default action.
     conflicts: { id: number; name: string; slug: string; pt_average_rating: number | null }[];
   }
 
-  let pickedCandidates = $derived(
-    (current?.candidates ?? []).filter((candidate) => picked.includes(candidate.id))
-  );
+  let pickedCandidates = $derived((current?.candidates ?? []).filter((candidate) => picked.includes(candidate.id)));
 
   // Moving to another entry has to clear the selection. Carrying ticks across
   // entries would arm a merge against a professor the moderator is no longer
@@ -436,8 +434,8 @@ never the default action.
       <div class="text-text-secondary my-2 flex flex-row flex-wrap gap-3 text-sm">
         <span>{entries.length} awaiting a decision</span>
         <span>
-          <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>1</kbd>–<kbd>9</kbd> link, or tick once a box is
-          ticked · <kbd>m</kbd> merge ticked · <kbd>n</kbd> new professor · <kbd>x</kbd> dismiss
+          <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>1</kbd>–<kbd>9</kbd> link, or tick once a box is ticked · <kbd>m</kbd>
+          merge ticked · <kbd>n</kbd> new professor · <kbd>x</kbd> dismiss
         </span>
         <button class="text-orange underline" onclick={() => load()}>Reload</button>
         <a class="text-orange underline" href={resolve('/admin/reviews')}>Review queue</a>
@@ -554,9 +552,8 @@ never the default action.
                     Merge {picked.length} records into one
                   </h3>
                   <p class="text-text-secondary mt-1 text-xs">
-                    Everything the others carry moves to the record you keep, and their rows are
-                    deleted. Their spellings become aliases of the survivor, so the next scrape
-                    will not recreate them.
+                    Everything the others carry moves to the record you keep, and their rows are deleted. Their
+                    spellings become aliases of the survivor, so the next scrape will not recreate them.
                   </p>
 
                   <fieldset class="mt-3">
