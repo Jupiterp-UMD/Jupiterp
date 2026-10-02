@@ -15,6 +15,7 @@ the professor is in the panel, which the planner's modal shows too.
   import { page } from '$app/state';
   import { replaceState } from '$app/navigation';
   import type { PageData } from './$types';
+  import { AngleDownOutline } from 'flowbite-svelte-icons';
 
   function syncCourseParam(code: string | null) {
     const url = new URL(page.url);
@@ -134,24 +135,24 @@ the professor is in the panel, which the planner's modal shows too.
 <!-- A size container so the panel's full-width course bar can span exactly
      this area (cqw) rather than the viewport (vw), which includes the
      scrollbar and would overflow sideways. -->
-<main class="custom-scrollbar @container fixed inset-x-0 bottom-0 top-12 overflow-y-auto">
-  <div class="mx-auto w-full max-w-3xl px-4 py-6">
-    <nav class="pb-4">
-      <a
-        href={resolve('/professors')}
-        class="text-orange hover:bg-orange/10 group -ml-3 inline-flex flex-row items-center gap-2 rounded-lg px-3 py-1.5 font-medium transition-colors"
-      >
-        <u>All professors</u>
-      </a>
-    </nav>
+<main
+  class="custom-scrollbar @container *:max-w-200 fixed inset-x-0 bottom-0 top-12 overflow-y-auto py-6 *:mx-auto *:px-4"
+>
+  <nav class="pb-4">
+    <a
+      href={resolve('/professors')}
+      class="text-orange hover:text-light-orange -mx-4 inline-flex flex-row items-center rounded-lg px-4 py-1.5 font-medium"
+    >
+      <AngleDownOutline class="-ml-0.75 mr-1 h-4 w-4 rotate-90" />
+      All professors
+    </a>
+  </nav>
 
-    {#key professor.instructor.slug}
-      <ProfessorPanel
-        data={professor}
-        headingLevel={1}
-        initialCourse={page.url.searchParams.get(COURSE_PARAM)}
-        onCourseChange={syncCourseParam}
-      />
-    {/key}
-  </div>
+  {#key professor.instructor.slug}
+    <ProfessorPanel
+      data={professor}
+      initialCourse={page.url.searchParams.get(COURSE_PARAM)}
+      onCourseChange={syncCourseParam}
+    />
+  {/key}
 </main>

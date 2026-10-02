@@ -1,0 +1,80 @@
+[
+  {
+    "title": "Mission to Mars",
+    "version": "3.0.0",
+    "date": "2026-09-27",
+    "content": "Migrate the codebase to Svelte 5. Launched a localized grade data and professor review system."
+  },
+  {
+    "title": "One Link to Rule Them All",
+    "version": "2.2.0",
+    "date": "2026-06-30",
+    "content": "Added the new schedule generator and sharable link functionality, paving the way for better schedule coordination with friends."
+  },
+  {
+    "title": "Waiting for Sulfur Cubes",
+    "version": "2.1.0",
+    "date": "2026-05-05",
+    "content": "Added a custom event for the schedule, for better planning, and export as ics file, allowing created schedules to be moved to any calendar app. Refactor search filters by moving professor to the search bar (type \"@\" to search by professors) and also added a \"minecraft\" easter egg."
+  },
+  {
+    "title": "Spring Cleaning",
+    "version": "2.0.1",
+    "date": "2026-04-10",
+    "content": "Completed mobile layout optimizations, enhanced frontend accessibility components, added functional course planner hotkeys (\"/\" for search; \",\" and \".\" to move up and down in split screen view of the course planner), and purged redundant repository configuration files. Configured prettier and eslint for better CI/CD pipeline."
+  },
+  {
+    "title": "Jupiterp 2 (SQL)",
+    "version": "2.0.0",
+    "date": "2025-10-08",
+    "content": "Major backend overhaul to use SQL-powered Jupiterp API for fetching course and instruction data. Paves the way for some future great improvements! Also some minor UI changes: course info panel now changes when selecting a course on the search, and departments show up when searching before it resolves to a single department."
+  },
+  {
+    "title": "GenEd Maxxing",
+    "version": "1.2.1",
+    "date": "2025-04-07",
+    "content": "Add additional information for courses available in course search. Add GenEd information for courses."
+  },
+  {
+    "title": "Saturp",
+    "version": "1.2.0",
+    "date": "2024-11-04",
+    "content": "Allow searching just by number; enable users having and switching between multiple schedules."
+  },
+  {
+    "title": "Have a Seat",
+    "version": "1.1.2",
+    "date": "2024-09-23",
+    "content": "Display number of seats left in sections in both course search and in the course info panel. Reduce number of requests necessary to retreive course information from the Testudo SOC."
+  },
+  {
+    "title": "Galileo Time",
+    "version": "1.1.1",
+    "date": "2024-07-14",
+    "content": "Show class times and meetings on course info panel. Add dropdown menus to site links. Make 'X' button to remove course on Schedule UI adapt to screen size. Improve tooltip descriptions for accessibility. Add Sentry error reporting."
+  },
+  {
+    "title": "The P = NP Update",
+    "version": "1.1.0",
+    "date": "2024-05-24",
+    "content": "Fix bug preventing Sunday and Saturday classes from being added to schedule. Provide classtimes in schedule course info panel. Make light/dark theme toggleable. Fix negative times on schedule when only async or weekend classes are added. Add error pages. Optimize spacing of conflicting classes on schedule. Improve underlying code site code quality."
+  },
+  {
+    "title": "Minor Quality Changes",
+    "version": "1.0.2",
+    "date": "2024-04-30",
+    "content": "Add banner to show when classes are added or removed on mobile; add changelog page. Add more colors for classes on the Schedule. Link to buildings on the UMD Map in course search."
+  },
+  {
+    "title": "Feedback",
+    "version": "1.0.1",
+    "date": "2024-04-04",
+    "content": "Minor changes to improve Jupiterp based on feedback after launch (these were pushed separately but are merged to one version for organizational purposes."
+  },
+  {
+    "title": "Initial Release",
+    "version": "1.0.0",
+    "date": "2024-03-12",
+    "content": "The original version of Jupiterp when officially published. Complete with the ability to add courses to a schedule, save schedules locally, and easily see PlanetTerp reviews for professors."
+  }
+]

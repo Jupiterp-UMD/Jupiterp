@@ -14,9 +14,10 @@ Copyright (C) 2026 Andrew Cupps
   interface Props {
     instructorSlug: string;
     courseCode: string | null;
+    reviewsEl?: HTMLElement | null;
   }
 
-  let { instructorSlug, courseCode }: Props = $props();
+  let { instructorSlug, courseCode, reviewsEl = $bindable(null) }: Props = $props();
 
   const PAGE_SIZE = 10;
 
@@ -75,7 +76,7 @@ Copyright (C) 2026 Andrew Cupps
   let hasMore = $derived(total !== null && reviews.length < total);
 </script>
 
-<section aria-label="Student reviews" class="flex flex-col gap-3">
+<section bind:this={reviewsEl} id="reviews" aria-label="Student reviews" class="mt-8 flex scroll-mt-16 flex-col gap-3">
   <div class="flex flex-row items-baseline justify-between">
     <h3 class="text-lg font-bold">Reviews{courseCode === null ? '' : ` for ${courseCode}`}</h3>
     {#if total !== null && total > 0}
@@ -91,8 +92,7 @@ Copyright (C) 2026 Andrew Cupps
     <p class="text-text-secondary text-sm">No reviews for {courseCode} yet.</p>
   {:else if reviews.length === 0}
     <p class="text-text-secondary text-sm">
-      No reviews yet. Jupiterp reviews are new, so if you've taken a course with this professor, yours would be the
-      first!
+      No reviews yet. If you've taken a course with this professor, be the first to review them!
     </p>
   {:else}
     <ul class="flex flex-col gap-3">

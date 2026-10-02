@@ -14,4 +14,10 @@ export default {
   // Plugins are loaded in order. Tailwind must always be placed last!
   plugins: ['prettier-plugin-svelte', 'prettier-plugin-tailwindcss'],
   tailwindConfig: './tailwind.config.mjs',
+  overrides: [
+    {
+      files: '*.svelte',
+      options: { parser: 'svelte' },
+    },
+  ],
 };

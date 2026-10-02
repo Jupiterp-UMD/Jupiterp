@@ -138,6 +138,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
 <svelte:window bind:innerWidth />
 
+<!-- Course search results & dept suggestions [min-height: 20rem - 9rem = 11rem]-->
 <div
   bind:this={scheduleElement}
   id="planner-schedule"
