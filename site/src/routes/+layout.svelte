@@ -9,6 +9,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import '../app.css';
   import Analytics from '../components/layout/Analytics.svelte';
   import SiteLinks from '../components/layout/SiteLinks.svelte';
+  import FeatureAnnouncement from '../components/layout/FeatureAnnouncement.svelte';
 
   interface Props {
     children?: import('svelte').Snippet;
@@ -36,3 +37,5 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 </header>
 
 {@render children?.()}
+
+<FeatureAnnouncement />

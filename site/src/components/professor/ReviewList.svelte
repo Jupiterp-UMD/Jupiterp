@@ -191,9 +191,7 @@ Copyright (C) 2026 Andrew Cupps
         {@const details = [
           review.course_code,
           review.term ? formatSemester(review.term) : null,
-          review.expected_grade
-            ? `Got ${/^[AEFIOU]/.test(review.expected_grade) ? 'an' : 'a'} ${review.expected_grade.replace('-', '−')}`
-            : null,
+          review.expected_grade ? `Got ${/^[AEFIOU]/.test(review.expected_grade) ? 'an ' : 'a '}` : null,
         ].filter((part) => part !== null)}
         <li class="border-outline flex flex-row gap-4 rounded-lg border p-4">
           <div
@@ -209,7 +207,10 @@ Copyright (C) 2026 Andrew Cupps
               {#if review.title}
                 <span class="text-lg font-bold">{review.title}</span>
               {:else}
-                <span class="text-text-secondary">{details.join(' · ')}</span>
+                <span class="text-text-secondary"
+                  >{details.join(' · ')}{#if review.expected_grade}
+                    <span class="text-orange">{review.expected_grade.replace('-', '−')}</span>{/if}</span
+                >
               {/if}
               <span class="text-text-secondary flex shrink-0 flex-row items-center gap-1.5 text-sm">
                 {#if review.source === 'planetterp'}
@@ -225,11 +226,14 @@ Copyright (C) 2026 Andrew Cupps
                     </span>
                   </span>
                 {/if}
-                {formatDate(review.submitted_at)}
+                <span class="text-orange">{formatDate(review.submitted_at)}</span>
               </span>
             </div>
             {#if review.title && details.length > 0}
-              <span class="text-text-secondary">{details.join(' · ')}</span>
+              <span class="text-text-secondary"
+                >{details.join(' · ')}{#if review.expected_grade}
+                  <span class="text-text-primary">{review.expected_grade.replace('-', '−')}</span>{/if}</span
+              >
             {/if}
 
             {#if review.body}
