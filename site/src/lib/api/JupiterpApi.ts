@@ -288,7 +288,15 @@ export { normalizeName as normalizeSearchTerm };
  */
 export async function reviewsFor(
   instructorSlug: string,
-  options: { courseCode?: string; limit?: number; offset?: number } = {},
+  options: {
+    courseCode?: string;
+    sort?: ReviewSort;
+    /** One star bucket: 4 is 4.0 up to but not including 5.0. */
+    rating?: number;
+    source?: Review['source'];
+    limit?: number;
+    offset?: number;
+  } = {},
   fetchFn?: Fetch
 ): Promise<Page<Review>> {
   return get<Review>(
@@ -296,12 +304,18 @@ export async function reviewsFor(
     build({
       instructorSlug,
       courseCode: options.courseCode,
+      sort: options.sort,
+      rating: options.rating,
+      source: options.source,
       limit: options.limit ?? 25,
       offset: options.offset,
     }),
     fetchFn
   );
 }
+
+/** The orders `GET /v1/reviews` accepts. `newest` is the API's default. */
+export type ReviewSort = 'newest' | 'oldest' | 'highest' | 'lowest';
 
 /** The API's reply to a submission, or to a validation failure. */
 export interface SubmitResult {
