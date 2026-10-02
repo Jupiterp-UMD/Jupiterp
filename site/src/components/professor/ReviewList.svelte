@@ -122,11 +122,13 @@ Copyright (C) 2026 Andrew Cupps
               {/if}
               <span class="text-text-secondary flex shrink-0 flex-row items-center gap-1.5 text-sm">
                 {#if review.source === 'planetterp'}
-                  <span class="group relative inline-flex" role="img" aria-label="From PlanetTerp">
-                    <GlobeOutline class="h-4 w-4" />
+                  <!-- Focusable so a tap opens the label on touch screens, which
+                     have no hover. -->
+                  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                  <span class="group relative inline-flex outline-none" tabindex="0">
+                    <GlobeOutline class="h-4 w-4 text-[#007bff] dark:text-[#52d4ff]" aria-hidden="true" />
                     <span
-                      class="bg-bg-secondary border-outline text-text-primary pointer-events-none absolute bottom-full right-0 mb-1 whitespace-nowrap rounded-md border px-2 py-1 text-xs opacity-0 transition-opacity group-hover:opacity-100"
-                      aria-hidden="true"
+                      class="bg-bg-secondary border-outline text-text-primary pointer-coarse:group-focus:opacity-100 pointer-events-none absolute bottom-full right-0 mb-1 whitespace-nowrap rounded-md border px-2 py-1 text-xs opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
                     >
                       From PlanetTerp
                     </span>
