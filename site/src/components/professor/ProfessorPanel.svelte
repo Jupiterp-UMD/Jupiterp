@@ -93,7 +93,32 @@ renders it.
     return () => observer.disconnect();
   });
 
-  // Scroll to the reviews section when the user clicks the "reviews" link in the header.
+  let reviewBar = $state<HTMLElement | null>(null);
+  let reviewBarStuck = $state(false);
+
+  $effect(() => {
+    if (!reviewBar) return;
+
+    let root: HTMLElement | null = reviewBar.parentElement;
+    while (root && root !== document.documentElement && !/(auto|scroll)/.test(getComputedStyle(root).overflowY)) {
+      root = root.parentElement;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        reviewBarStuck = entry.intersectionRatio < 1;
+      },
+      {
+        root: root === document.documentElement ? null : root,
+        rootMargin: '0px 0px -1px 0px',
+        threshold: [1],
+      }
+    );
+
+    observer.observe(reviewBar);
+    return () => observer.disconnect();
+  });
+
   let reviewsEl = $state<HTMLElement | null>(null);
 
   function scrollToReviews() {
@@ -104,13 +129,11 @@ renders it.
   let showForm = $state(false);
   let reviewSent = $state(false);
 
-  // For the hero section wrapping (68px + 2 error margins)
   let heroSectionHeight = $state(0);
   let isWrapped = $derived(heroSectionHeight > 70);
 </script>
 
 <section bind:clientHeight={heroSectionHeight} class="flex flex-row flex-wrap items-center justify-between">
-  <!-- div has a height of 68px -->
   <div class="min-w-fit flex-1">
     <h1 class="wrap-break-word text-2xl font-bold">{data.instructor.name}</h1>
     <div class="text-text-secondary mr-8 h-9 min-w-fit gap-2 py-2 text-sm">
@@ -158,15 +181,13 @@ renders it.
 {#if totalCourses.length > 0}
   <div
     bind:this={pickerBar}
-    class="bg-bg-primary mx-0! max-w-full! sticky -top-6 z-50 mt-8 border-b-2 py-2 transition-[border-color,box-shadow] duration-200"
+    class="bg-bg-primary mx-0! max-w-full! sticky -top-6 z-50 mt-8 border-b-2 py-5 transition-[border-color,box-shadow] duration-200"
     class:border-orange={stuck}
     class:shadow-md={stuck}
     class:border-transparent={!stuck}
     role={totalCourses.length > 1 ? 'group' : undefined}
     aria-label={totalCourses.length > 1 ? 'Scope grades and reviews to a course' : undefined}
   >
-    <!-- Once the bar sticks, the header has scrolled away, so the bar carries
-           the name and rating to keep the reader oriented. -->
     <div class="mx-auto flex w-full max-w-3xl flex-row items-center gap-4">
       <div class="shrink-0">
         {#if totalCourses.length > 1}
@@ -228,8 +249,8 @@ renders it.
 <!-- Reviews -->
 <ReviewList instructorSlug={data.instructor.slug} courseCode={selectedCode} bind:reviewsEl />
 
-<section aria-label="Write a review" class="mt-4 flex flex-col gap-2">
-  {#if showForm}
+{#if showForm}
+  <section aria-label="Write a review" class="mt-4 flex flex-col gap-2">
     <ReviewForm
       instructorSlug={data.instructor.slug}
       instructorName={data.instructor.name}
@@ -241,15 +262,22 @@ renders it.
         Cancel
       </button>
     {/if}
-  {:else}
-    <button
-      class="bg-orange text-bg-primary self-start rounded-lg px-4 py-2 font-bold"
-      onclick={() => (showForm = true)}
-    >
-      Write a review
-    </button>
-  {/if}
-</section>
+  </section>
+{:else}
+  <div
+    bind:this={reviewBar}
+    class="bg-bg-primary mx-0! max-w-full! sticky -bottom-6 z-50 mt-4 border-t-2 py-5 transition-[border-color,box-shadow] duration-200"
+    class:border-orange={reviewBarStuck}
+    class:shadow-md={reviewBarStuck}
+    class:border-transparent={!reviewBarStuck}
+  >
+    <div class="mx-auto flex w-full max-w-3xl flex-row items-center gap-4">
+      <button class="bg-orange text-bg-primary rounded-lg px-4 py-2 font-bold" onclick={() => (showForm = true)}>
+        Write a review
+      </button>
+    </div>
+  </div>
+{/if}
 
 <!-- Caveats. These generate "your numbers are wrong" reports if left
        implicit, because every one of them is invisible in the figures. -->
