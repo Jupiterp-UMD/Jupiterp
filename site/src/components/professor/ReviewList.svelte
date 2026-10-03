@@ -32,7 +32,6 @@ Copyright (C) 2026 Andrew Cupps
   // sorting it in the browser would order ten reviews out of hundreds.
   let sort = $state<ReviewSort>('newest');
   let rating = $state<number | null>(null);
-  let source = $state<Review['source'] | null>(null);
 
   const SORTS: { value: ReviewSort; label: string }[] = [
     { value: 'newest', label: 'Newest' },
@@ -46,7 +45,6 @@ Copyright (C) 2026 Andrew Cupps
     code: string | null;
     sort: ReviewSort;
     rating: number | null;
-    source: Review['source'] | null;
   }
 
   // What the reviews on screen were loaded for, so "Show more" continues that
@@ -65,7 +63,9 @@ Copyright (C) 2026 Andrew Cupps
           // entry with every client that never sends a sort.
           sort: query.sort === 'newest' ? undefined : query.sort,
           rating: query.rating ?? undefined,
-          source: query.source ?? undefined,
+          // Imported PlanetTerp reviews are not shown; filtered by the API so
+          // the total and "Show more" paging count only Jupiterp reviews.
+          source: 'jupiterp',
           limit: PAGE_SIZE,
           offset: append ? reviews.length : 0,
         },
@@ -88,17 +88,16 @@ Copyright (C) 2026 Andrew Cupps
     // re-runs when the professor, the page's course picker, or a control here
     // changes. The reviews already shown stay up, dimmed, until the new ones
     // arrive, so changing the sort does not collapse the page under the reader.
-    const query: Query = { slug: instructorSlug, code: courseCode, sort, rating, source };
+    const query: Query = { slug: instructorSlug, code: courseCode, sort, rating };
     status = 'loading';
     void load(query);
   });
 
   function clearFilters() {
     rating = null;
-    source = null;
   }
 
-  let filtered = $derived(rating !== null || source !== null);
+  let filtered = $derived(rating !== null);
 
   async function submitReport(id: string) {
     if (reportReason.trim() === '') {
@@ -150,17 +149,6 @@ Copyright (C) 2026 Andrew Cupps
           {#each [5, 4, 3, 2, 1] as stars (stars)}
             <option value={stars}>{stars} {stars === 1 ? 'star' : 'stars'}</option>
           {/each}
-        </select>
-      </label>
-      <label class="flex flex-row items-center gap-1.5">
-        <span class="text-text-secondary">Source</span>
-        <select
-          bind:value={source}
-          class="border-outline bg-bg-primary rounded-md border-2 py-1 pl-2 pr-8 text-base sm:text-sm"
-        >
-          <option value={null}>All</option>
-          <option value="jupiterp">Jupiterp</option>
-          <option value="planetterp">PlanetTerp</option>
         </select>
       </label>
     </div>
