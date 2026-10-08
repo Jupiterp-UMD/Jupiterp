@@ -97,6 +97,7 @@ export interface CourseGradesConfig {
   minStudents?: number;
   sortBy?: string;
   limit?: number;
+  offset?: number;
 }
 
 /** Course-wide grade distributions, one row per course. */
@@ -109,6 +110,7 @@ export async function courseGradeSummary(cfg: CourseGradesConfig, fetchFn?: Fetc
       minStudents: cfg.minStudents,
       sortBy: cfg.sortBy,
       limit: cfg.limit ?? 500,
+      offset: cfg.offset,
     }),
     fetchFn
   );
@@ -137,6 +139,7 @@ export async function courseInstructorGradeSummary(
       minStudents: cfg.minStudents,
       sortBy: cfg.sortBy,
       limit: cfg.limit ?? 500,
+      offset: cfg.offset,
     }),
     fetchFn
   );

@@ -19,6 +19,11 @@
  *   * in-flight deduplication;
  *   * the loading/loaded/none/error status union.
  *
+ * Courses requested within `BATCH_WINDOW_MS` of each other share one pair of
+ * requests. Every card on screen finishes its dwell at almost the same moment,
+ * so fetching per card sent two requests per visible course -- Sentry flagged
+ * it as an N+1 on `/v1/grades/summary`.
+ *
  * Dropped:
  *
  *   * the three-request concurrency limiter, which existed to be polite to
@@ -31,12 +36,33 @@ import { get } from 'svelte/store';
 import { CourseGradesStore } from '../../stores/CoursePlannerStores';
 import type { CourseGradesEntry } from '../../stores/CoursePlannerStores';
 import { courseGradeSummary, courseInstructorGradeSummary } from '../api/JupiterpApi';
+import type { CourseInstructorGradeSummary } from '../api/types';
 import { toDistribution, type GradeDistribution } from './Grades';
 
 /** How long a course card must stay visible before grades are fetched */
 const AUTOLOAD_DWELL_MS = 300;
 
+/** How long to wait for more courses before sending a batch */
+const BATCH_WINDOW_MS = 50;
+
+/**
+ * Most courses per request. Keeps URLs short and keeps the per-professor
+ * rows for one batch to a page or two.
+ */
+const MAX_BATCH_SIZE = 25;
+
+/** The API's maximum `limit` */
+const PAGE_SIZE = 500;
+
 const inFlight: Map<string, Promise<void>> = new Map();
+
+interface QueuedCourse {
+  courseCode: string;
+  resolve: () => void;
+}
+
+let queue: QueuedCourse[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
 
 function setEntry(courseCode: string, entry: CourseGradesEntry): void {
   CourseGradesStore.update((store) => ({ ...store, [courseCode]: entry }));
@@ -64,63 +90,105 @@ export interface CourseGrades {
  * `opts.retryError` is set. Failures are logged and swallowed: grade data is
  * supplementary, and a grades outage must not take the planner with it.
  */
-export async function loadCourseGrades(courseCode: string, opts: { retryError?: boolean } = {}): Promise<void> {
+export function loadCourseGrades(courseCode: string, opts: { retryError?: boolean } = {}): Promise<void> {
   const entry = get(CourseGradesStore)[courseCode];
   if (entry !== undefined && (entry.status !== 'error' || !opts.retryError)) {
-    return;
+    return Promise.resolve();
   }
   const pending = inFlight.get(courseCode);
   if (pending !== undefined) {
     return pending;
   }
-  const promise = fetchCourseGrades(courseCode);
+  setEntry(courseCode, { status: 'loading' });
+  const promise = new Promise<void>((resolve) => {
+    queue.push({ courseCode, resolve });
+  });
   inFlight.set(courseCode, promise);
-  try {
-    await promise;
-  } finally {
-    inFlight.delete(courseCode);
+  flushTimer ??= setTimeout(flushQueue, BATCH_WINDOW_MS);
+  return promise;
+}
+
+function flushQueue(): void {
+  flushTimer = null;
+  const queued = queue;
+  queue = [];
+  for (let i = 0; i < queued.length; i += MAX_BATCH_SIZE) {
+    void fetchBatch(queued.slice(i, i + MAX_BATCH_SIZE));
   }
 }
 
-async function fetchCourseGrades(courseCode: string): Promise<void> {
-  setEntry(courseCode, { status: 'loading' });
+async function fetchBatch(batch: QueuedCourse[]): Promise<void> {
+  // Sorted so the same set of visible courses always produces the same URL,
+  // which is what the API's response cache is keyed on.
+  const courseCodes = batch
+    .map((queued) => queued.courseCode)
+    .sort()
+    .join(',');
   try {
     // Two requests rather than one: the course-wide distribution includes
     // sections with no attributed instructor, so it is not the sum of the
     // per-professor rows and cannot be derived from them. About 26% of
     // historical rows have no registrar-named instructor.
-    const [coursePage, instructorPage] = await Promise.all([
-      courseGradeSummary({ courseCodes: courseCode }),
-      courseInstructorGradeSummary({ courseCodes: courseCode }),
+    const [coursePage, instructorRows] = await Promise.all([
+      courseGradeSummary({ courseCodes, limit: PAGE_SIZE }),
+      allCourseInstructorRows(courseCodes),
     ]);
 
-    const courseRow = coursePage.data[0];
-    if (courseRow === undefined) {
-      setEntry(courseCode, { status: 'none' });
-      return;
+    const grades: Record<string, CourseGrades> = {};
+    for (const row of coursePage.data) {
+      grades[row.course_code] = {
+        course: toDistribution(row),
+        byInstructorSlug: {},
+        namesBySlug: {},
+      };
     }
-
-    const byInstructorSlug: Record<string, GradeDistribution> = {};
-    const namesBySlug: Record<string, string> = {};
-    for (const row of instructorPage.data) {
-      if (row.instructor_slug === null || row.instructor_slug === undefined) {
+    for (const row of instructorRows) {
+      const courseGrades = grades[row.course_code];
+      if (courseGrades === undefined || row.instructor_slug === null || row.instructor_slug === undefined) {
         continue;
       }
-      byInstructorSlug[row.instructor_slug] = toDistribution(row);
-      namesBySlug[row.instructor_slug] = row.instructor;
+      courseGrades.byInstructorSlug[row.instructor_slug] = toDistribution(row);
+      courseGrades.namesBySlug[row.instructor_slug] = row.instructor;
     }
 
-    setEntry(courseCode, {
-      status: 'loaded',
-      grades: {
-        course: toDistribution(courseRow),
-        byInstructorSlug,
-        namesBySlug,
-      },
-    });
+    for (const { courseCode } of batch) {
+      const courseGrades = grades[courseCode];
+      setEntry(
+        courseCode,
+        courseGrades === undefined ? { status: 'none' } : { status: 'loaded', grades: courseGrades }
+      );
+    }
   } catch (error) {
     console.error('Error fetching Jupiterp grade data:', error);
-    setEntry(courseCode, { status: 'error' });
+    for (const { courseCode } of batch) {
+      setEntry(courseCode, { status: 'error' });
+    }
+  } finally {
+    for (const { courseCode, resolve } of batch) {
+      inFlight.delete(courseCode);
+      resolve();
+    }
+  }
+}
+
+/**
+ * Every per-professor row for the given courses. A batch of large courses can
+ * exceed one page, so this follows offsets until a short page comes back.
+ */
+async function allCourseInstructorRows(courseCodes: string): Promise<CourseInstructorGradeSummary[]> {
+  const rows: CourseInstructorGradeSummary[] = [];
+  for (;;) {
+    const page = await courseInstructorGradeSummary({
+      courseCodes,
+      // A total order, so rows cannot shift between pages.
+      sortBy: 'course_code.asc,instructor_id.asc',
+      limit: PAGE_SIZE,
+      offset: rows.length,
+    });
+    rows.push(...page.data);
+    if (page.data.length < PAGE_SIZE) {
+      return rows;
+    }
   }
 }
 
