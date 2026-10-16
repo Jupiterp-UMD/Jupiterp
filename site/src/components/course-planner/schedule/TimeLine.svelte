@@ -15,7 +15,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
 <div style="top: {position * 100}%" class="absolute h-7 w-full">
   <div
-    style="left: -4px; top: 50%; transform: translateY(-50%);"
+    style="left: 0; top: 50%; transform: translateY(-50%);"
     class="w-8.5 absolute text-right text-xs font-light 2xl:w-10 2xl:text-sm"
   >
     {number}
