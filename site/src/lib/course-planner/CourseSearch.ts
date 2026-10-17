@@ -7,7 +7,8 @@
  * @fileoverview Functions relating to searching for courses in Jupiterp.
  */
 
-import type { Course, Instructor, InstructorsResponse } from '@jupiterp/jupiterp';
+import type { Course, InstructorsResponse } from '@jupiterp/jupiterp';
+import type { PlannerInstructor } from '../api/types';
 import { client } from '$lib/client';
 import { CourseDataCache, type RequestInput } from './CourseDataCache';
 import {
@@ -340,11 +341,11 @@ export async function setSearchResults(input: string) {
  * Callers get the slug from `section.instructorSlugs`, which the API resolves
  * through the alias table rather than by matching strings.
  *
- * @param profs An array `Instructor[]` to be included in a lookup
- * @returns A `Record<string, Instructor>` keyed by slug.
+ * @param profs An array `PlannerInstructor[]` to be included in a lookup
+ * @returns A `Record<string, PlannerInstructor>` keyed by slug.
  */
-export function getProfsLookup(profs: Instructor[]): Record<string, Instructor> {
-  const result: Record<string, Instructor> = {};
+export function getProfsLookup(profs: PlannerInstructor[]): Record<string, PlannerInstructor> {
+  const result: Record<string, PlannerInstructor> = {};
   for (const prof of profs) {
     if (prof.slug) {
       result[prof.slug] = prof;
@@ -417,7 +418,12 @@ export async function loadInstructorLookup(): Promise<void> {
     // `.split(' ')` that builds the reversed "Last, First" list threw inside
     // `ProfsLookupStore.set`, so every subscriber registered after that one
     // stopped being notified.
-    const columns = ['slug', 'name', 'average_rating'];
+    //
+    // Two ratings, because they answer different questions: `display_rating`
+    // is the average the stars show, and `average_rating` -- the legacy alias
+    // of `combined_rating` -- is the shrunk score the schedule generator ranks
+    // by. Showing the shrunk one put a single 5-star review on screen as 3.9.
+    const columns = ['slug', 'name', 'average_rating', 'display_rating'];
 
     // The first page also asks for the total, which is what makes the rest
     // parallel. Without it the only way to find the end is to request pages
@@ -437,7 +443,7 @@ export async function loadInstructorLookup(): Promise<void> {
       );
     }
 
-    const pages: Instructor[][] = [first.data];
+    const pages: PlannerInstructor[][] = [first.data];
 
     // `total` comes from the `Content-Range` header. It is null if the header
     // is unreadable -- it was, until the API started sending
