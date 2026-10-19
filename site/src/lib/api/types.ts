@@ -18,6 +18,8 @@
  * layer in front of every endpoint for no benefit.
  */
 
+import type { Instructor } from '@jupiterp/jupiterp';
+
 /** The fifteen grade buckets as the database stores and reports them. */
 export interface GradeCounts {
   a_plus: number;
@@ -147,13 +149,35 @@ export interface InstructorFull {
   jupiterp_rating: number | null;
   jupiterp_review_count: number;
 
-  /** The blend of the two. See the rating model in CHANGES_.md section 11. */
+  /**
+   * The rating to show: the recency-weighted average of both sources, with
+   * nothing else mixed in. Null only when there are no reviews at all.
+   *
+   * Optional because it arrives with scraper migration 20261015120000; until
+   * that is applied the column is absent and readers fall back to
+   * `combined_rating`.
+   */
+  display_rating?: number | null;
+
+  /**
+   * The rating to rank by: `display_rating` shrunk toward the site-wide mean
+   * by a fixed number of notional reviews, so one 5-star review does not
+   * outrank sixty 4.8s. Not the number to show a reader -- with one real
+   * review it is mostly the site-wide mean.
+   */
   combined_rating: number | null;
 
   first_seen_term: number | null;
   last_seen_term: number | null;
   is_active: boolean;
 }
+
+/**
+ * An instructor as the planner's lookup holds it: the npm client's
+ * `Instructor`, plus `display_rating`, which the published client does not
+ * declare yet.
+ */
+export type PlannerInstructor = Instructor & Pick<InstructorFull, 'display_rating'>;
 
 /** A page of results, with the total when the caller asked for one. */
 export interface Page<T> {

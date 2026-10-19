@@ -83,7 +83,12 @@ instructor set.
 
   onMount(() => void run(false));
 
+  // The reviews' average, not the ranking score: this is printed beside each
+  // name, and the list is sorted by name rather than by rating.
   function ratingOf(instructor: InstructorFull): number | null {
+    if (instructor.display_rating != null && Number.isFinite(instructor.display_rating)) {
+      return instructor.display_rating;
+    }
     if (instructor.combined_rating !== null && instructor.combined_rating !== undefined) {
       return instructor.combined_rating;
     }

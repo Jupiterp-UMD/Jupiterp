@@ -10,7 +10,8 @@ the professor is in the panel, which the planner's modal shows too.
 <script lang="ts">
   import ProfessorPanel from '../../../components/professor/ProfessorPanel.svelte';
   import { hasEnoughForGpa } from '../../../lib/course-planner/Grades';
-  import { COURSE_PARAM, ratingBreakdown } from '../../../lib/professor/ProfessorData';
+  import { COURSE_PARAM } from '../../../lib/professor/ProfessorData';
+  import { ratingBreakdown } from '../../../lib/professor/Rating';
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import { replaceState } from '$app/navigation';
@@ -49,8 +50,8 @@ the professor is in the panel, which the planner's modal shows too.
     if (professor.courses.length > 0) {
       parts.push(`${professor.courses.length} courses at the University of Maryland`);
     }
-    if (rating.displayable && rating.combined !== null) {
-      parts.push(`rated ${rating.combined.toFixed(1)} out of 5`);
+    if (rating.displayable && rating.display !== null) {
+      parts.push(`rated ${rating.display.toFixed(1)} out of 5`);
     }
     return parts.length > 0
       ? `${professor.instructor.name}: ${parts.join(', ')}.`
@@ -75,10 +76,13 @@ the professor is in the panel, which the planner's modal shows too.
         name: 'University of Maryland',
       },
     };
-    if (rating.displayable && rating.combined !== null) {
+    // The reviews' own average, as schema.org defines `ratingValue`. The
+    // ranking score is pulled toward the site-wide mean and is not an average
+    // of anything a search result could show beside it.
+    if (rating.displayable && rating.display !== null) {
       person.aggregateRating = {
         '@type': 'AggregateRating',
-        ratingValue: rating.combined,
+        ratingValue: rating.display,
         bestRating: 5,
         worstRating: 1,
         ratingCount: rating.jupiterpCount + rating.planetterpCount,
