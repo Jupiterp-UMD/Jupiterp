@@ -16,7 +16,7 @@ the professor is in the panel, which the planner's modal shows too.
   import { page } from '$app/state';
   import { replaceState } from '$app/navigation';
   import type { PageData } from './$types';
-  import { AngleDownOutline } from 'flowbite-svelte-icons';
+  import { AngleDownOutline, ArrowUpRightFromSquareOutline } from 'flowbite-svelte-icons';
 
   function syncCourseParam(code: string | null) {
     const url = new URL(page.url);
@@ -38,6 +38,14 @@ the professor is in the panel, which the planner's modal shows too.
 
   let professor = $derived(data.professor);
   let rating = $derived(ratingBreakdown(professor.instructor));
+
+  // Jupiterp's slugs are its own; PlanetTerp's is kept separately, and only for
+  // professors PlanetTerp lists.
+  let planetterpUrl = $derived(
+    professor.instructor.pt_slug
+      ? `https://planetterp.com/professor/${encodeURIComponent(professor.instructor.pt_slug)}`
+      : null
+  );
 
   let title = $derived(`${professor.instructor.name} - UMD Grades and Ratings | Jupiterp`);
 
@@ -142,7 +150,7 @@ the professor is in the panel, which the planner's modal shows too.
 <main
   class="custom-scrollbar @container *:max-w-200 fixed inset-x-0 bottom-0 top-12 overflow-y-auto py-6 *:mx-auto *:px-4"
 >
-  <nav class="pb-4">
+  <nav class="flex flex-row items-center justify-between gap-4 pb-4">
     <a
       href={resolve('/professors')}
       class="text-orange hover:text-light-orange -mx-4 inline-flex flex-row items-center rounded-lg px-4 py-1.5 font-medium"
@@ -150,6 +158,17 @@ the professor is in the panel, which the planner's modal shows too.
       <AngleDownOutline class="-ml-0.75 mr-1 h-4 w-4 rotate-90" />
       All professors
     </a>
+    {#if planetterpUrl !== null}
+      <a
+        href={planetterpUrl}
+        target="_blank"
+        rel="external noopener noreferrer"
+        class="text-text-secondary hover:text-orange inline-flex flex-row items-center gap-1 whitespace-nowrap text-sm hover:underline"
+      >
+        View on PlanetTerp
+        <ArrowUpRightFromSquareOutline class="h-3.5 w-3.5" aria-hidden="true" />
+      </a>
+    {/if}
   </nav>
 
   {#key professor.instructor.slug}

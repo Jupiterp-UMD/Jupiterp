@@ -140,6 +140,12 @@ export interface InstructorFull {
   /** Retained for v0 compatibility. Prefer `combined_rating`. */
   average_rating: number | null;
 
+  /**
+   * PlanetTerp's slug for this professor, for linking to their PlanetTerp
+   * page. Null for professors PlanetTerp has never listed.
+   */
+  pt_slug: string | null;
+
   /** PlanetTerp's rating, frozen at `pt_snapshot_at` and never updated. */
   pt_average_rating: number | null;
   pt_review_count: number | null;
