@@ -104,7 +104,7 @@ function modernizeMeeting(legacy: LegacyClassMeeting): ClassMeeting {
     };
     location = {
       building:
-        legacy.InPerson.location == null || legacy.InPerson.location.length === 0 ? 'TBA' : legacy.InPerson.location[0],
+        legacy.InPerson.location == null || legacy.InPerson.location.length === 0 ? 'Location TBA' : legacy.InPerson.location[0],
       room:
         legacy.InPerson.location == null || legacy.InPerson.location.length < 2 ? null : legacy.InPerson.location[1],
     };
