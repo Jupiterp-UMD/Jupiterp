@@ -76,6 +76,10 @@ function buildRatings(requests: CourseRequest[]): Map<string, number> {
         // until now, so this used to go through parseFloat, which coerced it
         // and hid the mismatch. The finite check stays -- a null or a NaN
         // should leave the professor unrated rather than poison the sort.
+        //
+        // Deliberately `average_rating` (the legacy alias of `combined_rating`)
+        // and not `display_rating`: this ranks, and the shrunk score is the one
+        // that stops a single 5-star review outranking sixty 4.8s.
         const raw = lookup[slug]?.average_rating;
         if (raw != null && Number.isFinite(raw)) {
           ratings.set(name, raw);

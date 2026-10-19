@@ -67,7 +67,10 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     // Testudo spelling differs from their canonical record, and for two
     // professors who share a name.
     const profData = profs?.[slug];
-    const rating = profData?.average_rating ?? null;
+    // The unshrunk average, not `average_rating`: that is the ranking score,
+    // pulled toward the site-wide mean, and showed a single 5-star review as
+    // 3.9 stars. Falls back to it only until the column is deployed.
+    const rating = profData?.display_rating ?? profData?.average_rating ?? null;
     return {
       name,
       slug,
@@ -78,7 +81,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   // Convert rating to a percentage for CSS.
   //
-  // Takes a number: `average_rating` is a Postgres `real` and arrives as JSON,
+  // Takes a number: both rating columns arrive as JSON numbers,
   // so the parseFloat this used to do was coercing a value that was already
   // numeric. The caller only reaches here when the rating is non-null.
   function convertRating(rating: number | null): number {
