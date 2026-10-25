@@ -253,7 +253,11 @@ Copyright (C) 2026 Andrew Cupps
           every one they have grade history for, so a student reviewing a
           course they took has it.
         -->
-        <select bind:value={courseCode} required class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1">
+        <select
+          bind:value={courseCode}
+          required
+          class="border-outline bg-bg-primary rounded-md border-2 py-1 pl-2 pr-8"
+        >
           <option value="" disabled>Select</option>
           {#each courseCodes as code (code)}
             <option value={code}>{code}</option>
@@ -263,7 +267,7 @@ Copyright (C) 2026 Andrew Cupps
 
       <label class="flex flex-col gap-1">
         <span class="text-sm font-bold">Term</span>
-        <select bind:value={term} required class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1">
+        <select bind:value={term} required class="border-outline bg-bg-primary rounded-md border-2 py-1 pl-2 pr-8">
           <option value="" disabled>Select</option>
           {#each TERMS as option (option.value)}
             <option value={option.value}>{option.label}</option>
@@ -273,7 +277,11 @@ Copyright (C) 2026 Andrew Cupps
 
       <label class="flex flex-col gap-1">
         <span class="text-sm font-bold">Your grade</span>
-        <select bind:value={expectedGrade} required class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1">
+        <select
+          bind:value={expectedGrade}
+          required
+          class="border-outline bg-bg-primary rounded-md border-2 py-1 pl-2 pr-8"
+        >
           <option value="" disabled>Select</option>
           {#each GRADES as grade (grade)}
             <option value={grade}>{grade}</option>
