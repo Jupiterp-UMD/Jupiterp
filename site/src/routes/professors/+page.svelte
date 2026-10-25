@@ -124,6 +124,10 @@ instructor set.
       <div>
         <h1 class="text-2xl font-bold">Professors</h1>
         <p class="text-text-secondary text-sm">See grade distributions and ratings for UMD professors.</p>
+        <a
+          href={resolve('/professors/compare')}
+          class="text-orange mt-2 inline-block text-sm font-semibold hover:underline">Compare professors →</a
+        >
       </div>
       <div class="flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <div class="relative flex-1">

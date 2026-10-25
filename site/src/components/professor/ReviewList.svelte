@@ -15,9 +15,10 @@ Copyright (C) 2026 Andrew Cupps
     instructorSlug: string;
     courseCode: string | null;
     reviewsEl?: HTMLElement | null;
+    id?: string;
   }
 
-  let { instructorSlug, courseCode, reviewsEl = $bindable(null) }: Props = $props();
+  let { instructorSlug, courseCode, reviewsEl = $bindable(null), id = 'reviews' }: Props = $props();
 
   const PAGE_SIZE = 10;
 
@@ -116,7 +117,7 @@ Copyright (C) 2026 Andrew Cupps
   let hasMore = $derived(total !== null && reviews.length < total);
 </script>
 
-<section bind:this={reviewsEl} id="reviews" aria-label="Student reviews" class="mt-8 flex scroll-mt-16 flex-col gap-3">
+<section bind:this={reviewsEl} {id} aria-label="Student reviews" class="mt-8 flex scroll-mt-16 flex-col gap-3">
   <div class="flex flex-row items-baseline justify-between">
     <h3 class="text-lg font-bold">Reviews{courseCode === null ? '' : ` for ${courseCode}`}</h3>
     {#if total !== null && (total > 0 || filtered)}
