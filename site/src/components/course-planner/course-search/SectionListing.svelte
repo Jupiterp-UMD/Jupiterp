@@ -16,8 +16,10 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     CourseSearchFilterStore,
   } from '../../../stores/CoursePlannerStores';
   import SeatData from './SeatData.svelte';
+  import { ComparisonStore, addToComparison, removeFromComparison } from '../../../stores/ComparisonStore';
   import type { Section, CourseBasic } from '@jupiterp/jupiterp';
   import type { ScheduleBlock, ScheduleSelection } from '../../../types';
+  import { comparisonProfessors } from '$lib/professor/Comparison';
   import { noDifferences } from '$lib/course-planner/Schedule';
   import { firstAvailableColor } from '$lib/course-planner/ColorSelector';
 
@@ -169,6 +171,31 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     );
   }
 
+  let comparisonEntries = $derived(
+    comparisonProfessors([], [section]).map(({ slug, name }) => ({
+      slug,
+      name,
+      courses: [courseCode],
+      course: courseCode,
+    }))
+  );
+  let comparisonSelected = $derived(
+    comparisonEntries.length > 0 &&
+      comparisonEntries.every((professor) => $ComparisonStore.some((entry) => entry.slug === professor.slug))
+  );
+  let comparisonDisabled = $derived(
+    !comparisonSelected &&
+      new Set([
+        ...$ComparisonStore.map((professor) => professor.slug),
+        ...comparisonEntries.map((professor) => professor.slug),
+      ]).size > 2
+  );
+
+  function toggleComparison() {
+    if (comparisonSelected) comparisonEntries.forEach((professor) => removeFromComparison(professor.slug));
+    else if (!comparisonDisabled) comparisonEntries.forEach(addToComparison);
+  }
+
   let profsHover: boolean = $state(false);
   let locationHover: boolean = $state(false);
 
@@ -184,7 +211,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   onfocusin={isDesktop ? addHoverSection : null}
   onfocusout={isDesktop ? removeHoverSection : null}
   onblur={isDesktop ? removeHoverSection : null}
-  style="border-top: 1px solid var(--color-outline); display: grid; grid-template-columns: auto 1fr; padding-bottom: 0.25rem;"
+  style="border-top: 1px solid var(--color-outline); display: grid; grid-template-columns: auto minmax(0, 1fr); padding-bottom: 0.25rem;"
   class={sectionAdded ? 'bg-hover' : 'hover:bg-hover/50'}
 >
   <!-- Section code (click to view) -->
@@ -201,17 +228,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     </div>
   </button>
 
-  <button
-    onclick={addSectionToSchedule}
-    title="{sectionAdded ? 'Remove course from' : 'Add course to'} schedule"
-    class="w-full text-left"
-  >
-    <!-- Section info -->
+  <div class="min-w-0 pr-1 {comparisonSelected ? 'bg-orange/10' : ''}">
     <div class="w-full">
-      <!-- Instructors -->
-      <!-- Keyed by index: instructor names and meetings are NOT unique within
-           a section (e.g. PSYC100 0201 lists "OnlineAsync" twice), and a
-           duplicate key is a fatal runtime error in Svelte 5. -->
       {#each section.instructors as instructor, i (i)}
         <InstructorListing
           {instructor}
@@ -221,16 +239,42 @@ https://github.com/atcupps/Jupiterp/LICENSE).
           {removeHoverSection}
         />
       {/each}
-
-      <!-- Seats info -->
-      <SeatData {section} />
-
-      <!-- Class meetings -->
+    </div>
+    <div class="section-seat-row flex min-w-0 flex-nowrap items-start justify-between gap-1">
+      <button
+        type="button"
+        onclick={addSectionToSchedule}
+        class="min-w-0 flex-1 text-left"
+        title="{sectionAdded ? 'Remove course from' : 'Add course to'} schedule"
+      >
+        <SeatData {section} />
+      </button>
+      {#if comparisonEntries.length > 0}
+        <button
+          type="button"
+          disabled={comparisonDisabled}
+          aria-pressed={comparisonSelected}
+          aria-label={`Compare ${comparisonEntries.map((professor) => professor.name).join(' and ')} in ${courseCode}, section ${section.sectionCode}`}
+          title={comparisonSelected ? 'Remove from comparison' : 'Add to comparison'}
+          class="border-orange text-orange hover:bg-orange/10 inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[0.625rem] font-semibold disabled:opacity-50"
+          class:bg-hover={comparisonSelected}
+          onclick={toggleComparison}
+        >
+          <span aria-hidden="true">⇆</span> Compare with…
+        </button>
+      {/if}
+    </div>
+    <button
+      type="button"
+      onclick={addSectionToSchedule}
+      title="{sectionAdded ? 'Remove course from' : 'Add course to'} schedule"
+      class="w-full text-left"
+    >
       {#each section.meetings as meeting, i (i)}
         <MeetingListing {meeting} bind:locationHover {removeHoverSection} />
       {/each}
-    </div>
-  </button>
+    </button>
+  </div>
 </div>
 
 {#if addAlertVisible}

@@ -15,14 +15,12 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 </script>
 
 {#if section.totalSeats > 0}
-  <div class="flex w-full flex-row pb-1 text-xs font-medium 2xl:text-base">
-    {section.openSeats} / {section.totalSeats} seats available
-    <br />
+  <div class="pb-1 text-[0.625rem] font-medium xl:text-xs 2xl:text-sm">
+    <span class="block whitespace-nowrap">{section.openSeats} / {section.totalSeats} seats available</span>
     {#if section.openSeats == 0}
       Waitlist: {section.waitlist}
     {/if}
     {#if section.holdfile != null}
-      <br />
       Holdfile: {section.holdfile}
     {/if}
   </div>

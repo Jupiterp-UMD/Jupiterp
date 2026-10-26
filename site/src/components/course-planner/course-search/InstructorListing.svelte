@@ -10,7 +10,6 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import { courseQuery } from '../../../lib/professor/ProfessorData';
   import { CourseGradesStore, ProfsLookupStore } from '../../../stores/CoursePlannerStores';
   import { hasEnoughForGpa } from '../../../lib/course-planner/Grades';
-  import AddToComparison from '../../professor/AddToComparison.svelte';
   import GradesPopover from './GradesPopover.svelte';
 
   // 1. Properly define the component props type contract
@@ -113,7 +112,6 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   let showChip = $derived(profDist != null && hasEnoughForGpa(profDist));
 
   let gpaOpen = $state(false);
-  let compareExpanded = $state(false);
 
   let chipTitle = $derived(
     profDist != null && profDist.gpa != null
@@ -141,12 +139,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <!-- `relative` anchors the absolutely positioned `sr-only` rating label. Without
      it that label is placed against a distant ancestor, outside the search
      results' scroll container, and overflows it while searching. -->
-<div
-  role="group"
-  aria-label="Instructor details"
-  class="relative text-sm xl:text-base"
-  onpointerleave={() => (compareExpanded = false)}
->
+<div role="group" aria-label="Instructor details" class="relative text-sm xl:text-base">
   {#if currentProf}
     <!-- Internal professor page, not an outbound PlanetTerp link. -->
     <a
@@ -219,13 +212,6 @@ https://github.com/atcupps/Jupiterp/LICENSE).
           />
         {/if}
       </span>
-    {/if}
-    {#if currentProf && courseCode}
-      <AddToComparison
-        compact
-        bind:expanded={compareExpanded}
-        professor={{ slug: currentProf.slug, name: currentProf.name, courses: [courseCode], course: courseCode }}
-      />
     {/if}
   </span>
 </div>

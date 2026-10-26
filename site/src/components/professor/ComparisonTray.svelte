@@ -94,94 +94,132 @@ https://github.com/atcupps/Jupiterp/LICENSE.
 {#if $ComparisonStore.length > 0 && page.url.pathname !== resolve('/professors/compare')}
   <aside
     aria-label="Professor comparison tray"
+    class:planner-tray={page.url.pathname === resolve('/')}
     class="comparison-tray border-outline bg-bg-primary fixed inset-x-3 bottom-3 z-[60] mx-auto max-w-3xl rounded-xl border-2 p-3 shadow-xl sm:p-4"
   >
-    <div class="mb-2 flex items-center justify-between gap-3">
-      <p class="font-semibold" aria-live="polite">Compare professors · {$ComparisonStore.length}/2</p>
-      <button type="button" class="text-text-secondary text-sm hover:underline" onclick={() => ComparisonStore.set([])}
-        >Clear</button
-      >
-    </div>
-    <div class="flex flex-wrap items-center gap-2">
-      {#each $ComparisonStore as professor (professor.slug)}
-        <span class="border-outline flex min-w-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-sm">
-          <span class="truncate">{professor.name}</span>
-          <button
-            type="button"
-            class="text-text-secondary shrink-0 px-1"
-            aria-label={`Remove ${professor.name} from comparison`}
-            onclick={() => removeFromComparison(professor.slug)}>×</button
+    {#if page.url.pathname === resolve('/') && $ComparisonStore.length === 2 && course}
+      <div class="flex items-center gap-3">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-sm font-bold" aria-live="polite">2 professors selected</p>
+            <button
+              type="button"
+              class="text-text-secondary text-xs hover:underline"
+              onclick={() => ComparisonStore.set([])}>Clear</button
+            >
+          </div>
+          <p
+            class="text-text-secondary mt-1 truncate text-xs"
+            title={$ComparisonStore.map((professor) => professor.name).join(', ')}
           >
-        </span>
-      {/each}
-      {#if $ComparisonStore.length === 2 && course}
-        <label class="sr-only" for="tray-course">Comparison course</label>
-        <select
-          id="tray-course"
-          class="border-outline bg-bg-primary min-w-0 rounded-lg border px-2 py-1.5 text-sm"
-          value={course}
-          onchange={(event) => (chosenCourse = event.currentTarget.value)}
-        >
-          {#each courses as code (code)}<option value={code}>{code}</option>{/each}
-        </select>
+            {course} · {$ComparisonStore.map((professor) => professor.name).join(', ')}
+          </p>
+        </div>
         <a
           href="{resolve('/professors/compare')}?{query}"
-          class="bg-orange rounded-lg px-4 py-2 text-sm font-bold text-black">Compare →</a
+          class="bg-orange shrink-0 rounded-lg px-3 py-2.5 text-sm font-bold text-black">Compare →</a
         >
-      {/if}
-    </div>
-    {#if $ComparisonStore.length === 1}
-      <div class="mt-3">
-        <label for="tray-professor-search" class="sr-only">Search for a professor to compare</label>
-        <input
-          id="tray-professor-search"
-          type="search"
-          bind:value={search}
-          disabled={adding}
-          placeholder="Search professor (Ex: naren)"
-          class="border-outline bg-bg-primary focus:border-orange w-full rounded-lg border-2 px-3 py-2 text-base outline-none"
-          aria-describedby="tray-search-status"
-          oninput={() => (message = '')}
-          onkeydown={(event) => {
-            if (event.key === 'Escape') search = '';
-          }}
-        />
-        <div id="tray-search-status" class="text-text-secondary mt-1 text-sm" aria-live="polite">
-          {#if adding}Loading professor…
-          {:else if message}{message}
-          {:else if searching}Searching…
-          {:else if search.trim().length >= 2 && results.length === 0}No matching professors.
-          {/if}
-        </div>
-        {#if results.length > 0}
-          <ul
-            aria-label="Professor search results"
-            class="custom-scrollbar border-outline mt-2 max-h-40 overflow-y-auto rounded-lg border"
+      </div>
+    {:else}
+      <div class="mb-2 flex items-center justify-between gap-3">
+        <p class="font-semibold" aria-live="polite">Compare professors · {$ComparisonStore.length}/2</p>
+        <button
+          type="button"
+          class="text-text-secondary text-sm hover:underline"
+          onclick={() => ComparisonStore.set([])}>Clear</button
+        >
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        {#each $ComparisonStore as professor (professor.slug)}
+          <span class="border-outline flex min-w-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-sm">
+            <span class="truncate">{professor.name}</span>
+            <button
+              type="button"
+              class="text-text-secondary shrink-0 px-1"
+              aria-label={`Remove ${professor.name} from comparison`}
+              onclick={() => removeFromComparison(professor.slug)}>×</button
+            >
+          </span>
+        {/each}
+        {#if $ComparisonStore.length === 2 && course}
+          <label class="sr-only" for="tray-course">Comparison course</label>
+          <select
+            id="tray-course"
+            class="border-outline bg-bg-primary min-w-0 rounded-lg border px-2 py-1.5 text-sm"
+            value={course}
+            onchange={(event) => (chosenCourse = event.currentTarget.value)}
           >
-            {#each results as professor (professor.slug)}
-              <li>
-                <button
-                  type="button"
-                  disabled={adding}
-                  class="hover:bg-hover flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm disabled:opacity-50"
-                  onclick={() => chooseProfessor(professor)}
-                >
-                  <span>{professor.name}</span><span class="text-orange" aria-hidden="true">+</span>
-                </button>
-              </li>
-            {/each}
-          </ul>
+            {#each courses as code (code)}<option value={code}>{code}</option>{/each}
+          </select>
+          <a
+            href="{resolve('/professors/compare')}?{query}"
+            class="bg-orange rounded-lg px-4 py-2 text-sm font-bold text-black">Compare →</a
+          >
         {/if}
       </div>
-    {:else if !course}
-      <p class="text-text-secondary mt-2 text-sm">
-        These professors have no shared course available. Remove one to choose another.
-      </p>
+      {#if $ComparisonStore.length === 1}
+        <div class="mt-3">
+          <label for="tray-professor-search" class="sr-only">Search for a professor to compare</label>
+          <input
+            id="tray-professor-search"
+            type="search"
+            bind:value={search}
+            disabled={adding}
+            placeholder="Search professor (Ex: naren)"
+            class="border-outline bg-bg-primary focus:border-orange w-full rounded-lg border-2 px-3 py-2 text-base outline-none"
+            aria-describedby="tray-search-status"
+            oninput={() => (message = '')}
+            onkeydown={(event) => {
+              if (event.key === 'Escape') search = '';
+            }}
+          />
+          <div id="tray-search-status" class="text-text-secondary mt-1 text-sm" aria-live="polite">
+            {#if adding}Loading professor…
+            {:else if message}{message}
+            {:else if searching}Searching…
+            {:else if search.trim().length >= 2 && results.length === 0}No matching professors.
+            {/if}
+          </div>
+          {#if results.length > 0}
+            <ul
+              aria-label="Professor search results"
+              class="custom-scrollbar border-outline mt-2 max-h-40 overflow-y-auto rounded-lg border"
+            >
+              {#each results as professor (professor.slug)}
+                <li>
+                  <button
+                    type="button"
+                    disabled={adding}
+                    class="hover:bg-hover flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm disabled:opacity-50"
+                    onclick={() => chooseProfessor(professor)}
+                  >
+                    <span>{professor.name}</span><span class="text-orange" aria-hidden="true">+</span>
+                  </button>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
+      {:else if !course}
+        <p class="text-text-secondary mt-2 text-sm">
+          These professors have no shared course available. Remove one to choose another.
+        </p>
+      {/if}
     {/if}
   </aside>
 {/if}
 
 <style>
+  :global(body:has(.comparison-tray) #planner-search-results) {
+    padding-bottom: 14rem;
+  }
+  @media (min-width: 1024px) {
+    .planner-tray {
+      left: 1rem;
+      right: auto;
+      width: 20.5rem;
+    }
+  }
   :global(body:has(.comparison-tray) main) {
     padding-bottom: 14rem;
   }

@@ -20,7 +20,7 @@ renders it.
   import GradeTrend from './GradeTrend.svelte';
   import ReviewForm from './ReviewForm.svelte';
   import ReviewList from './ReviewList.svelte';
-  import AddToComparison from './AddToComparison.svelte';
+  import CompareWith from './CompareWith.svelte';
   import StarRating from './StarRating.svelte';
 
   interface Props {
@@ -196,28 +196,22 @@ renders it.
         </div>
       {/if}
       <div class="ml-auto">
-        <AddToComparison
-          showLabel
-          professor={{
-            slug: data.instructor.slug,
-            name: data.instructor.name,
-            courses: allCourseCodes,
-            course: selectedCode ?? initialCourse,
-          }}
+        <CompareWith
+          slug={data.instructor.slug}
+          name={data.instructor.name}
+          courses={allCourseCodes}
+          preferredCourse={selectedCode ?? initialCourse}
         />
       </div>
     </div>
   </div>
 {:else}
   <div class="mt-6 flex justify-end">
-    <AddToComparison
-      showLabel
-      professor={{
-        slug: data.instructor.slug,
-        name: data.instructor.name,
-        courses: allCourseCodes,
-        course: selectedCode ?? initialCourse,
-      }}
+    <CompareWith
+      slug={data.instructor.slug}
+      name={data.instructor.name}
+      courses={allCourseCodes}
+      preferredCourse={selectedCode ?? initialCourse}
     />
   </div>
 {/if}
