@@ -5,7 +5,7 @@ https://github.com/atcupps/Jupiterp/LICENSE.
 Compare two professors within a single course.
 -->
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { resolve } from '$app/paths';
   import { client } from '$lib/client';
   import { courseGradeSummary, courseInstructorGradeSummary } from '$lib/api/JupiterpApi';
@@ -42,8 +42,8 @@ Compare two professors within a single course.
     requestId++;
   });
 
-  async function loadCourse(event: SubmitEvent) {
-    event.preventDefault();
+  async function loadCourse(event?: SubmitEvent, initialLeft = '', initialRight = '') {
+    event?.preventDefault();
     const code = input.replace(/\s+/g, '').toUpperCase();
     if (!/^[A-Z]{4}\d{3}[A-Z]?$/.test(code)) {
       validation = 'Enter a course code, such as CMSC132.';
@@ -57,6 +57,7 @@ Compare two professors within a single course.
     leftSlug = '';
     rightSlug = '';
     allReviews = false;
+    reviewTab = 0;
     warning = '';
     courseMean = null;
     status = 'loading';
@@ -76,11 +77,25 @@ Compare two professors within a single course.
       professors = comparisonProfessors(history.value.data, currentCourse?.sections ?? []);
       const overall = summary.status === 'fulfilled' ? summary.value.data[0] : undefined;
       if (overall && hasEnoughForGpa(toDistribution(overall))) courseMean = Number(overall.gpa);
+      leftSlug = professors.some((professor) => professor.slug === initialLeft) ? initialLeft : '';
+      rightSlug =
+        initialRight !== leftSlug && professors.some((professor) => professor.slug === initialRight)
+          ? initialRight
+          : '';
       status = 'loaded';
     } catch {
       if (id === requestId) status = 'error';
     }
   }
+
+  onMount(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('course');
+    if (code) {
+      input = code;
+      void loadCourse(undefined, params.get('left') ?? '', params.get('right') ?? '');
+    }
+  });
 
   function gpaOf(professor: ComparisonProfessor | undefined): number | null {
     const distribution = professor?.distribution;
@@ -111,7 +126,7 @@ Compare two professors within a single course.
       </p>
     </header>
 
-    <form onsubmit={loadCourse} class="border-outline rounded-xl border p-4 sm:p-6">
+    <form onsubmit={(event) => loadCourse(event)} class="border-outline rounded-xl border p-4 sm:p-6">
       <label for="comparison-course" class="mb-2 block font-semibold">Choose a course</label>
       <div class="flex max-w-xl flex-col gap-3 sm:flex-row">
         <input

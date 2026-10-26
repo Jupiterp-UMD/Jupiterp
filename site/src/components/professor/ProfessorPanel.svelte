@@ -20,6 +20,7 @@ renders it.
   import GradeTrend from './GradeTrend.svelte';
   import ReviewForm from './ReviewForm.svelte';
   import ReviewList from './ReviewList.svelte';
+  import AddToComparison from './AddToComparison.svelte';
   import StarRating from './StarRating.svelte';
 
   interface Props {
@@ -112,7 +113,9 @@ renders it.
 <section bind:clientHeight={heroSectionHeight} class="flex flex-row flex-wrap items-center justify-between">
   <!-- div has a height of 68px -->
   <div class="min-w-fit flex-1">
-    <h1 class="wrap-break-word text-2xl font-bold">{data.instructor.name}</h1>
+    <div class="flex flex-wrap items-center gap-2">
+      <h1 class="wrap-break-word text-2xl font-bold">{data.instructor.name}</h1>
+    </div>
     <div class="text-text-secondary mr-8 h-9 min-w-fit gap-2 py-2 text-sm">
       {#if data.departments.length > 0}
         <span>{data.departments.slice(0, 3).join(', ')}</span>
@@ -167,7 +170,7 @@ renders it.
   >
     <!-- Once the bar sticks, the header has scrolled away, so the bar carries
            the name and rating to keep the reader oriented. -->
-    <div class="mx-auto flex w-full max-w-3xl flex-row items-center gap-4">
+    <div class="mx-auto flex w-full max-w-3xl flex-row flex-wrap items-center gap-2 sm:gap-4">
       <div class="shrink-0">
         {#if totalCourses.length > 1}
           <CoursePicker
@@ -192,7 +195,30 @@ renders it.
           >
         </div>
       {/if}
+      <div class="ml-auto">
+        <AddToComparison
+          showLabel
+          professor={{
+            slug: data.instructor.slug,
+            name: data.instructor.name,
+            courses: allCourseCodes,
+            course: selectedCode ?? initialCourse,
+          }}
+        />
+      </div>
     </div>
+  </div>
+{:else}
+  <div class="mt-6 flex justify-end">
+    <AddToComparison
+      showLabel
+      professor={{
+        slug: data.instructor.slug,
+        name: data.instructor.name,
+        courses: allCourseCodes,
+        course: selectedCode ?? initialCourse,
+      }}
+    />
   </div>
 {/if}
 

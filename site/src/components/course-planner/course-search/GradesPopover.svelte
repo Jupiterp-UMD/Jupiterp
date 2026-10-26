@@ -11,6 +11,7 @@ Copyright (C) 2026 Andrew Cupps
     MIN_GRADED_FOR_GPA,
     type GradeDistribution,
   } from '../../../lib/course-planner/Grades';
+  import AddToComparison from '../../professor/AddToComparison.svelte';
   import GradeDistributionBars from './GradeDistributionBars.svelte';
   import { resolve } from '$app/paths';
   import { courseQuery } from '../../../lib/professor/ProfessorData';
@@ -158,6 +159,12 @@ Copyright (C) 2026 Andrew Cupps
       {heading}
     {/if}
   </div>
+
+  {#if slug && courseCode}
+    <div class="my-2">
+      <AddToComparison professor={{ slug, name: heading, courses: [courseCode], course: courseCode }} />
+    </div>
+  {/if}
 
   {#if showGpa && distribution.gpa != null}
     <div class="flex flex-row items-baseline gap-1 pb-1">

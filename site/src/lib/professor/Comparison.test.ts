@@ -5,7 +5,7 @@
 import { describe, expect, test } from '@jest/globals';
 import type { Section } from '@jupiterp/jupiterp';
 import type { CourseInstructorGradeSummary } from '../api/types';
-import { comparisonProfessors } from './Comparison';
+import { comparisonProfessors, sharedComparisonCourses } from './Comparison';
 
 describe('comparisonProfessors', () => {
   const history = {
@@ -35,4 +35,10 @@ describe('comparisonProfessors', () => {
     const section = { instructors: ['Alex Canonical'], instructorSlugs: ['another-alex'] } as Section;
     expect(comparisonProfessors([history], [section])).toHaveLength(2);
   });
+});
+
+test('comparison tray offers only shared courses', () => {
+  expect(sharedComparisonCourses([{ courses: ['CMSC250', 'CMSC132'] }, { courses: ['CMSC250'] }])).toEqual(['CMSC250']);
+  expect(sharedComparisonCourses([{ courses: ['CMSC250'] }, { courses: ['MATH140'] }])).toEqual([]);
+  expect(sharedComparisonCourses([])).toEqual([]);
 });

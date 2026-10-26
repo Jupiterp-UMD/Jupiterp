@@ -7,6 +7,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <script lang="ts">
   import { resolve } from '$app/paths';
   import '../app.css';
+  import ComparisonTray from '../components/professor/ComparisonTray.svelte';
   import Analytics from '../components/layout/Analytics.svelte';
   import SiteLinks from '../components/layout/SiteLinks.svelte';
 
@@ -36,3 +37,5 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 </header>
 
 {@render children?.()}
+
+<ComparisonTray />
