@@ -43,9 +43,3 @@ export function comparisonProfessors(
   }
   return [...professors.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
-
-export function sharedComparisonCourses(selected: { courses: string[] }[]): string[] {
-  return selected.length === 0
-    ? []
-    : selected[0].courses.filter((code) => selected.every((professor) => professor.courses.includes(code))).sort();
-}

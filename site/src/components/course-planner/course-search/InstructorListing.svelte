@@ -139,7 +139,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <!-- `relative` anchors the absolutely positioned `sr-only` rating label. Without
      it that label is placed against a distant ancestor, outside the search
      results' scroll container, and overflows it while searching. -->
-<div role="group" aria-label="Instructor details" class="relative text-sm xl:text-base">
+<div class="relative text-sm xl:text-base">
   {#if currentProf}
     <!-- Internal professor page, not an outbound PlanetTerp link. -->
     <a
@@ -173,47 +173,45 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   {:else}
     {instructor ?? 'No instructor'}
   {/if}
-  <span class="inline-flex max-w-full flex-wrap items-center gap-y-1 align-middle">
-    {#if showChip && profDist != null && profDist.gpa != null}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
+  {#if showChip && profDist != null && profDist.gpa != null}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <span
+      class="relative inline-block"
+      use:clickoutside
+      onclickoutside={() => (gpaOpen = false)}
+      onmouseenter={() => {
+        profsHover = true;
+        removeHoverSection();
+        gpaOpen = true;
+      }}
+      onmouseleave={() => {
+        profsHover = false;
+        removeHoverSection();
+        gpaOpen = false;
+      }}
+    >
       <span
-        class="relative inline-block"
-        use:clickoutside
-        onclickoutside={() => (gpaOpen = false)}
-        onmouseenter={() => {
-          profsHover = true;
-          removeHoverSection();
-          gpaOpen = true;
-        }}
-        onmouseleave={() => {
-          profsHover = false;
-          removeHoverSection();
-          gpaOpen = false;
-        }}
+        role="button"
+        tabindex="0"
+        aria-expanded={gpaOpen}
+        class="border-outline ml-1 cursor-pointer rounded-md border px-1 align-[2px] text-[0.625rem] font-bold leading-tight 2xl:text-xs"
+        title={chipTitle}
+        onclick={handleChipClick}
+        onkeydown={handleChipKeydown}
       >
-        <span
-          role="button"
-          tabindex="0"
-          aria-expanded={gpaOpen}
-          class="border-outline ml-1 cursor-pointer rounded-md border px-1 align-[2px] text-[0.625rem] font-bold leading-tight 2xl:text-xs"
-          title={chipTitle}
-          onclick={handleChipClick}
-          onkeydown={handleChipKeydown}
-        >
-          {profDist.gpa.toFixed(2)}
-        </span>
-        {#if gpaOpen}
-          <GradesPopover
-            heading={instructor}
-            distribution={profDist}
-            slug={profSlug}
-            {courseCode}
-            onclose={() => (gpaOpen = false)}
-          />
-        {/if}
+        {profDist.gpa.toFixed(2)}
       </span>
-    {/if}
-  </span>
+      {#if gpaOpen}
+        <GradesPopover
+          heading={instructor}
+          distribution={profDist}
+          slug={profSlug}
+          {courseCode}
+          onclose={() => (gpaOpen = false)}
+        />
+      {/if}
+    </span>
+  {/if}
 </div>
 
 <style>

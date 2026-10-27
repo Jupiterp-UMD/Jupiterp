@@ -15,7 +15,6 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import { formatSemesterRange, hasEnoughForGpa } from '../../../lib/course-planner/Grades';
   import { gradesAutoload, loadCourseGrades } from '../../../lib/course-planner/GradesLoader';
   import { CourseGradesStore } from '../../../stores/CoursePlannerStores';
-  import { resolve } from '$app/paths';
   import { TERM_ID } from '$lib/term';
 
   export let course: Course;
@@ -70,12 +69,6 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
     <!-- Course title -->
     <div class="wrap max-w-63.5 xl:max-w-78.5 2xl:max-w-98.5 text-sm 2xl:text-base">{course.name}</div>
-    <a
-      href="{resolve('/professors/compare')}?{new URLSearchParams({ course: course.courseCode })}"
-      class="border-orange text-orange hover:bg-orange/10 my-2 inline-flex max-w-full items-center gap-2 rounded-lg border px-2 py-2 text-xs font-semibold"
-    >
-      <span aria-hidden="true">⇆</span> Compare {course.courseCode} professors
-    </a>
     {#if course.genEds != null && course.genEds.length > 0}
       <div class="align-center my-1 flex w-full flex-row justify-start">
         {#each course.genEds as genEd (genEd.code)}

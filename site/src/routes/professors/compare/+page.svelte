@@ -121,9 +121,6 @@ Compare two professors within a single course.
     <header class="space-y-2">
       <a href={resolve('/professors')} class="text-orange text-sm hover:underline">← All professors</a>
       <h1 class="text-3xl font-bold">Compare professors</h1>
-      <p class="text-text-secondary">
-        One course. Two professors. See how their grades and student experiences compare.
-      </p>
     </header>
 
     <form onsubmit={(event) => loadCourse(event)} class="border-outline rounded-xl border p-4 sm:p-6">
