@@ -31,7 +31,7 @@ import { get } from 'svelte/store';
 import { CourseGradesStore } from '../../stores/CoursePlannerStores';
 import type { CourseGradesEntry } from '../../stores/CoursePlannerStores';
 import { courseGradeSummary, courseInstructorGradeSummary } from '../api/JupiterpApi';
-import { toDistribution, type GradeDistribution } from './Grades';
+import { toDistribution, mergeDistributions, type GradeDistribution } from './Grades';
 
 /** How long a course card must stay visible before grades are fetched */
 const AUTOLOAD_DWELL_MS = 300;
@@ -82,6 +82,29 @@ export async function loadCourseGrades(courseCode: string, opts: { retryError?: 
   }
 }
 
+const courseSummaries = new Map<string, ReturnType<typeof courseGradeSummary>>();
+const instructorSummaries = new Map<string, ReturnType<typeof courseInstructorGradeSummary>>();
+
+export function loadCourseGradeSummaries(courseCode: string) {
+  let course = courseSummaries.get(courseCode);
+  if (!course) {
+    course = courseGradeSummary({ courseCodes: courseCode }).catch((error) => {
+      courseSummaries.delete(courseCode);
+      throw error;
+    });
+    courseSummaries.set(courseCode, course);
+  }
+  let instructors = instructorSummaries.get(courseCode);
+  if (!instructors) {
+    instructors = courseInstructorGradeSummary({ courseCodes: courseCode }).catch((error) => {
+      instructorSummaries.delete(courseCode);
+      throw error;
+    });
+    instructorSummaries.set(courseCode, instructors);
+  }
+  return Promise.allSettled([course, instructors] as const);
+}
+
 async function fetchCourseGrades(courseCode: string): Promise<void> {
   setEntry(courseCode, { status: 'loading' });
   try {
@@ -89,12 +112,10 @@ async function fetchCourseGrades(courseCode: string): Promise<void> {
     // sections with no attributed instructor, so it is not the sum of the
     // per-professor rows and cannot be derived from them. About 26% of
     // historical rows have no registrar-named instructor.
-    const [coursePage, instructorPage] = await Promise.all([
-      courseGradeSummary({ courseCodes: courseCode }),
-      courseInstructorGradeSummary({ courseCodes: courseCode }),
-    ]);
-
-    const courseRow = coursePage.data[0];
+    const [coursePage, instructorPage] = await loadCourseGradeSummaries(courseCode);
+    if (coursePage.status === 'rejected') throw coursePage.reason;
+    if (instructorPage.status === 'rejected') throw instructorPage.reason;
+    const courseRow = coursePage.value.data[0];
     if (courseRow === undefined) {
       setEntry(courseCode, { status: 'none' });
       return;
@@ -102,11 +123,13 @@ async function fetchCourseGrades(courseCode: string): Promise<void> {
 
     const byInstructorSlug: Record<string, GradeDistribution> = {};
     const namesBySlug: Record<string, string> = {};
-    for (const row of instructorPage.data) {
+    for (const row of instructorPage.value.data) {
       if (row.instructor_slug === null || row.instructor_slug === undefined) {
         continue;
       }
-      byInstructorSlug[row.instructor_slug] = toDistribution(row);
+      const existing = byInstructorSlug[row.instructor_slug];
+      const distribution = toDistribution(row);
+      byInstructorSlug[row.instructor_slug] = existing ? mergeDistributions(existing, distribution) : distribution;
       namesBySlug[row.instructor_slug] = row.instructor;
     }
 

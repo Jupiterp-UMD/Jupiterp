@@ -5,12 +5,16 @@ https://github.com/atcupps/Jupiterp/LICENSE.
 Compare two professors within a single course.
 -->
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { client } from '$lib/client';
-  import { courseGradeSummary, courseInstructorGradeSummary } from '$lib/api/JupiterpApi';
-  import { comparisonProfessors, type ComparisonProfessor } from '$lib/professor/Comparison';
-  import { hasEnoughForGpa, toDistribution } from '$lib/course-planner/Grades';
+  import {
+    loadComparisonProfessors,
+    loadComparisonInstructor,
+    type ComparisonProfessor,
+  } from '$lib/professor/Comparison';
+  import { hasEnoughForGpa, calculateGpaWithoutActiveProf, type GradeDistribution } from '$lib/course-planner/Grades';
   import ComparisonDistribution from '../../../components/professor/ComparisonDistribution.svelte';
   import ReviewList from '../../../components/professor/ReviewList.svelte';
   import ComparisonRating from '../../../components/professor/ComparisonRating.svelte';
@@ -19,14 +23,17 @@ Compare two professors within a single course.
   let input = $state('');
   let course = $state('');
   let professors = $state<ComparisonProfessor[]>([]);
-  let leftSlug = $state('');
-  let rightSlug = $state('');
+  let selectionSlugs = $state(['', '']);
+  let leftSlug = $derived(selectionSlugs[0]);
+  let rightSlug = $derived(selectionSlugs[1]);
   let allReviews = $state(false);
   let reviewTab = $state(0);
   let status = $state<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   let validation = $state('');
   let warning = $state('');
   let courseMean = $state<number | null>(null);
+  let overall = $state<GradeDistribution | null>(null);
+  let dataWarning = '';
   let requestId = 0;
 
   let left = $derived(professors.find((professor) => professor.slug === leftSlug));
@@ -42,59 +49,121 @@ Compare two professors within a single course.
     requestId++;
   });
 
-  async function loadCourse(event?: SubmitEvent, initialLeft = '', initialRight = '') {
-    event?.preventDefault();
+  function syncUrl(code: string, left = '', right = '') {
+    const url = new URL(page.url);
+    url.searchParams.set('course', code);
+    for (const [key, value] of [
+      ['left', left],
+      ['right', right],
+    ]) {
+      if (value) url.searchParams.set(key, value);
+      else url.searchParams.delete(key);
+    }
+    if (url.href === page.url.href) return false;
+    // eslint-disable-next-line svelte/no-navigation-without-resolve
+    void goto(url, { keepFocus: true, noScroll: true });
+    return true;
+  }
+
+  function submitCourse(event: SubmitEvent) {
+    event.preventDefault();
     const code = input.replace(/\s+/g, '').toUpperCase();
     if (!/^[A-Z]{4}\d{3}[A-Z]?$/.test(code)) {
       validation = 'Enter a course code, such as CMSC132.';
       return;
     }
     validation = '';
+    if (!syncUrl(code)) void loadCourse(code);
+  }
+
+  async function restoreSelections(initialLeft: string, initialRight: string, id: number) {
+    const slugs = [initialLeft, initialRight === initialLeft ? '' : initialRight];
+    const notes: string[] = [];
+    const missing = await Promise.all(
+      slugs
+        .filter((slug) => slug && !professors.some((professor) => professor.slug === slug))
+        .map(async (slug) => {
+          try {
+            const instructor = await loadComparisonInstructor(slug);
+            if (!instructor) {
+              notes.push(`Linked professor “${slug}” could not be found.`);
+              return null;
+            }
+            return { slug, name: instructor.name, current: false, distribution: null } satisfies ComparisonProfessor;
+          } catch {
+            notes.push(`Linked professor “${slug}” could not be loaded. Try again.`);
+            return null;
+          }
+        })
+    );
+    if (id !== requestId) return;
+    professors = [
+      ...professors,
+      ...missing.filter((professor): professor is NonNullable<typeof professor> => professor !== null),
+    ];
+    selectionSlugs = slugs.map((slug) => (professors.some((professor) => professor.slug === slug) ? slug : ''));
+    const unavailable = selectionSlugs.flatMap((slug) => {
+      const professor = professors.find((entry) => entry.slug === slug);
+      return professor && professor.distribution === null && !professor.current
+        ? [`${professor.name} has no linked grade history or current assignment for this course.`]
+        : [];
+    });
+    warning = [dataWarning, ...notes, ...unavailable].filter(Boolean).join(' ');
+  }
+
+  async function loadCourse(rawCode: string, initialLeft = '', initialRight = '') {
+    const code = rawCode.replace(/\s+/g, '').toUpperCase();
     const id = ++requestId;
+    if (!/^[A-Z]{4}\d{3}[A-Z]?$/.test(code)) {
+      validation = 'Enter a course code, such as CMSC132.';
+      status = 'idle';
+      return;
+    }
+    validation = '';
     course = code;
     input = code;
     professors = [];
-    leftSlug = '';
-    rightSlug = '';
+    selectionSlugs = ['', ''];
     allReviews = false;
     reviewTab = 0;
     warning = '';
+    overall = null;
     courseMean = null;
     status = 'loading';
     try {
-      const [history, current, summary] = await Promise.allSettled([
-        courseInstructorGradeSummary({ courseCodes: code }),
-        client.coursesWithSections({ courseCodes: new Set([code]) }),
-        courseGradeSummary({ courseCodes: code }),
-      ]);
+      const result = await loadComparisonProfessors(code);
       if (id !== requestId) return;
-      // Historical grades are essential; current assignments can fail independently.
-      if (history.status === 'rejected') throw history.reason;
-      const response = current.status === 'fulfilled' ? current.value : null;
-      const currentCourse = response?.ok() ? response.data?.find((row) => row.courseCode === code) : undefined;
-      if (!response?.ok())
-        warning = 'Current teaching assignments could not be loaded. Showing professors from grade history.';
-      professors = comparisonProfessors(history.value.data, currentCourse?.sections ?? []);
-      const overall = summary.status === 'fulfilled' ? summary.value.data[0] : undefined;
-      if (overall && hasEnoughForGpa(toDistribution(overall))) courseMean = Number(overall.gpa);
-      leftSlug = professors.some((professor) => professor.slug === initialLeft) ? initialLeft : '';
-      rightSlug =
-        initialRight !== leftSlug && professors.some((professor) => professor.slug === initialRight)
-          ? initialRight
-          : '';
-      status = 'loaded';
+      professors = result.professors;
+      overall = result.overall;
+      dataWarning = result.warning;
+      if (overall && hasEnoughForGpa(overall)) courseMean = overall.gpa;
+      await restoreSelections(initialLeft, initialRight, id);
+      if (id === requestId) status = 'loaded';
     } catch {
       if (id === requestId) status = 'error';
     }
   }
 
-  onMount(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('course');
-    if (code) {
-      input = code;
-      void loadCourse(undefined, params.get('left') ?? '', params.get('right') ?? '');
-    }
+  $effect(() => {
+    const params = page.url.searchParams;
+    const code = params.get('course') ?? '';
+    const left = params.get('left') ?? '';
+    const right = params.get('right') ?? '';
+    untrack(() => {
+      if (!code) {
+        requestId++;
+        input = '';
+        course = '';
+        professors = [];
+        selectionSlugs = ['', ''];
+        status = 'idle';
+        validation = '';
+      } else if (code === course && status === 'loaded') {
+        void restoreSelections(left, right, ++requestId);
+      } else {
+        void loadCourse(code, left, right);
+      }
+    });
   });
 
   function gpaOf(professor: ComparisonProfessor | undefined): number | null {
@@ -106,8 +175,12 @@ Compare two professors within a single course.
     return Math.max(0, Math.min(100, ((gpa - scaleMin) / (4 - scaleMin)) * 100));
   }
 
-  function deviation(gpa: number): number | null {
-    return courseMean === null || courseMean === 0 ? null : ((gpa - courseMean) / courseMean) * 100;
+  function deviation(professor: ComparisonProfessor | undefined): number | null {
+    const gpa = gpaOf(professor);
+    const otherMean = calculateGpaWithoutActiveProf(overall, professor?.distribution);
+    return gpa === null || otherMean === null || otherMean === 0
+      ? null
+      : Math.round(((gpa - otherMean) / otherMean) * 100);
   }
 </script>
 
@@ -123,7 +196,7 @@ Compare two professors within a single course.
       <h1 class="text-3xl font-bold">Compare professors</h1>
     </header>
 
-    <form onsubmit={(event) => loadCourse(event)} class="border-outline rounded-xl border p-4 sm:p-6">
+    <form onsubmit={submitCourse} class="border-outline rounded-xl border p-4 sm:p-6">
       <label for="comparison-course" class="mb-2 block font-semibold">Choose a course</label>
       <div class="flex max-w-xl flex-col gap-3 sm:flex-row">
         <input
@@ -167,23 +240,14 @@ Compare two professors within a single course.
               <label for={`professor-${side}`} class="mb-3 flex items-center gap-2 font-semibold">
                 <span class="comparison-dot" class:second={index === 1}></span>Professor {index + 1}
               </label>
-              {#if index === 0}
-                <ProfessorPicker
-                  {professors}
-                  bind:selected={leftSlug}
-                  excluded={rightSlug}
-                  id="professor-left"
-                  label="Professor 1"
-                />
-              {:else}
-                <ProfessorPicker
-                  {professors}
-                  bind:selected={rightSlug}
-                  excluded={leftSlug}
-                  id="professor-right"
-                  label="Professor 2"
-                />
-              {/if}
+              <ProfessorPicker
+                {professors}
+                bind:selected={selectionSlugs[index]}
+                excluded={selectionSlugs[1 - index]}
+                id={`professor-${side}`}
+                label={`Professor ${index + 1}`}
+                onChange={() => syncUrl(course, leftSlug, rightSlug)}
+              />
               {#if selected[index]}
                 <ComparisonRating slug={selected[index]!.slug} />
               {/if}
@@ -198,7 +262,7 @@ Compare two professors within a single course.
           <div class="my-6 grid grid-cols-2 gap-4 sm:gap-8">
             {#each selected as professor, index (index)}
               {@const gpa = gpaOf(professor)}
-              {@const delta = gpa === null ? null : deviation(gpa)}
+              {@const delta = gpa === null ? null : deviation(professor)}
               <div>
                 <p class="flex items-center gap-2 font-semibold">
                   <span class="comparison-dot" class:second={index === 1}></span>{professor?.name}
@@ -215,9 +279,9 @@ Compare two professors within a single course.
                 </p>
                 {#if delta !== null}
                   <p class="mt-2 font-medium" class:text-success={delta > 0} class:text-warning={delta < 0}>
-                    {Math.abs(delta) < 0.05
-                      ? 'At the course mean'
-                      : `${Math.abs(delta).toFixed(1)}% ${delta > 0 ? 'above' : 'below'} the course mean`}
+                    {delta === 0
+                      ? 'Same as other professors'
+                      : `${Math.abs(delta)}% ${delta > 0 ? 'higher' : 'lower'} than other ${course} professors`}
                   </p>
                 {/if}
               </div>
@@ -270,7 +334,8 @@ Compare two professors within a single course.
               : courseMean.toFixed(2)}
           </p>
           <p class="text-text-secondary mt-1 text-sm">
-            The course mean is weighted by graded student count and includes both selected professors.
+            The line marks the overall course mean. Percentages compare each professor with the other instructors,
+            excluding their own students.
           </p>
           {#if gpaOf(left) === null || gpaOf(right) === null}<p class="text-text-secondary mt-4 text-sm">
               GPA requires at least 20 graded students. Professors without enough data can still be compared through

@@ -113,9 +113,7 @@ renders it.
 <section bind:clientHeight={heroSectionHeight} class="flex flex-row flex-wrap items-center justify-between">
   <!-- div has a height of 68px -->
   <div class="min-w-fit flex-1">
-    <div class="flex flex-wrap items-center gap-2">
-      <h1 class="wrap-break-word text-2xl font-bold">{data.instructor.name}</h1>
-    </div>
+    <h1 class="wrap-break-word text-2xl font-bold">{data.instructor.name}</h1>
     <div class="text-text-secondary mr-8 h-9 min-w-fit gap-2 py-2 text-sm">
       {#if data.departments.length > 0}
         <span>{data.departments.slice(0, 3).join(', ')}</span>
@@ -205,7 +203,7 @@ renders it.
       </div>
     </div>
   </div>
-{:else}
+{:else if allCourseCodes.length > 0}
   <div class="mt-6 flex justify-end">
     <CompareWith
       slug={data.instructor.slug}

@@ -200,7 +200,7 @@ export function formatSemesterRange(dist: GradeDistribution): string | null {
  * The alternative is presenting a confident-looking 4.00 computed from three
  * students, which is worse than showing nothing.
  */
-export function hasEnoughForGpa(dist: GradeDistribution): boolean {
+export function hasEnoughForGpa(dist: GradeDistribution): dist is GradeDistribution & { gpa: number } {
   return dist.gpa !== null && dist.graded >= MIN_GRADED_FOR_GPA;
 }
 
@@ -224,4 +224,40 @@ export function bucketPercent(dist: GradeDistribution, bucket: GradeBucket): str
     return '<1';
   }
   return percent.toString();
+}
+
+/** Combine disjoint API summaries without recalculating GPA from letter grades. */
+export function mergeDistributions(a: GradeDistribution, b: GradeDistribution): GradeDistribution {
+  const graded = a.graded + b.graded;
+  const letters = { ...a.letters };
+  for (const letter of Object.keys(letters) as LetterGrade[]) letters[letter] += b.letters[letter];
+  const buckets = { ...a.buckets };
+  for (const bucket of GRADE_BUCKETS) buckets[bucket] += b.buckets[bucket];
+  const firstTerms = [a.firstTerm, b.firstTerm].filter((term): term is number => term !== null);
+  const lastTerms = [a.lastTerm, b.lastTerm].filter((term): term is number => term !== null);
+  return {
+    letters,
+    buckets,
+    graded,
+    barTotal: a.barTotal + b.barTotal,
+    total: a.total + b.total,
+    otherCount: a.otherCount + b.otherCount,
+    sectionCount: a.sectionCount + b.sectionCount,
+    firstTerm: firstTerms.length ? Math.min(...firstTerms) : null,
+    lastTerm: lastTerms.length ? Math.max(...lastTerms) : null,
+    gpa:
+      graded === 0 || (a.graded > 0 && a.gpa === null) || (b.graded > 0 && b.gpa === null)
+        ? null
+        : ((a.gpa ?? 0) * a.graded + (b.gpa ?? 0) * b.graded) / graded,
+  };
+}
+
+export function calculateGpaWithoutActiveProf(
+  course: Pick<GradeDistribution, 'gpa' | 'graded'> | null | undefined,
+  own: Pick<GradeDistribution, 'gpa' | 'graded'> | null | undefined
+): number | null {
+  if (course?.gpa == null || course.graded < MIN_GRADED_FOR_GPA) return null;
+  if (own?.gpa == null) return course.gpa;
+  const restGraded = course.graded - own.graded;
+  return restGraded < MIN_GRADED_FOR_GPA ? null : (course.gpa * course.graded - own.gpa * own.graded) / restGraded;
 }

@@ -15,8 +15,9 @@ Searchable professor selector with keyboard navigation.
     excluded: string;
     id: string;
     label: string;
+    onChange?: () => void;
   }
-  let { professors, selected = $bindable(), excluded, id, label }: Props = $props();
+  let { professors, selected = $bindable(), excluded, id, label, onChange }: Props = $props();
   let open = $state(false);
   let query = $state('');
   let active = $state(0);
@@ -49,6 +50,7 @@ Searchable professor selector with keyboard navigation.
 
   function choose(slug: string) {
     selected = slug;
+    onChange?.();
     void close();
   }
 
@@ -65,8 +67,6 @@ Searchable professor selector with keyboard navigation.
       active = (active + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
       await tick();
       list?.children[active]?.scrollIntoView({ block: 'nearest' });
-    } else if (event.key === 'Tab') {
-      open = false;
     }
   }
 </script>
@@ -77,7 +77,15 @@ Searchable professor selector with keyboard navigation.
   }}
 />
 
-<div bind:this={root} class="relative">
+<div
+  bind:this={root}
+  class="relative"
+  role="group"
+  aria-label={label}
+  onfocusout={(event) => {
+    if (open && event.relatedTarget && !root.contains(event.relatedTarget as Node)) open = false;
+  }}
+>
   {#if open}
     <div class="border-outline flex items-center rounded-t-lg border-2 px-4 py-2">
       <input
@@ -96,7 +104,7 @@ Searchable professor selector with keyboard navigation.
         aria-activedescendant={options[active] ? `${id}-option-${options[active].slug}` : undefined}
         autocomplete="off"
       />
-      <button type="button" class="ml-2 shrink-0" aria-label="Close professor list" onclick={close}
+      <button type="button" tabindex="-1" class="ml-2 shrink-0" aria-label="Close professor list" onclick={close}
         ><AngleDownOutline class="h-4 w-4 rotate-180" /></button
       >
     </div>
@@ -104,6 +112,7 @@ Searchable professor selector with keyboard navigation.
       bind:this={list}
       id={`${id}-options`}
       role="listbox"
+      tabindex="-1"
       aria-label={label}
       class="custom-scrollbar border-outline bg-bg-primary absolute left-0 right-0 top-full z-20 max-h-72 overflow-y-auto rounded-b-lg border-2 border-t-0 shadow-lg"
     >

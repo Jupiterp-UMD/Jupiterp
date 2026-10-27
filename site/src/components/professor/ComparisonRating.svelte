@@ -3,7 +3,7 @@ This file is part of Jupiterp. For terms of use, please see LICENSE at
 https://github.com/atcupps/Jupiterp/LICENSE.
 -->
 <script lang="ts">
-  import { instructorBySlug } from '../../lib/api/JupiterpApi';
+  import { loadComparisonInstructor } from '../../lib/professor/Comparison';
   import { ratingBreakdown, type RatingBreakdown } from '../../lib/professor/ProfessorData';
   import StarRating from './StarRating.svelte';
 
@@ -16,7 +16,7 @@ https://github.com/atcupps/Jupiterp/LICENSE.
     let cancelled = false;
     rating = null;
     status = 'loading';
-    instructorBySlug(selectedSlug)
+    loadComparisonInstructor(selectedSlug)
       .then((instructor) => {
         if (cancelled) return;
         rating = instructor ? ratingBreakdown(instructor) : null;
