@@ -20,6 +20,7 @@ renders it.
   import GradeTrend from './GradeTrend.svelte';
   import ReviewForm from './ReviewForm.svelte';
   import ReviewList from './ReviewList.svelte';
+  import CompareWith from './CompareWith.svelte';
   import StarRating from './StarRating.svelte';
 
   interface Props {
@@ -167,7 +168,7 @@ renders it.
   >
     <!-- Once the bar sticks, the header has scrolled away, so the bar carries
            the name and rating to keep the reader oriented. -->
-    <div class="mx-auto flex w-full max-w-3xl flex-row items-center gap-4">
+    <div class="mx-auto flex w-full max-w-3xl flex-row flex-wrap items-center gap-2 sm:gap-4">
       <div class="shrink-0">
         {#if totalCourses.length > 1}
           <CoursePicker
@@ -192,7 +193,24 @@ renders it.
           >
         </div>
       {/if}
+      <div class="ml-auto">
+        <CompareWith
+          slug={data.instructor.slug}
+          name={data.instructor.name}
+          courses={allCourseCodes}
+          preferredCourse={selectedCode ?? initialCourse}
+        />
+      </div>
     </div>
+  </div>
+{:else if allCourseCodes.length > 0}
+  <div class="mt-6 flex justify-end">
+    <CompareWith
+      slug={data.instructor.slug}
+      name={data.instructor.name}
+      courses={allCourseCodes}
+      preferredCourse={selectedCode ?? initialCourse}
+    />
   </div>
 {/if}
 

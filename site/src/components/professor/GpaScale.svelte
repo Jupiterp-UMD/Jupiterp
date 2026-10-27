@@ -9,9 +9,8 @@ scale carries the comparison: every other instructor who taught it as a grey
 dot, and the course's overall GPA as a line.
 -->
 <script lang="ts">
-  import { courseGradeSummary, courseInstructorGradeSummary } from '../../lib/api/JupiterpApi';
-  import type { GradeSummary } from '../../lib/api/types';
-  import { MIN_GRADED_FOR_GPA } from '../../lib/course-planner/Grades';
+  import { loadComparisonProfessors } from '../../lib/professor/Comparison';
+  import { calculateGpaWithoutActiveProf, hasEnoughForGpa } from '../../lib/course-planner/Grades';
 
   interface Props {
     gpa: number;
@@ -26,58 +25,33 @@ dot, and the course's overall GPA as a line.
     others: number[];
   }
 
-  // eslint-disable-next-line svelte/prefer-svelte-reactivity
-  const cache = new Map<string, Comparison>();
   let comparison = $state<Comparison | null>(null);
-  let requestId = 0;
-
-  function calculateGpaWithoutActiveProf(
-    course: GradeSummary | undefined,
-    own: GradeSummary | undefined
-  ): number | null {
-    if (course?.gpa == null) return null;
-    if (own?.gpa == null) return Number(course.gpa);
-    const restGraded = course.graded - own.graded;
-    if (restGraded < MIN_GRADED_FOR_GPA) return null;
-    return (Number(course.gpa) * course.graded - Number(own.gpa) * own.graded) / restGraded;
-  }
-
-  async function loadComparison(code: string): Promise<Comparison> {
-    const [coursePage, instructorPage] = await Promise.all([
-      courseGradeSummary({ courseCodes: code }),
-      courseInstructorGradeSummary({ courseCodes: code }),
-    ]);
-    const courseRow = coursePage.data[0];
-    const own = instructorPage.data.find((row) => row.instructor_slug === instructorSlug);
-    return {
-      courseGpa: calculateGpaWithoutActiveProf(courseRow, own),
-      others: instructorPage.data
-        .filter((row) => row.instructor_slug !== instructorSlug && row.gpa !== null && row.graded >= MIN_GRADED_FOR_GPA)
-        .map((row) => Number(row.gpa)),
-    };
-  }
 
   $effect(() => {
     const code = courseCode;
-    const id = ++requestId;
-    if (code === null) {
-      comparison = null;
-      return;
-    }
-    const cached = cache.get(code);
-    if (cached) {
-      comparison = cached;
-      return;
-    }
+    const slug = instructorSlug;
+    let cancelled = false;
     comparison = null;
-    loadComparison(code)
-      .then((result) => {
-        cache.set(code, result);
-        if (id === requestId) {
-          comparison = result;
-        }
+    if (code === null) return;
+    loadComparisonProfessors(code)
+      .then(({ professors, overall }) => {
+        if (cancelled) return;
+        comparison = {
+          courseGpa: calculateGpaWithoutActiveProf(
+            overall,
+            professors.find((professor) => professor.slug === slug)?.distribution
+          ),
+          others: professors.flatMap((professor) =>
+            professor.slug !== slug && professor.distribution && hasEnoughForGpa(professor.distribution)
+              ? [professor.distribution.gpa]
+              : []
+          ),
+        };
       })
       .catch((error) => console.error('Course comparison failed:', error));
+    return () => {
+      cancelled = true;
+    };
   });
 
   const MIN = 2;
@@ -87,7 +61,9 @@ dot, and the course's overall GPA as a line.
   }
 
   let delta = $derived(
-    comparison?.courseGpa == null ? null : Math.round(((gpa - comparison.courseGpa) / comparison.courseGpa) * 100)
+    comparison?.courseGpa == null || comparison.courseGpa === 0
+      ? null
+      : Math.round(((gpa - comparison.courseGpa) / comparison.courseGpa) * 100)
   );
 </script>
 

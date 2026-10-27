@@ -24,6 +24,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       link: '/professors',
       text: 'Professors',
       children: [
+        { link: '/professors/compare', text: 'Compare Professors' },
         { link: '/review/withdraw', text: 'Withdraw Review' },
         { link: '/review-policy', text: 'Review Policy' },
       ],
