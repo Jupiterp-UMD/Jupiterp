@@ -9,6 +9,8 @@ scale carries the comparison: every other instructor who taught it as a grey
 dot, and the course's overall GPA as a line.
 -->
 <script lang="ts">
+  import { resolve } from '$app/paths';
+  import { courseQuery } from '../../lib/professor/ProfessorData';
   import { loadComparisonProfessors } from '../../lib/professor/Comparison';
   import { calculateGpaWithoutActiveProf, hasEnoughForGpa } from '../../lib/course-planner/Grades';
 
@@ -22,7 +24,7 @@ dot, and the course's overall GPA as a line.
 
   interface Comparison {
     courseGpa: number | null;
-    others: number[];
+    others: { slug: string; name: string; gpa: number }[];
   }
 
   let comparison = $state<Comparison | null>(null);
@@ -43,7 +45,7 @@ dot, and the course's overall GPA as a line.
           ),
           others: professors.flatMap((professor) =>
             professor.slug !== slug && professor.distribution && hasEnoughForGpa(professor.distribution)
-              ? [professor.distribution.gpa]
+              ? [{ slug: professor.slug, name: professor.name, gpa: professor.distribution.gpa }]
               : []
           ),
         };
@@ -90,24 +92,43 @@ dot, and the course's overall GPA as a line.
     <div class="relative h-7">
       <div class="bg-outline top-3.25 absolute inset-x-0 h-0.5 rounded"></div>
       {#if comparison !== null}
-        {#each comparison.others as other, i (i)}
-          <div
-            style="left: {pos(other)}%"
-            class="border-text-secondary bg-bg-secondary absolute top-2 -ml-1.5 h-3 w-3 rounded-full border-2"
-            title="Another instructor: {other.toFixed(2)}"
-          ></div>
+        {#each comparison.others as other (other.slug)}
+          <a
+            href="{resolve('/professor/[slug]', { slug: other.slug })}{courseQuery(courseCode)}"
+            data-sveltekit-preload-data="off"
+            style:left={`${pos(other.gpa)}%`}
+            class="group/dot focus-visible:outline-orange absolute top-1.5 -ml-2 flex h-4 w-4 items-center justify-center rounded-full hover:z-20 focus-visible:z-20 focus-visible:outline-2 focus-visible:outline-offset-2"
+            aria-label={`${other.name}: ${other.gpa.toFixed(2)} average GPA in ${courseCode}. View professor.`}
+          >
+            <span
+              class="border-text-secondary bg-bg-secondary group-hover/dot:border-orange group-focus-visible/dot:border-orange h-3 w-3 rounded-full border-2"
+            ></span>
+            <span
+              aria-hidden="true"
+              class="bg-text-primary text-bg-primary pointer-events-none invisible absolute bottom-full mb-2 w-max max-w-[min(16rem,calc(100vw-3rem))] rounded-lg px-3 py-2 text-center text-sm opacity-0 shadow-lg group-hover/dot:visible group-hover/dot:opacity-100 group-focus-visible/dot:visible group-focus-visible/dot:opacity-100 {pos(
+                other.gpa
+              ) < 20
+                ? 'left-0'
+                : pos(other.gpa) > 80
+                  ? 'right-0'
+                  : 'left-1/2 -translate-x-1/2'}"
+            >
+              <span class="block font-semibold">{other.name}</span>
+              <span class="block">{other.gpa.toFixed(2)} average GPA</span>
+            </span>
+          </a>
         {/each}
         {#if comparison.courseGpa !== null}
           <div
             style="left: {pos(comparison.courseGpa)}%"
-            class="bg-text-primary absolute top-0.5 -ml-px h-6 w-0.5"
+            class="bg-text-primary pointer-events-none absolute top-0.5 -ml-px h-6 w-0.5"
             title="Other instructors' average: {comparison.courseGpa.toFixed(2)}"
           ></div>
         {/if}
       {/if}
       <div
         style="left: {pos(gpa)}%"
-        class="bg-orange ring-orange/20 top-1.25 -ml-2.25 h-4.5 w-4.5 absolute rounded-full"
+        class="bg-orange ring-orange/20 top-1.25 -ml-2.25 h-4.5 w-4.5 pointer-events-none absolute rounded-full"
       ></div>
     </div>
     <div class="text-text-secondary flex flex-row justify-between text-sm">
