@@ -13,11 +13,13 @@ renders it.
   import { untrack } from 'svelte';
   import { fade } from 'svelte/transition';
   import { hasEnoughForGpa } from '../../lib/course-planner/Grades';
-  import { ratingBreakdown, type ProfessorData } from '../../lib/professor/ProfessorData';
+  import type { ProfessorData } from '../../lib/professor/ProfessorData';
+  import { ratingBreakdown } from '../../lib/professor/Rating';
   import CoursePicker from './CoursePicker.svelte';
   import GpaScale from './GpaScale.svelte';
   import GradeDistribution from './GradeDistribution.svelte';
   import GradeTrend from './GradeTrend.svelte';
+  import RatingBreakdownCard from './RatingBreakdownCard.svelte';
   import ReviewForm from './ReviewForm.svelte';
   import ReviewList from './ReviewList.svelte';
   import CompareWith from './CompareWith.svelte';
@@ -105,6 +107,8 @@ renders it.
   let showForm = $state(false);
   let reviewSent = $state(false);
 
+  let reviewCount = $derived(rating.jupiterpCount + rating.planetterpCount);
+
   // For the hero section wrapping (68px + 2 error margins)
   let heroSectionHeight = $state(0);
   let isWrapped = $derived(heroSectionHeight > 70);
@@ -128,32 +132,38 @@ renders it.
     </div>
   </div>
 
-  <!-- Dynamic padding and item placement toggled exactly by the wrap state -->
-  <button
-    onclick={scrollToReviews}
+  <!-- Dynamic padding and item placement toggled exactly by the wrap state.
+       A div rather than one big button: the breakdown's info button sits
+       inside it, and a button cannot contain another. The count and the stars
+       are each their own button to the reviews instead. -->
+  <section
     aria-label="Rating"
     class="flex shrink-0 flex-col items-end gap-x-2 sm:w-auto"
     class:w-full={isWrapped}
     class:justify-between={isWrapped}
     class:flex-row-reverse={isWrapped}
   >
-    {#if rating.displayable && rating.combined !== null}
-      <span class="whitespace-nowrap pb-0.5 pt-2.5 text-sm"
-        >{rating.jupiterpCount + rating.planetterpCount} reviews</span
-      >
-      <div class="flex flex-row items-center gap-3">
-        <StarRating value={rating.combined} size="text-2xl" />
-        <div class="flex flex-row items-baseline gap-1.5">
-          <span class="text-orange whitespace-nowrap text-2xl font-bold">{rating.combined.toFixed(1)}</span>
+    {#if rating.displayable && rating.display !== null}
+      <span class="flex flex-row items-center gap-1.5 pb-0.5 pt-2.5">
+        <button onclick={scrollToReviews} class="whitespace-nowrap text-sm hover:underline">
+          {reviewCount}
+          {reviewCount === 1 ? 'review' : 'reviews'}
+        </button>
+        <RatingBreakdownCard {rating} />
+      </span>
+      <button onclick={scrollToReviews} class="flex flex-row items-center gap-3">
+        <StarRating value={rating.display} size="text-2xl" />
+        <span class="flex flex-row items-baseline gap-1.5">
+          <span class="text-orange whitespace-nowrap text-2xl font-bold">{rating.display.toFixed(1)}</span>
           <span class="text-text-secondary whitespace-nowrap text-sm">out of 5</span>
-        </div>
-      </div>
+        </span>
+      </button>
     {:else}
       <!-- Needs two elements to maintain the layout -->
       <span></span>
       <p class="text-text-secondary whitespace-nowrap py-2 text-sm">Not enough reviews yet.</p>
     {/if}
-  </button>
+  </section>
 </section>
 
 {#if totalCourses.length > 0}
@@ -182,14 +192,14 @@ renders it.
           </div>
         {/if}
       </div>
-      {#if stuck && rating.displayable && rating.combined !== null}
+      {#if stuck && rating.displayable && rating.display !== null}
         <div class="flex min-w-0 flex-1 flex-row items-center justify-end gap-2" transition:fade={{ duration: 150 }}>
           <span class="min-w-0 truncate text-lg font-bold max-sm:hidden">{data.instructor.name}</span>
           <span class="bg-outline h-8 w-px shrink-0 max-sm:hidden" aria-hidden="true"></span>
           <button
             onclick={scrollToReviews}
             class="text-orange hover:text-orange/80 shrink-0 text-lg font-bold"
-            aria-hidden="true">★ {rating.combined.toFixed(1)}</button
+            aria-hidden="true">★ {rating.display.toFixed(1)}</button
           >
         </div>
       {/if}

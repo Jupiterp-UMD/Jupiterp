@@ -5,10 +5,11 @@
  *
  */
 
-import type { Course, Department, Instructor } from '@jupiterp/jupiterp';
+import type { Course, Department } from '@jupiterp/jupiterp';
 import { writable, type Writable } from 'svelte/store';
 import type { CourseSectionPair, FilterParams, ScheduleSelection, StoredSchedule } from '../types';
 import type { CourseGrades } from '../lib/course-planner/GradesLoader';
+import type { PlannerInstructor } from '../lib/api/types';
 
 /**
  * Shared planner state for components.
@@ -21,11 +22,11 @@ export const PlannerState: Writable<{
   chainScrollParent: null,
 });
 
-/** `Record<string, Instructor>` for getting instructor data from names
+/** `Record<string, PlannerInstructor>` for getting instructor data from names
 /* Initially set to an empty record since the data used here is
 /* loaded in `+page.svelte`.
  */
-export const ProfsLookupStore: Writable<Record<string, Instructor>> = writable({});
+export const ProfsLookupStore: Writable<Record<string, PlannerInstructor>> = writable({});
 
 /** Track which section is being hovered by the user in Course Search */
 export const HoveredSectionStore: Writable<ScheduleSelection | null> = writable(null);
