@@ -96,3 +96,32 @@ export async function loadComparisonProfessors(code: string) {
     warning: warnings.join(' '),
   };
 }
+
+export interface ProfessorGpa {
+  slug: string;
+  name: string;
+  gpa: number;
+}
+
+export function groupGpaDots(professors: ProfessorGpa[], scaleWidth: number) {
+  const width = Math.max(44, scaleWidth);
+  const position = (gpa: number) => Math.max(22, Math.min(width - 22, ((gpa - 2) / 2) * width));
+  const groups: ProfessorGpa[][] = [];
+  for (const professor of [...professors].sort((a, b) => a.gpa - b.gpa)) {
+    const group = groups.at(-1);
+    const previous = group?.at(-1);
+    if (
+      group &&
+      previous &&
+      (professor.gpa - previous.gpa <= 0.04 + Number.EPSILON || position(professor.gpa) - position(previous.gpa) <= 44)
+    ) {
+      group.push(professor);
+    } else {
+      groups.push([professor]);
+    }
+  }
+  return groups.map((professors) => ({
+    professors,
+    gpa: professors.reduce((sum, professor) => sum + professor.gpa, 0) / professors.length,
+  }));
+}

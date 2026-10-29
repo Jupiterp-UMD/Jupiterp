@@ -9,7 +9,7 @@ import { loadCourseGradeSummaries } from '../course-planner/GradesLoader';
 import { toDistribution, mergeDistributions, calculateGpaWithoutActiveProf } from '../course-planner/Grades';
 import type { Section } from '@jupiterp/jupiterp';
 import type { CourseInstructorGradeSummary } from '../api/types';
-import { comparisonProfessors, loadComparisonProfessors, loadComparisonInstructor } from './Comparison';
+import { comparisonProfessors, loadComparisonProfessors, loadComparisonInstructor, groupGpaDots } from './Comparison';
 
 jest.mock('../client', () => ({ client: { coursesWithSections: jest.fn() } }));
 jest.mock('../api/JupiterpApi', () => ({ instructorBySlug: jest.fn() }));
@@ -156,5 +156,35 @@ describe('comparison loading', () => {
     await expect(loadComparisonInstructor('retry-professor')).rejects.toThrow('offline');
     await expect(loadComparisonInstructor('retry-professor')).resolves.toBeNull();
     expect(instructor).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('touch GPA groups', () => {
+  const professor = (slug: string, gpa: number) => ({ slug, name: slug, gpa });
+
+  test('retains every professor without mutating input order', () => {
+    const input = [professor('high', 3.8), professor('close', 3.03), professor('low', 3)];
+    const groups = groupGpaDots(input, 1000);
+    expect(groups.map((group) => group.professors.map((entry) => entry.slug))).toEqual([['low', 'close'], ['high']]);
+    expect(groups[0].gpa).toBeCloseTo(3.015);
+    expect(input.map((entry) => entry.slug)).toEqual(['high', 'close', 'low']);
+  });
+
+  test('groups markers whose tap targets would overlap on a narrow scale', () => {
+    const groups = groupGpaDots([professor('a', 2.5), professor('b', 2.65), professor('c', 3.5)], 288);
+    expect(groups.map((group) => group.professors.length)).toEqual([2, 1]);
+  });
+
+  test('groups dots clamped to either end of the scale', () => {
+    expect(
+      groupGpaDots([professor('a', 1), professor('b', 1.8), professor('c', 4), professor('d', 4.1)], 288).map(
+        (group) => group.professors.length
+      )
+    ).toEqual([2, 2]);
+  });
+
+  test('handles empty and single-professor scales', () => {
+    expect(groupGpaDots([], 0)).toEqual([]);
+    expect(groupGpaDots([professor('a', 3)], 0)[0].professors).toHaveLength(1);
   });
 });
