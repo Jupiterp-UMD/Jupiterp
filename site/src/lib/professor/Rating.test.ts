@@ -17,6 +17,7 @@ function instructor(overrides: Partial<InstructorFull>): InstructorFull {
     slug: 'joseph-conroy',
     name: 'Joseph Conroy',
     average_rating: null,
+    pt_slug: null,
     pt_average_rating: null,
     pt_review_count: null,
     pt_snapshot_at: null,
