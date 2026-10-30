@@ -6,9 +6,10 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 const isVercel = process.env.VERCEL === '1' || process.env.NOW_BUILDER === '1';
 
 /**
- * GitHub Pages serves static files only, from a project subpath
- * (`/<repo>`), so that build is a client-rendered SPA: every route falls back
- * to `404.html`, which GitHub Pages serves for unknown paths.
+ * GitHub Pages serves static files only, so that build is a client-rendered
+ * SPA: every route falls back to `404.html`, which GitHub Pages serves for
+ * unknown paths. It is served at the root of jupiterp.com; set `BASE_PATH`
+ * (e.g. `/Jupiterp`) only when deploying to a `<user>.github.io/<repo>` URL.
  */
 const isGhPages = process.env.GH_PAGES === '1';
 
@@ -25,7 +26,7 @@ const config = {
     adapter: pickAdapter(),
 
     paths: {
-      base: isGhPages ? (process.env.BASE_PATH ?? '/Jupiterp') : '',
+      base: isGhPages ? (process.env.BASE_PATH ?? '') : '',
     },
 
     prerender: {
