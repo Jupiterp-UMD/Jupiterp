@@ -1,7 +1,8 @@
 # Deploy the site to GitHub Pages as a client-rendered SPA.
 #
 # `GH_PAGES=1` switches svelte.config.js to adapter-static with a `404.html`
-# fallback and a `/<repo>` base path. GitHub Pages serves `404.html` for any
+# fallback. The site is served from the jupiterp.com custom domain, so it
+# lives at `/` and needs no base path. GitHub Pages serves `404.html` for any
 # path it has no file for, so deep links like `/professor/<slug>` still boot
 # the app. `index.html` is the same file so the root returns 200, not 404.
 name: Deploy to GitHub Pages
@@ -44,7 +45,6 @@ jobs:
         working-directory: ./site
         env:
           GH_PAGES: '1'
-          BASE_PATH: /${{ github.event.repository.name }}
 
       - name: Add index.html
         run: cp site/build/404.html site/build/index.html
