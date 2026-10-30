@@ -5,6 +5,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
 -->
 <script lang="ts">
+  import { base } from '$app/paths';
   import { page } from '$app/state';
   import NavBarLink from './NavBarLink.svelte';
   import DarkModeToggle from './DarkModeToggle.svelte';
@@ -42,7 +43,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     },
   ];
 
-  const currentPath: string = $derived(page.url.pathname);
+  // Strip the base path (set on GitHub Pages) so it compares against `link`.
+  const currentPath: string = $derived(page.url.pathname.slice(base.length) || '/');
 </script>
 
 <!-- [START] Nav Menu Toggle -->

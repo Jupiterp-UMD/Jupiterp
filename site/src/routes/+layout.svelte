@@ -5,7 +5,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
  -->
 <script lang="ts">
-  import { resolve } from '$app/paths';
+  import { asset, resolve } from '$app/paths';
   import '../app.css';
   import Analytics from '../components/layout/Analytics.svelte';
   import SiteLinks from '../components/layout/SiteLinks.svelte';
@@ -23,7 +23,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <header class="fixed z-50 flex h-12 w-full flex-row justify-between border-b-2 px-4">
   <a href={resolvedHomeLink} aria-label="Home" rel="canonical" class="flex py-1">
     <img
-      src="/logo.svg"
+      src={asset('/logo.svg')}
       alt="Jupiterp Logo"
       width="143.75"
       height="38"
