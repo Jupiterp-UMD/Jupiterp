@@ -1,0 +1,65 @@
+# Deploy the site to GitHub Pages as a client-rendered SPA.
+#
+# `GH_PAGES=1` switches svelte.config.js to adapter-static with a `404.html`
+# fallback and a `/<repo>` base path. GitHub Pages serves `404.html` for any
+# path it has no file for, so deep links like `/professor/<slug>` still boot
+# the app. `index.html` is the same file so the root returns 200, not 404.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: bun install
+        working-directory: ./site
+
+      - name: Build
+        run: bun run build
+        working-directory: ./site
+        env:
+          GH_PAGES: '1'
+          BASE_PATH: /${{ github.event.repository.name }}
+
+      - name: Add index.html
+        run: cp site/build/404.html site/build/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
