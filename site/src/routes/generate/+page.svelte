@@ -7,6 +7,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <script lang="ts">
   import { onMount } from 'svelte';
   import { loadInstructorLookup } from '$lib/course-planner/CourseSearch';
+  import { SELECTED_SECTIONS_KEY } from '$lib/course-planner/SchedulePersistence';
+  import { syncFromPlanner } from '$lib/schedule-generator/PlannerSync';
   import { client } from '$lib/client';
   import { DepartmentsStore } from '../../stores/CoursePlannerStores';
   import CourseWishlist from '../../components/schedule-generator/CourseWishlist.svelte';
@@ -23,11 +25,22 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     }
   }
 
+  // Storage events fire when the planner changes in another tab. The key is
+  // null when storage is cleared.
+  function handleStorage(event: StorageEvent) {
+    if (event.key === SELECTED_SECTIONS_KEY || event.key === null) {
+      syncFromPlanner();
+    }
+  }
+
   onMount(() => {
     loadInstructorLookup();
     fetchDeptCodes();
+    syncFromPlanner();
   });
 </script>
+
+<svelte:window onstorage={handleStorage} />
 
 <svelte:head>
   <title>Schedule Generator | Jupiterp</title>
