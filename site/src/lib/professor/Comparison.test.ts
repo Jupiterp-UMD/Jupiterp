@@ -175,6 +175,12 @@ describe('touch GPA groups', () => {
     expect(groups.map((group) => group.professors.length)).toEqual([2, 1]);
   });
 
+  test('uses the comparison scale range when grouping touch targets', () => {
+    const input = [professor('a', 1.5), professor('b', 1.7)];
+    expect(groupGpaDots(input, 400, 1)).toHaveLength(1);
+    expect(groupGpaDots(input, 1000, 1)).toHaveLength(2);
+  });
+
   test('groups dots clamped to either end of the scale', () => {
     expect(
       groupGpaDots([professor('a', 1), professor('b', 1.8), professor('c', 4), professor('d', 4.1)], 288).map(
