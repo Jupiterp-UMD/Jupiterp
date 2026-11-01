@@ -31,7 +31,9 @@ Searchable professor selector with keyboard navigation.
       .filter(
         (professor) => professor.slug !== excluded && professor.name.toLowerCase().includes(query.trim().toLowerCase())
       )
-      .sort((a, b) => Number(b.slug === selected) - Number(a.slug === selected))
+      .sort(
+        (a, b) => Number(b.slug === selected) - Number(a.slug === selected) || Number(b.current) - Number(a.current)
+      )
   );
 
   async function show() {
@@ -127,12 +129,18 @@ Searchable professor selector with keyboard navigation.
           class:bg-hover={index === active}
           class:text-orange={professor.slug === selected}
           class:font-semibold={professor.slug === selected}
-          class:underline={professor.slug === selected}
+          class:text-text-secondary={!professor.current && professor.slug !== selected}
+          class:border-t={index > 0 && !professor.current && options[index - 1].current}
+          class:border-outline={index > 0 && !professor.current && options[index - 1].current}
           onpointermove={() => (active = index)}
           onclick={() => choose(professor.slug)}
         >
           <span class="block">{professor.name}</span>
-          <span class="text-text-secondary block text-xs no-underline"
+          <span
+            class="block text-sm"
+            class:text-success={professor.current}
+            class:font-semibold={professor.current}
+            class:text-text-secondary={!professor.current}
             >{professor.current ? 'Teaching now' : 'Previously taught'}</span
           >
         </button>

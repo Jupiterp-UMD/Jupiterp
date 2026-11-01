@@ -8,11 +8,18 @@ Paired, stacked grade bars on one percentage scale.
   import {
     BUCKET_LETTERS,
     GRADE_BUCKETS,
-    bucketPercent,
     formatSemesterRange,
+    type GradeBucket,
+    type GradeDistribution,
     type LetterGrade,
   } from '../../lib/course-planner/Grades';
   import type { ComparisonProfessor } from '../../lib/professor/Comparison';
+
+  function formatPercent(distribution: GradeDistribution, bucket: GradeBucket): string {
+    const count = distribution.buckets[bucket];
+    const percent = (count / distribution.barTotal) * 100;
+    return count > 0 && percent < 0.05 ? '<0.1' : percent.toFixed(1);
+  }
 
   let { professors }: { professors: (ComparisonProfessor | undefined)[] } = $props();
   let series = $derived(professors.filter((professor): professor is ComparisonProfessor => professor !== undefined));
@@ -98,7 +105,7 @@ Paired, stacked grade bars on one percentage scale.
             {@const percent = available ? (distribution.buckets[bucket] / distribution.barTotal) * 100 : 0}
             <div
               class="flex items-center gap-2"
-              aria-label={`${professor.name}, ${bucket}: ${available ? `${bucketPercent(distribution, bucket)}%` : 'unavailable'}`}
+              aria-label={`${professor.name}, ${bucket}: ${available ? `${formatPercent(distribution, bucket)}%` : 'unavailable'}`}
             >
               <div class="bg-outline/40 h-3 min-w-0 flex-1 overflow-hidden rounded-sm">
                 <div
@@ -107,8 +114,8 @@ Paired, stacked grade bars on one percentage scale.
                   style:background={index === 0 ? 'var(--orange)' : '#38bdf8'}
                 ></div>
               </div>
-              <span class="w-10 shrink-0 text-right text-xs font-semibold tabular-nums"
-                >{available ? `${bucketPercent(distribution, bucket)}%` : '—'}</span
+              <span class="w-12 shrink-0 text-right text-xs font-semibold tabular-nums"
+                >{available ? `${formatPercent(distribution, bucket)}%` : '—'}</span
               >
             </div>
           {/each}
@@ -127,12 +134,12 @@ Paired, stacked grade bars on one percentage scale.
             {@const percent = available ? (distribution.buckets[bucket] / distribution.barTotal) * 100 : 0}
             <div class="relative min-w-0 flex-1" style:height={`${(percent / maxPercent) * 85}%`}>
               <span class="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-semibold"
-                >{available ? `${bucketPercent(distribution, bucket)}%` : '—'}</span
+                >{available ? `${formatPercent(distribution, bucket)}%` : '—'}</span
               >
               <div
                 class="flex h-full flex-col overflow-hidden rounded-t-md"
                 role="img"
-                aria-label={`${professor.name}, ${bucket}: ${available ? `${bucketPercent(distribution, bucket)}%` : 'unavailable'}`}
+                aria-label={`${professor.name}, ${bucket}: ${available ? `${formatPercent(distribution, bucket)}%` : 'unavailable'}`}
               >
                 {#if available}
                   {#each BUCKET_LETTERS[bucket] as letter (letter)}
