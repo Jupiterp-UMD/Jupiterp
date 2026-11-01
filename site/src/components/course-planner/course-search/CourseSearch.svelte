@@ -52,7 +52,11 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   });
 
   let searchInput = $state('');
-  let searchResults: Course[] = $state([]);
+  // `$state.raw`, not `$state`: plain `$state` deep-proxies every course and
+  // section each time the store fires, and the fresh proxy identities make the
+  // keyed `{#each}` below re-render every listing even when the results are
+  // unchanged -- ~600ms per keystroke for a large department like ENGL.
+  let searchResults: Course[] = $state.raw([]);
   $effect(() => {
     return SearchResultsStore.subscribe((results) => {
       searchResults = results;
