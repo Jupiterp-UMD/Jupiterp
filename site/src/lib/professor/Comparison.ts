@@ -7,7 +7,7 @@
 import { client } from '../client';
 import { instructorBySlug } from '../api/JupiterpApi';
 import { loadCourseGradeSummaries } from '../course-planner/GradesLoader';
-import type { Section } from '@jupiterp/jupiterp';
+import { SortBy, type CourseMinified, type Section } from '@jupiterp/jupiterp';
 import type { CourseInstructorGradeSummary } from '../api/types';
 import { toDistribution, mergeDistributions, type GradeDistribution } from '../course-planner/Grades';
 
@@ -47,6 +47,26 @@ export function comparisonProfessors(
     });
   }
   return [...professors.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+const suggestions = new Map<string, Promise<CourseMinified[]>>();
+
+export function loadCourseSuggestions(prefix: string): Promise<CourseMinified[]> {
+  let pending = suggestions.get(prefix);
+  if (!pending) {
+    pending = client
+      .minifiedCourses({ prefix, limit: 50, sortBy: new SortBy().ascending('course_code') })
+      .then((response) => {
+        if (!response.ok() || response.data == null) throw new Error(`Course suggestions failed for ${prefix}`);
+        return response.data;
+      })
+      .catch((error) => {
+        suggestions.delete(prefix);
+        throw error;
+      });
+    suggestions.set(prefix, pending);
+  }
+  return pending;
 }
 
 const currentCourses = new Map<string, ReturnType<typeof client.coursesWithSections>>();

@@ -12,8 +12,10 @@ Compare two professors within a single course.
   import {
     loadComparisonProfessors,
     loadComparisonInstructor,
+    loadCourseSuggestions,
     type ComparisonProfessor,
   } from '$lib/professor/Comparison';
+  import type { CourseMinified } from '@jupiterp/jupiterp';
   import { hasEnoughForGpa, calculateGpaWithoutActiveProf, type GradeDistribution } from '$lib/course-planner/Grades';
   import ComparisonDistribution from '../../../components/professor/ComparisonDistribution.svelte';
   import ReviewList from '../../../components/professor/ReviewList.svelte';
@@ -36,6 +38,13 @@ Compare two professors within a single course.
   let dataWarning = '';
   let requestId = 0;
 
+  let suggestions = $state<CourseMinified[]>([]);
+  let suggestionsOpen = $state(false);
+  let activeSuggestion = $state(-1);
+  let suggestionTimer: ReturnType<typeof setTimeout> | undefined;
+  let suggestionRequest = 0;
+  let showSuggestions = $derived(suggestionsOpen && suggestions.length > 0);
+
   let left = $derived(professors.find((professor) => professor.slug === leftSlug));
   let right = $derived(professors.find((professor) => professor.slug === rightSlug));
   let selected = $derived([left, right]);
@@ -47,6 +56,58 @@ Compare two professors within a single course.
 
   onDestroy(() => {
     requestId++;
+    clearTimeout(suggestionTimer);
+  });
+
+  function updateSuggestions() {
+    clearTimeout(suggestionTimer);
+    activeSuggestion = -1;
+    const prefix = input.replace(/\s+/g, '').toUpperCase();
+    const id = ++suggestionRequest;
+    if (prefix.length < 2) {
+      suggestions = [];
+      return;
+    }
+    suggestionsOpen = true;
+    suggestionTimer = setTimeout(async () => {
+      try {
+        const results = await loadCourseSuggestions(prefix);
+        if (id === suggestionRequest) suggestions = results;
+      } catch {
+        if (id === suggestionRequest) suggestions = [];
+      }
+    }, 150);
+  }
+
+  function chooseSuggestion(code: string) {
+    clearTimeout(suggestionTimer);
+    suggestionRequest++;
+    suggestionsOpen = false;
+    input = code;
+    validation = '';
+    if (!syncUrl(code)) void loadCourse(code);
+  }
+
+  function onCourseKeydown(event: KeyboardEvent) {
+    if (!showSuggestions) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      activeSuggestion = (activeSuggestion + 1) % suggestions.length;
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      activeSuggestion = activeSuggestion <= 0 ? suggestions.length - 1 : activeSuggestion - 1;
+    } else if (event.key === 'Enter' && activeSuggestion >= 0) {
+      event.preventDefault();
+      chooseSuggestion(suggestions[activeSuggestion].courseCode);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      suggestionsOpen = false;
+    }
+  }
+
+  $effect(() => {
+    if (activeSuggestion < 0) return;
+    document.getElementById(`course-suggestion-${activeSuggestion}`)?.scrollIntoView({ block: 'nearest' });
   });
 
   function syncUrl(code: string, left = '', right = '') {
@@ -67,6 +128,7 @@ Compare two professors within a single course.
 
   function submitCourse(event: SubmitEvent) {
     event.preventDefault();
+    suggestionsOpen = false;
     const code = input.replace(/\s+/g, '').toUpperCase();
     if (!/^[A-Z]{4}\d{3}[A-Z]?$/.test(code)) {
       validation = 'Enter a course code, such as CMSC132.';
@@ -199,15 +261,52 @@ Compare two professors within a single course.
     <form onsubmit={submitCourse} class="border-outline rounded-xl border p-4 sm:p-6">
       <label for="comparison-course" class="mb-2 block font-semibold">Choose a course</label>
       <div class="flex max-w-xl flex-col gap-3 sm:flex-row">
-        <input
-          id="comparison-course"
-          class="border-outline bg-bg-primary focus:border-orange min-w-0 flex-1 rounded-lg border-2 px-4 py-2 uppercase outline-none"
-          bind:value={input}
-          placeholder="e.g. CMSC132"
-          autocomplete="off"
-          aria-describedby={validation ? 'course-validation' : undefined}
-          aria-invalid={!!validation}
-        />
+        <div class="relative min-w-0 flex-1">
+          <input
+            id="comparison-course"
+            class="border-outline bg-bg-primary focus:border-orange w-full rounded-lg border-2 px-4 py-2 uppercase outline-none"
+            bind:value={input}
+            oninput={updateSuggestions}
+            onkeydown={onCourseKeydown}
+            onfocus={() => (suggestionsOpen = true)}
+            onblur={() => (suggestionsOpen = false)}
+            placeholder="e.g. CMSC132"
+            autocomplete="off"
+            role="combobox"
+            aria-expanded={showSuggestions}
+            aria-controls="course-suggestions"
+            aria-autocomplete="list"
+            aria-activedescendant={showSuggestions && activeSuggestion >= 0
+              ? `course-suggestion-${activeSuggestion}`
+              : undefined}
+            aria-describedby={validation ? 'course-validation' : undefined}
+            aria-invalid={!!validation}
+          />
+          {#if showSuggestions}
+            <ul
+              id="course-suggestions"
+              role="listbox"
+              class="border-outline bg-bg-primary custom-scrollbar absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-lg border-2 shadow-lg"
+            >
+              {#each suggestions as suggestion, i (suggestion.courseCode)}
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <li
+                  id="course-suggestion-{i}"
+                  role="option"
+                  aria-selected={i === activeSuggestion}
+                  class="cursor-pointer select-none px-4 py-2"
+                  class:bg-hover={i === activeSuggestion}
+                  onpointermove={() => (activeSuggestion = i)}
+                  onpointerdown={(event) => event.preventDefault()}
+                  onclick={() => chooseSuggestion(suggestion.courseCode)}
+                >
+                  <span class="font-semibold">{suggestion.courseCode}</span>
+                  <span class="ml-2">{suggestion.name}</span>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
         <button type="submit" class="bg-orange rounded-lg px-5 py-2 font-semibold text-black">Find professors</button>
       </div>
       {#if validation}<p id="course-validation" class="text-danger mt-2 text-sm" role="alert">{validation}</p>{/if}
