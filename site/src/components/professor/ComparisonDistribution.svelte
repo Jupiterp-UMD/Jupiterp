@@ -2,7 +2,7 @@
 This file is part of Jupiterp. For terms of use, please see LICENSE at
 https://github.com/atcupps/Jupiterp/LICENSE.
 
-Paired, stacked grade bars on one percentage scale.
+Grouped, stacked grade bars on one percentage scale, one colour per comparison slot.
 -->
 <script lang="ts">
   import {
@@ -13,7 +13,7 @@ Paired, stacked grade bars on one percentage scale.
     type GradeDistribution,
     type LetterGrade,
   } from '../../lib/course-planner/Grades';
-  import type { ComparisonProfessor } from '../../lib/professor/Comparison';
+  import { PROFESSOR_COLORS, type ComparisonProfessor } from '../../lib/professor/Comparison';
 
   function formatPercent(distribution: GradeDistribution, bucket: GradeBucket): string {
     const count = distribution.buckets[bucket];
@@ -22,7 +22,8 @@ Paired, stacked grade bars on one percentage scale.
   }
 
   let { professors }: { professors: (ComparisonProfessor | undefined)[] } = $props();
-  let series = $derived(professors.filter((professor): professor is ComparisonProfessor => professor !== undefined));
+  let series = $derived(professors.flatMap((professor, slot) => (professor ? [{ professor, slot }] : [])));
+  let compact = $derived(series.length > 2);
   let chart: HTMLDivElement | undefined = $state();
   let tip = $state<{
     name: string;
@@ -59,7 +60,7 @@ Paired, stacked grade bars on one percentage scale.
   let maxPercent = $derived(
     Math.max(
       1,
-      ...series.flatMap(({ distribution }) =>
+      ...series.flatMap(({ professor: { distribution } }) =>
         distribution && distribution.barTotal > 0
           ? GRADE_BUCKETS.map((bucket) => (distribution.buckets[bucket] / distribution.barTotal) * 100)
           : []
@@ -67,22 +68,25 @@ Paired, stacked grade bars on one percentage scale.
     )
   );
 
-  function color(letter: LetterGrade, index: number): string {
-    if (letter === 'W') return index === 0 ? 'var(--mid-gray)' : '#647f98';
+  function color(letter: LetterGrade, slot: number): string {
+    const palette = PROFESSOR_COLORS[slot];
+    if (letter === 'W') return palette.withdrawn;
     const shade = letter.endsWith('-') ? 2 : letter.endsWith('+') || letter === 'F' ? 0 : 1;
-    return (
-      index === 0 ? ['var(--grade-strong)', 'var(--grade-mid)', 'var(--grade-soft)'] : ['#0369a1', '#38bdf8', '#bae6fd']
-    )[shade];
+    return palette.shades[shade];
   }
 </script>
 
 <section aria-label="Grade distribution comparison" class="border-outline rounded-xl border p-4 sm:p-6">
   <h2 class="text-xl font-bold">Grade distribution</h2>
-  <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-8">
-    {#each series as professor, index (index)}
+  <div
+    class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-8"
+    class:lg:grid-cols-4={series.length === 4}
+    class:lg:grid-cols-3={series.length === 3}
+  >
+    {#each series as { professor, slot } (slot)}
       <div>
         <p class="flex items-center gap-2 font-semibold">
-          <span class="h-3 w-3 shrink-0 rounded-full" style:background={index === 0 ? 'var(--orange)' : '#38bdf8'}
+          <span class="h-3 w-3 shrink-0 rounded-full" style:background={PROFESSOR_COLORS[slot].dot}
           ></span>{professor.name}
         </p>
         <p class="text-text-secondary mt-1 text-sm">
@@ -99,7 +103,7 @@ Paired, stacked grade bars on one percentage scale.
       <div class="flex items-center gap-3">
         <span class="text-text-secondary w-4 shrink-0 text-sm font-semibold">{bucket}</span>
         <div class="min-w-0 flex-1 space-y-1.5">
-          {#each series as professor, index (index)}
+          {#each series as { professor, slot } (slot)}
             {@const distribution = professor.distribution}
             {@const available = distribution !== null && distribution.barTotal > 0}
             {@const percent = available ? (distribution.buckets[bucket] / distribution.barTotal) * 100 : 0}
@@ -111,7 +115,7 @@ Paired, stacked grade bars on one percentage scale.
                 <div
                   class="h-full rounded-sm"
                   style:width={`${percent}%`}
-                  style:background={index === 0 ? 'var(--orange)' : '#38bdf8'}
+                  style:background={PROFESSOR_COLORS[slot].dot}
                 ></div>
               </div>
               <span class="w-12 shrink-0 text-right text-xs font-semibold tabular-nums"
@@ -127,14 +131,17 @@ Paired, stacked grade bars on one percentage scale.
     <div bind:this={chart} class="relative mt-8 grid h-80 grid-cols-[repeat(5,minmax(0,1fr))_1rem_minmax(0,1fr)] gap-5">
       {#each GRADE_BUCKETS as bucket (bucket)}
         {#if bucket === 'W'}<div></div>{/if}
-        <div class="flex h-full items-end gap-2">
-          {#each series as professor, index (index)}
+        <div class="flex h-full items-end" class:gap-2={!compact} class:gap-1={compact}>
+          {#each series as { professor, slot } (slot)}
             {@const distribution = professor.distribution}
             {@const available = distribution !== null && distribution.barTotal > 0}
             {@const percent = available ? (distribution.buckets[bucket] / distribution.barTotal) * 100 : 0}
             <div class="relative min-w-0 flex-1" style:height={`${(percent / maxPercent) * 85}%`}>
-              <span class="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-semibold"
-                >{available ? `${formatPercent(distribution, bucket)}%` : '—'}</span
+              <span
+                class={[
+                  'absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-semibold',
+                  compact ? '-top-5 text-xs' : '-top-7 text-sm',
+                ]}>{available ? `${formatPercent(distribution, bucket)}%` : '—'}</span
               >
               <div
                 class="flex h-full flex-col overflow-hidden rounded-t-md"
@@ -146,7 +153,7 @@ Paired, stacked grade bars on one percentage scale.
                     <div
                       class="min-h-0 transition-[filter] hover:brightness-110"
                       style:flex={distribution.letters[letter]}
-                      style:background={color(letter, index)}
+                      style:background={color(letter, slot)}
                       role="presentation"
                       onmouseenter={(event) => showTip(professor, letter, event.currentTarget)}
                       onmouseleave={() => (tip = null)}

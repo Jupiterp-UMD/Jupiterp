@@ -2,7 +2,7 @@
 This file is part of Jupiterp. For terms of use, please see LICENSE at
 https://github.com/atcupps/Jupiterp/LICENSE.
 
-Compare two professors within a single course.
+Compare up to four professors within a single course, or list all of them.
 -->
 <script lang="ts">
   import { onDestroy, untrack } from 'svelte';
@@ -13,6 +13,8 @@ Compare two professors within a single course.
     loadComparisonProfessors,
     loadComparisonInstructor,
     loadCourseSuggestions,
+    MAX_COMPARED,
+    PROFESSOR_COLORS,
     type ComparisonProfessor,
   } from '$lib/professor/Comparison';
   import type { CourseMinified } from '@jupiterp/jupiterp';
@@ -21,13 +23,15 @@ Compare two professors within a single course.
   import ReviewList from '../../../components/professor/ReviewList.svelte';
   import ComparisonRating from '../../../components/professor/ComparisonRating.svelte';
   import ProfessorPicker from '../../../components/professor/ProfessorPicker.svelte';
+  import ProfessorTable from '../../../components/professor/ProfessorTable.svelte';
+
+  type View = 'current' | 'pick' | 'all';
 
   let input = $state('');
   let course = $state('');
   let professors = $state<ComparisonProfessor[]>([]);
-  let selectionSlugs = $state(['', '']);
-  let leftSlug = $derived(selectionSlugs[0]);
-  let rightSlug = $derived(selectionSlugs[1]);
+  let selectionSlugs = $state<string[]>(['', '']);
+  let view = $state<View>('current');
   let allReviews = $state(false);
   let reviewTab = $state(0);
   let status = $state<'idle' | 'loading' | 'loaded' | 'error'>('idle');
@@ -45,13 +49,31 @@ Compare two professors within a single course.
   let suggestionRequest = 0;
   let showSuggestions = $derived(suggestionsOpen && suggestions.length > 0);
 
-  let left = $derived(professors.find((professor) => professor.slug === leftSlug));
-  let right = $derived(professors.find((professor) => professor.slug === rightSlug));
-  let selected = $derived([left, right]);
-  let ready = $derived(left !== undefined && right !== undefined);
+  let selected = $derived(selectionSlugs.map((slug) => professors.find((professor) => professor.slug === slug)));
+  let compared = $derived(selected.flatMap((professor, slot) => (professor ? [{ professor, slot }] : [])));
+  let ready = $derived(compared.length >= 2);
+  let tabbedReviews = $derived(compared.length > 2);
+  let activeReviewTab = $derived(Math.min(reviewTab, Math.max(0, compared.length - 1)));
+  let currentCount = $derived(professors.filter((professor) => professor.current).length);
+  let activeView = $derived<View>(view === 'current' && professors.length > 0 && currentCount === 0 ? 'pick' : view);
+  let tableProfessors = $derived(
+    activeView === 'current' ? professors.filter((professor) => professor.current) : professors
+  );
+  let viewOptions = $derived<{ id: View; label: string }[]>([
+    { id: 'current', label: `All teaching now (${currentCount})` },
+    { id: 'pick', label: 'Pick professors' },
+    { id: 'all', label: `All professors (${professors.length})` },
+  ]);
   let plottedProfessors = $derived(professors.filter((professor) => gpaOf(professor) !== null));
   let scaleMin = $derived(
     Math.min(2, ...plottedProfessors.map((professor) => Math.floor(gpaOf(professor)!)), Math.floor(courseMean ?? 2))
+  );
+  let gpaScaleLabel = $derived(
+    [
+      `GPA scale from ${scaleMin} to 4 with ${plottedProfessors.length} professors`,
+      `Course mean: ${courseMean?.toFixed(2) ?? 'unavailable'}`,
+      ...compared.map(({ professor }) => `${professor.name}: ${gpaOf(professor)?.toFixed(2) ?? 'unavailable'}`),
+    ].join('. ') + '.'
   );
 
   onDestroy(() => {
@@ -85,7 +107,7 @@ Compare two professors within a single course.
     suggestionsOpen = false;
     input = code;
     validation = '';
-    if (!syncUrl(code)) void loadCourse(code);
+    if (!syncUrl(code, [], null)) void loadCourse(code);
   }
 
   function onCourseKeydown(event: KeyboardEvent) {
@@ -110,16 +132,16 @@ Compare two professors within a single course.
     document.getElementById(`course-suggestion-${activeSuggestion}`)?.scrollIntoView({ block: 'nearest' });
   });
 
-  function syncUrl(code: string, left = '', right = '') {
+  function syncUrl(code: string, slugs: string[] = [], nextView: View | null = 'pick') {
     const url = new URL(page.url);
     url.searchParams.set('course', code);
-    for (const [key, value] of [
-      ['left', left],
-      ['right', right],
-    ]) {
-      if (value) url.searchParams.set(key, value);
-      else url.searchParams.delete(key);
-    }
+
+    url.searchParams.delete('left');
+    url.searchParams.delete('right');
+    if (slugs.some(Boolean)) url.searchParams.set('profs', slugs.join(','));
+    else url.searchParams.delete('profs');
+    if (nextView === null) url.searchParams.delete('view');
+    else url.searchParams.set('view', nextView);
     if (url.href === page.url.href) return false;
     // eslint-disable-next-line svelte/no-navigation-without-resolve
     void goto(url, { keepFocus: true, noScroll: true });
@@ -135,11 +157,39 @@ Compare two professors within a single course.
       return;
     }
     validation = '';
-    if (!syncUrl(code)) void loadCourse(code);
+    if (!syncUrl(code, [], null)) void loadCourse(code);
   }
 
-  async function restoreSelections(initialLeft: string, initialRight: string, id: number) {
-    const slugs = [initialLeft, initialRight === initialLeft ? '' : initialRight];
+  function addSlot() {
+    if (selectionSlugs.length >= MAX_COMPARED) return;
+    selectionSlugs = [...selectionSlugs, ''];
+    syncUrl(course, selectionSlugs);
+  }
+
+  function removeSlot(slot: number) {
+    if (selectionSlugs.length <= 2) return;
+    selectionSlugs = selectionSlugs.filter((_, index) => index !== slot);
+    reviewTab = 0;
+    syncUrl(course, selectionSlugs);
+  }
+
+  function setView(next: View) {
+    view = next;
+    syncUrl(course, selectionSlugs, next);
+  }
+
+  function compareFromTable(slugs: string[]) {
+    selectionSlugs = slugs.length >= 2 ? slugs.slice(0, MAX_COMPARED) : [...slugs, ''];
+    view = 'pick';
+    reviewTab = 0;
+    syncUrl(course, selectionSlugs);
+  }
+
+  async function restoreSelections(initialSlugs: string[], id: number) {
+    const slugs = initialSlugs
+      .slice(0, MAX_COMPARED)
+      .map((slug, index, all) => (all.indexOf(slug) === index ? slug : ''));
+    while (slugs.length < 2) slugs.push('');
     const notes: string[] = [];
     const missing = await Promise.all(
       slugs
@@ -173,7 +223,7 @@ Compare two professors within a single course.
     warning = [dataWarning, ...notes, ...unavailable].filter(Boolean).join(' ');
   }
 
-  async function loadCourse(rawCode: string, initialLeft = '', initialRight = '') {
+  async function loadCourse(rawCode: string, initialSlugs: string[] = []) {
     const code = rawCode.replace(/\s+/g, '').toUpperCase();
     const id = ++requestId;
     if (!/^[A-Z]{4}\d{3}[A-Z]?$/.test(code)) {
@@ -199,7 +249,7 @@ Compare two professors within a single course.
       overall = result.overall;
       dataWarning = result.warning;
       if (overall && hasEnoughForGpa(overall)) courseMean = overall.gpa;
-      await restoreSelections(initialLeft, initialRight, id);
+      await restoreSelections(initialSlugs, id);
       if (id === requestId) status = 'loaded';
     } catch {
       if (id === requestId) status = 'error';
@@ -209,9 +259,16 @@ Compare two professors within a single course.
   $effect(() => {
     const params = page.url.searchParams;
     const code = params.get('course') ?? '';
-    const left = params.get('left') ?? '';
-    const right = params.get('right') ?? '';
+    const profs = params.get('profs');
+    const slugs = profs !== null ? profs.split(',') : [params.get('left') ?? '', params.get('right') ?? ''];
+    const viewParam = params.get('view');
     untrack(() => {
+      view =
+        viewParam === 'pick' || viewParam === 'current' || viewParam === 'all'
+          ? viewParam
+          : slugs.some(Boolean)
+            ? 'pick'
+            : 'current';
       if (!code) {
         requestId++;
         input = '';
@@ -221,9 +278,9 @@ Compare two professors within a single course.
         status = 'idle';
         validation = '';
       } else if (code === course && status === 'loaded') {
-        void restoreSelections(left, right, ++requestId);
+        void restoreSelections(slugs, ++requestId);
       } else {
-        void loadCourse(code, left, right);
+        void loadCourse(code, slugs);
       }
     });
   });
@@ -248,7 +305,7 @@ Compare two professors within a single course.
 
 <svelte:head>
   <title>Compare Professors | Jupiterp</title>
-  <meta name="description" content="Compare two UMD professors' grades and student reviews for the same course." />
+  <meta name="description" content="Compare UMD professors' grades and student reviews for the same course." />
 </svelte:head>
 
 <main class="comparison-page custom-scrollbar fixed inset-x-0 bottom-0 top-12 overflow-y-auto">
@@ -329,42 +386,91 @@ Compare two professors within a single course.
     {#if status === 'loaded' && professors.length > 0}
       <section aria-label="Select professors" class="space-y-4">
         <h2 class="text-xl font-bold">Who teaches {course}?</h2>
-        <p class="text-text-secondary text-sm">Choose from current teaching assignments and available grade history.</p>
-        {#if professors.length === 1}<p class="text-text-secondary">
-            Only one professor is available for this course; a comparison needs two.
-          </p>{/if}
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8">
-          {#each ['left', 'right'] as side, index (side)}
-            <div class="border-outline min-w-0 rounded-xl border p-4 sm:p-5">
-              <label for={`professor-${side}`} class="mb-3 flex items-center gap-2 font-semibold">
-                <span class="comparison-dot" class:second={index === 1}></span>Professor {index + 1}
-              </label>
-              <ProfessorPicker
-                {professors}
-                bind:selected={selectionSlugs[index]}
-                excluded={selectionSlugs[1 - index]}
-                id={`professor-${side}`}
-                label={`Professor ${index + 1}`}
-                onChange={() => syncUrl(course, leftSlug, rightSlug)}
-              />
-              {#if selected[index]}
-                <ComparisonRating slug={selected[index]!.slug} />
-              {/if}
-            </div>
+        <div class="border-outline inline-flex flex-wrap rounded-lg border-2 p-1" role="group" aria-label="View">
+          {#each viewOptions as option (option.id)}
+            <button
+              type="button"
+              class="rounded-md px-4 py-1.5 font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+              class:bg-orange={activeView === option.id}
+              class:text-black={activeView === option.id}
+              class:hover:bg-hover={activeView !== option.id}
+              aria-pressed={activeView === option.id}
+              disabled={option.id === 'current' && currentCount === 0}
+              onclick={() => setView(option.id)}>{option.label}</button
+            >
           {/each}
         </div>
+
+        {#if activeView !== 'pick'}
+          <ProfessorTable
+            professors={tableProfessors}
+            {course}
+            {overall}
+            showStatus={activeView === 'all'}
+            onCompare={compareFromTable}
+          />
+        {:else}
+          <p class="text-text-secondary text-sm">
+            Choose from current teaching assignments and available grade history.
+          </p>
+          {#if professors.length === 1}<p class="text-text-secondary">
+              Only one professor is available for this course; a comparison needs two.
+            </p>{/if}
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8">
+            {#each selectionSlugs.keys() as slot (slot)}
+              <div class="border-outline min-w-0 rounded-xl border p-4 sm:p-5">
+                <div class="mb-3 flex items-center justify-between gap-2">
+                  <label for={`professor-${slot}`} class="flex items-center gap-2 font-semibold">
+                    <span class="comparison-dot" style:background={PROFESSOR_COLORS[slot].dot}></span>Professor {slot +
+                      1}
+                  </label>
+                  {#if selectionSlugs.length > 2}
+                    <button
+                      type="button"
+                      class="hover:bg-hover rounded-md px-2 py-0.5 text-sm font-semibold"
+                      aria-label={`Remove professor ${slot + 1}`}
+                      onclick={() => removeSlot(slot)}>Remove</button
+                    >
+                  {/if}
+                </div>
+                <ProfessorPicker
+                  {professors}
+                  bind:selected={selectionSlugs[slot]}
+                  excluded={selectionSlugs.filter((slug, index) => index !== slot && slug)}
+                  id={`professor-${slot}`}
+                  label={`Professor ${slot + 1}`}
+                  onChange={() => syncUrl(course, selectionSlugs)}
+                />
+                {#if selected[slot]}
+                  <ComparisonRating slug={selected[slot]!.slug} />
+                {/if}
+              </div>
+            {/each}
+            {#if selectionSlugs.length < MAX_COMPARED && professors.length > selectionSlugs.length}
+              <button
+                type="button"
+                class="border-outline hover:border-orange hover:text-orange flex min-h-32 items-center justify-center rounded-xl border-2 border-dashed p-4 font-semibold"
+                onclick={addSlot}>+ Add professor</button
+              >
+            {/if}
+          </div>
+        {/if}
       </section>
 
-      {#if ready}
+      {#if activeView === 'pick' && ready}
         <section aria-label="GPA comparison" class="border-outline rounded-xl border p-4 sm:p-6">
           <h2 class="text-xl font-bold">Average GPA in {course}</h2>
-          <div class="my-6 grid grid-cols-2 gap-4 sm:gap-8">
-            {#each selected as professor, index (index)}
+          <div
+            class="my-6 grid grid-cols-2 gap-4 sm:gap-8"
+            class:lg:grid-cols-3={compared.length === 3}
+            class:lg:grid-cols-4={compared.length === 4}
+          >
+            {#each compared as { professor, slot } (slot)}
               {@const gpa = gpaOf(professor)}
               {@const delta = gpa === null ? null : deviation(professor)}
               <div>
                 <p class="flex items-center gap-2 font-semibold">
-                  <span class="comparison-dot" class:second={index === 1}></span>{professor?.name}
+                  <span class="comparison-dot" style:background={PROFESSOR_COLORS[slot].dot}></span>{professor.name}
                 </p>
                 <p class="mt-2 text-2xl font-semibold sm:text-3xl">
                   {gpa === null ? 'Unavailable' : gpa.toFixed(2)}<span
@@ -372,7 +478,7 @@ Compare two professors within a single course.
                   >
                 </p>
                 <p class="text-text-secondary mt-1 text-sm">
-                  {professor?.distribution
+                  {professor.distribution
                     ? `${professor.distribution.graded.toLocaleString()} graded students`
                     : 'No grade history for this course'}
                 </p>
@@ -387,14 +493,10 @@ Compare two professors within a single course.
             {/each}
           </div>
           <div class="mx-3">
-            <div
-              class="relative h-14"
-              role="img"
-              aria-label={`GPA scale from ${scaleMin} to 4 with ${plottedProfessors.length} professors. Course mean: ${courseMean?.toFixed(2) ?? 'unavailable'}. ${left?.name}: ${gpaOf(left)?.toFixed(2) ?? 'unavailable'}. ${right?.name}: ${gpaOf(right)?.toFixed(2) ?? 'unavailable'}.`}
-            >
+            <div class="relative h-14" role="img" aria-label={gpaScaleLabel}>
               <div class="bg-outline absolute inset-x-0 top-7 h-0.5 rounded-full"></div>
               {#each plottedProfessors as professor (professor.slug)}
-                {#if professor.slug !== leftSlug && professor.slug !== rightSlug}
+                {#if !selectionSlugs.includes(professor.slug)}
                   <div
                     class="border-text-secondary bg-bg-primary absolute top-7 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
                     style:left={`${position(gpaOf(professor)!)}%`}
@@ -409,16 +511,17 @@ Compare two professors within a single course.
                   title={`Course mean: ${courseMean.toFixed(2)}`}
                 ></div>
               {/if}
-              {#each selected as professor, index (index)}
+              {#each compared as { professor, slot } (slot)}
                 {@const gpa = gpaOf(professor)}
                 {#if gpa !== null}
                   <div
                     class="gpa-marker"
-                    class:second={index === 1}
                     style:left={`${position(gpa)}%`}
-                    title={`${professor?.name}: ${gpa.toFixed(2)}`}
+                    style:background={PROFESSOR_COLORS[slot].dot}
+                    style:color={PROFESSOR_COLORS[slot].text}
+                    title={`${professor.name}: ${gpa.toFixed(2)}`}
                   >
-                    <span>{index + 1}</span>
+                    <span>{slot + 1}</span>
                   </div>
                 {/if}
               {/each}
@@ -436,7 +539,7 @@ Compare two professors within a single course.
             The line marks the overall course mean. Percentages compare each professor with the other instructors,
             excluding their own students.
           </p>
-          {#if gpaOf(left) === null || gpaOf(right) === null}<p class="text-text-secondary mt-4 text-sm">
+          {#if compared.some(({ professor }) => gpaOf(professor) === null)}<p class="text-text-secondary mt-4 text-sm">
               GPA requires at least 20 graded students. Professors without enough data can still be compared through
               reviews.
             </p>{/if}
@@ -463,57 +566,65 @@ Compare two professors within a single course.
               Show reviews from all courses
             </label>
           </div>
-          <div class="border-outline mt-4 flex border-b md:hidden" role="tablist" aria-label="Professor reviews">
-            {#each selected as professor, index (index)}
+          <div
+            class="border-outline mt-4 flex border-b"
+            class:md:hidden={!tabbedReviews}
+            role="tablist"
+            aria-label="Professor reviews"
+          >
+            {#each compared as { professor, slot }, index (slot)}
               <button
                 type="button"
                 role="tab"
                 id={`review-tab-${index}`}
-                aria-selected={reviewTab === index}
+                aria-selected={activeReviewTab === index}
                 aria-controls={`review-panel-${index}`}
-                tabindex={reviewTab === index ? 0 : -1}
-                class="min-w-0 flex-1 border-b-2 px-3 py-3 text-sm font-semibold"
-                class:border-orange={reviewTab === index}
-                class:text-orange={reviewTab === index}
-                class:border-transparent={reviewTab !== index}
+                tabindex={activeReviewTab === index ? 0 : -1}
+                class="flex min-w-0 flex-1 items-center justify-center gap-2 border-b-2 px-3 py-3 text-sm font-semibold"
+                class:border-orange={activeReviewTab === index}
+                class:text-orange={activeReviewTab === index}
+                class:border-transparent={activeReviewTab !== index}
                 onclick={() => (reviewTab = index)}
                 onkeydown={(event) => {
                   if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
                     event.preventDefault();
-                    reviewTab = 1 - reviewTab;
+                    const step = event.key === 'ArrowRight' ? 1 : -1;
+                    reviewTab = (activeReviewTab + step + compared.length) % compared.length;
                     document.getElementById(`review-tab-${reviewTab}`)?.focus();
                   }
-                }}>{professor?.name}</button
+                }}
+                ><span class="comparison-dot" style:background={PROFESSOR_COLORS[slot].dot}></span><span
+                  class="truncate">{professor.name}</span
+                ></button
               >
             {/each}
           </div>
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8">
-            {#each selected as professor, index (index)}
-              {#if professor}
-                <div
-                  id={`review-panel-${index}`}
-                  class="min-w-0 md:block"
-                  class:hidden={reviewTab !== index}
-                  aria-label={`${professor.name}'s reviews`}
-                >
-                  <h3 class="mt-6 flex items-center gap-2 font-bold">
-                    <span class="comparison-dot" class:second={index === 1}></span>{professor.name}
-                  </h3>
-                  {#key professor.slug}
-                    <ReviewList
-                      id={`comparison-reviews-${index}`}
-                      instructorSlug={professor.slug}
-                      courseCode={allReviews ? null : course}
-                    />
-                  {/key}
-                </div>
-              {/if}
+          <div class="grid grid-cols-1 gap-4 md:gap-8" class:md:grid-cols-2={!tabbedReviews}>
+            {#each compared as { professor, slot }, index (slot)}
+              <div
+                id={`review-panel-${index}`}
+                class="min-w-0"
+                class:md:block={!tabbedReviews}
+                class:hidden={activeReviewTab !== index}
+                aria-label={`${professor.name}'s reviews`}
+              >
+                <h3 class="mt-6 flex items-center gap-2 font-bold">
+                  <span class="comparison-dot" style:background={PROFESSOR_COLORS[slot].dot}></span>{professor.name}
+                </h3>
+                {#key professor.slug}
+                  <ReviewList
+                    id={`comparison-reviews-${slot}`}
+                    instructorSlug={professor.slug}
+                    courseCode={allReviews ? null : course}
+                  />
+                {/key}
+              </div>
             {/each}
           </div>
         </section>
-      {:else}
+      {:else if activeView === 'pick'}
         <p class="text-text-secondary py-8 text-center">
-          Select two professors to compare their GPA, grade distributions, and reviews.
+          Select at least two professors to compare their GPA, grade distributions, and reviews.
         </p>
       {/if}
     {/if}
@@ -531,16 +642,8 @@ Compare two professors within a single course.
     height: 0.75rem;
     flex-shrink: 0;
     border-radius: 50%;
-    background: var(--orange);
-  }
-  .second {
-    --marker-color: #38bdf8;
-  }
-  .comparison-dot.second {
-    background: var(--marker-color);
   }
   .gpa-marker {
-    --marker-color: var(--orange);
     position: absolute;
     display: grid;
     place-items: center;
@@ -550,12 +653,7 @@ Compare two professors within a single course.
     transform: translate(-50%, -50%);
     border: 2px solid var(--bg-primary);
     border-radius: 50%;
-    background: var(--marker-color);
-    color: #000;
     font-size: 0.7rem;
     font-weight: 700;
-  }
-  .gpa-marker.second {
-    --marker-color: #38bdf8;
   }
 </style>

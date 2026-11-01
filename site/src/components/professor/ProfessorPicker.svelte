@@ -12,7 +12,7 @@ Searchable professor selector with keyboard navigation.
   interface Props {
     professors: ComparisonProfessor[];
     selected: string;
-    excluded: string;
+    excluded: string[];
     id: string;
     label: string;
     onChange?: () => void;
@@ -29,7 +29,8 @@ Searchable professor selector with keyboard navigation.
   let options = $derived(
     professors
       .filter(
-        (professor) => professor.slug !== excluded && professor.name.toLowerCase().includes(query.trim().toLowerCase())
+        (professor) =>
+          !excluded.includes(professor.slug) && professor.name.toLowerCase().includes(query.trim().toLowerCase())
       )
       .sort(
         (a, b) => Number(b.slug === selected) - Number(a.slug === selected) || Number(b.current) - Number(a.current)
