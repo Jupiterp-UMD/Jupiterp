@@ -324,26 +324,182 @@ export interface SubmitResult {
   error?: string;
   /** True when the caller should wait and retry rather than change anything. */
   rateLimited?: boolean;
+  /**
+   * True when a reviewer session skipped the confirmation email: the review is
+   * already with the moderators and `manageKey` is its key, shown once.
+   */
+  submitted?: boolean;
+  manageKey?: string;
+}
+
+/* =========================== reviewer sessions ========================== */
+
+/**
+ * Reviewer session tokens, so that after confirming one review by email the
+ * next few from this browser go straight through.
+ *
+ * Kept only when the reviewer ticks "remember this device", because anyone
+ * who later uses this browser and types the same address inherits the
+ * session. Several are kept, not just the latest: someone who reviews three
+ * professors and then confirms the first link needs the first token.
+ *
+ * A token starts a session only when this browser presents it together with
+ * the emailed link (see `activateReviewSessions`). The API decides everything
+ * else -- expiry, the use cap, the address it is bound to -- and the copy
+ * here is pruned once it cannot matter: 48 hours unconfirmed, the link's own
+ * lifetime, or the moment its session expires.
+ */
+const REVIEW_SESSIONS_KEY = 'reviewSessions';
+const PENDING_SESSION_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+/** The API refuses an activation presenting more than this. */
+const MAX_STORED_SESSIONS = 20;
+
+interface StoredSession {
+  token: string;
+  /** SHA-256 of the address, so the address itself is not left in storage. */
+  emailHash: string;
+  savedAt: number;
+  /** Set once the session is activated; absent while it is pending. */
+  expiresAt?: number;
+}
+
+function isStoredSession(value: unknown): value is StoredSession {
+  const v = value as StoredSession;
+  return typeof v?.token === 'string' && typeof v.emailHash === 'string' && typeof v.savedAt === 'number';
+}
+
+function readSessions(): StoredSession[] {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(REVIEW_SESSIONS_KEY) ?? '[]');
+    const now = Date.now();
+    const all = Array.isArray(parsed) ? parsed.filter(isStoredSession) : [];
+    const live = all.filter((s) =>
+      s.expiresAt === undefined ? now - s.savedAt < PENDING_SESSION_MAX_AGE_MS : s.expiresAt > now
+    );
+    if (live.length !== all.length) {
+      writeSessions(live);
+    }
+    return live;
+  } catch {
+    // Private mode, blocked storage, or a corrupt value: no session, so the
+    // review goes through the email flow, which always works.
+    return [];
+  }
+}
+
+function writeSessions(sessions: StoredSession[]) {
+  try {
+    if (sessions.length === 0) {
+      localStorage.removeItem(REVIEW_SESSIONS_KEY);
+      return;
+    }
+    localStorage.setItem(REVIEW_SESSIONS_KEY, JSON.stringify(sessions.slice(-MAX_STORED_SESSIONS)));
+  } catch {
+    // As above: costs only the shortcut.
+  }
+}
+
+async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+const emailKey = (email: string) => sha256Hex(email.trim().toLowerCase());
+
+/** Whether this browser is keeping any reviewer session, pending or active. */
+export function hasReviewSessions(): boolean {
+  return readSessions().length > 0;
+}
+
+/** Drop every reviewer session this browser holds. */
+export function forgetReviewSessions() {
+  writeSessions([]);
+}
+
+/**
+ * Start the session issued with the review whose link was just confirmed.
+ *
+ * Sends every pending token: this page cannot tell which review the link
+ * belongs to, and the API matches it. Returns when the session expires, or
+ * undefined if none started -- nothing stored, a link from another browser,
+ * or an address with a rejected review.
+ */
+export async function activateReviewSessions(verifyToken: string, fetchFn: Fetch = fetch): Promise<Date | undefined> {
+  const pending = readSessions().filter((s) => s.expiresAt === undefined);
+  if (pending.length === 0) {
+    return undefined;
+  }
+  const response = await sendSafely(fetchFn, `${client.dbUrl}/v1/reviews/sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ verify_token: verifyToken, session_tokens: pending.map((s) => s.token) }),
+  });
+  const payload = response?.ok ? await response.json().catch(() => ({})) : {};
+  const expiresAt = Date.parse(payload.expires_at);
+  if (payload.activated !== true || Number.isNaN(expiresAt)) {
+    return undefined;
+  }
+
+  const sessions = readSessions();
+  for (const session of sessions) {
+    if ((await sha256Hex(session.token)) === payload.token_hash) {
+      session.expiresAt = expiresAt;
+      writeSessions(sessions);
+      return new Date(expiresAt);
+    }
+  }
+  return undefined;
 }
 
 /**
  * Submit a review.
  *
- * The API answers identically whether or not this address has already reviewed
- * this professor, so a caller cannot use it to find out. Do not try to
- * interpret the response as anything finer than "accepted".
+ * With `rememberDevice`, an active session for this address is used and a new
+ * pending one is kept. Without it, every session this browser held is
+ * dropped: unticking the box is how a reviewer on a shared computer says so.
+ *
+ * Without an active reviewer session, the API answers identically whether or
+ * not this address has already reviewed this professor, so a caller cannot use
+ * it to find out. Do not try to interpret that response as anything finer than
+ * "accepted".
  */
-export async function submitReview(review: ReviewSubmission, fetchFn: Fetch = fetch): Promise<SubmitResult> {
+export async function submitReview(
+  review: ReviewSubmission,
+  { rememberDevice = false }: { rememberDevice?: boolean } = {},
+  fetchFn: Fetch = fetch
+): Promise<SubmitResult> {
+  let emailHash: string | undefined;
+  let sessionToken: string | undefined;
+  if (rememberDevice) {
+    emailHash = await emailKey(review.email);
+    const now = Date.now();
+    sessionToken = readSessions()
+      .filter((s) => s.emailHash === emailHash && s.expiresAt !== undefined && s.expiresAt > now)
+      .sort((a, b) => (b.expiresAt ?? 0) - (a.expiresAt ?? 0))[0]?.token;
+  } else {
+    forgetReviewSessions();
+  }
+
   const response = await sendSafely(fetchFn, `${client.dbUrl}/v1/reviews`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(review),
+    body: JSON.stringify({ ...review, session_token: sessionToken }),
   });
 
   if (response === null) {
     return { ok: false, error: UNREACHABLE_MESSAGE };
   }
   if (response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    // A 202 ran the email flow and issued a new pending token. It is added,
+    // not swapped in: the active one sent, if any, stays good, and so do
+    // other pending ones whose links have not been clicked yet.
+    if (rememberDevice && emailHash !== undefined && typeof payload.session_token === 'string') {
+      writeSessions([...readSessions(), { token: payload.session_token, emailHash, savedAt: Date.now() }]);
+    }
+    if (payload.status === 'submitted') {
+      return { ok: true, submitted: true, manageKey: payload.manage_key };
+    }
     return { ok: true };
   }
   const payload = await response.json().catch(() => ({ error: 'Something went wrong.' }));

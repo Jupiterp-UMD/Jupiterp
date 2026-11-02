@@ -8,8 +8,9 @@ Copyright (C) 2026 Andrew Cupps
   import { onMount } from 'svelte';
   import { resolve } from '$app/paths';
   import { env } from '$env/dynamic/public';
-  import { submitReview } from '../../lib/api/JupiterpApi';
+  import { forgetReviewSessions, hasReviewSessions, submitReview } from '../../lib/api/JupiterpApi';
   import StarRatingInput from './StarRatingInput.svelte';
+  import ManageKey from './ManageKey.svelte';
 
   interface Props {
     instructorSlug: string;
@@ -60,9 +61,27 @@ Copyright (C) 2026 Andrew Cupps
   let body = $state('');
   let email = $state('');
   let agreed = $state(false);
+  /**
+   * Opt-in, because whoever uses this browser next can type the same address
+   * and inherit the session. Starts ticked only if this browser is already
+   * keeping one, which means the reviewer ticked it last time.
+   */
+  let rememberDevice = $state(false);
+  let forgotten = $state(false);
 
-  let status = $state<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  onMount(() => {
+    rememberDevice = hasReviewSessions();
+  });
+
+  function forgetDevice() {
+    forgetReviewSessions();
+    forgotten = true;
+  }
+
+  let status = $state<'idle' | 'sending' | 'sent' | 'submitted' | 'error'>('idle');
   let errorMessage = $state('');
+  /** Only when a reviewer session skipped the email; shown once. */
+  let manageKey = $state('');
 
   /* ============================== captcha ============================== */
 
@@ -183,23 +202,27 @@ Copyright (C) 2026 Andrew Cupps
     status = 'sending';
     errorMessage = '';
 
-    const result = await submitReview({
-      instructor_slug: instructorSlug,
-      course_code: courseCode,
-      term: Number(term),
-      rating,
-      expected_grade: expectedGrade,
-      title: title.trim(),
-      body: body.trim(),
-      email: email.trim(),
-      // Held in state by the widget's callback rather than scraped out of the
-      // DOM. Undefined only when no site key is configured, which is the case
-      // the API treats as captcha satisfied.
-      captcha_token: captchaToken === '' ? undefined : captchaToken,
-    });
+    const result = await submitReview(
+      {
+        instructor_slug: instructorSlug,
+        course_code: courseCode,
+        term: Number(term),
+        rating,
+        expected_grade: expectedGrade,
+        title: title.trim(),
+        body: body.trim(),
+        email: email.trim(),
+        // Held in state by the widget's callback rather than scraped out of the
+        // DOM. Undefined only when no site key is configured, which is the case
+        // the API treats as captcha satisfied.
+        captcha_token: captchaToken === '' ? undefined : captchaToken,
+      },
+      { rememberDevice }
+    );
 
     if (result.ok) {
-      status = 'sent';
+      manageKey = result.manageKey ?? '';
+      status = result.submitted ? 'submitted' : 'sent';
       onsent?.();
       return;
     }
@@ -217,7 +240,25 @@ Copyright (C) 2026 Andrew Cupps
   }
 </script>
 
-{#if status === 'sent'}
+{#if status === 'submitted'}
+  <!-- A reviewer session from a recently confirmed review vouched for this
+       address, so there is no email to wait for. -->
+  <div class="border-outline rounded-lg border-2 p-4">
+    <h3 class="text-lg font-bold">Thanks, your review is in the queue</h3>
+    <p class="my-2 text-sm">
+      You confirmed your UMD address recently, so this one didn't need another email. A moderator reads every review
+      before it appears.
+    </p>
+    {#if manageKey}
+      <ManageKey {manageKey} headingLevel={4} />
+    {/if}
+    {#if forgotten}
+      <p class="text-text-secondary text-sm" role="status">This browser will ask for email confirmation next time.</p>
+    {:else}
+      <button class="text-orange text-sm font-bold underline" onclick={forgetDevice}>Forget this device</button>
+    {/if}
+  </div>
+{:else if status === 'sent'}
   <!-- Deliberately says nothing about whether this address had already
        reviewed this professor. The API answers identically either way, and
        leaking the difference here would undo that. -->
@@ -339,6 +380,14 @@ Copyright (C) 2026 Andrew Cupps
         Your Terpmail is used only to verify that you’re a UMD student and prevent duplicate reviews. We <b
           ><u>CANNOT</u></b
         > see your email after verification or link it to your review, and neither can professors or other users.
+      </span>
+    </label>
+
+    <label class="flex flex-row items-start gap-2 text-sm">
+      <input type="checkbox" bind:checked={rememberDevice} class="accent-orange mt-1" />
+      <span>
+        Remember this device for 5 hours after I confirm, so my next reviews don't need another email.
+        <span class="text-text-secondary">Leave this off on a shared or public computer.</span>
       </span>
     </label>
 
