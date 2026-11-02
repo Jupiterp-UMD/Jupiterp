@@ -13,12 +13,14 @@ one browser session.
 <script lang="ts">
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
-  import { verifyReview } from '../../../lib/api/JupiterpApi';
+  import { activateReviewSessions, forgetReviewSessions, verifyReview } from '../../../lib/api/JupiterpApi';
+  import ManageKey from '../../../components/professor/ManageKey.svelte';
 
   let status = $state<'working' | 'done' | 'failed'>('working');
   let message = $state('');
   let manageKey = $state('');
-  let copied = $state(false);
+  /** When this browser can next submit without an email; null if it can't. */
+  let sessionUntil = $state<Date | null>(null);
 
   $effect(() => {
     const token = page.url.searchParams.get('token');
@@ -32,12 +34,18 @@ one browser session.
       status = result.ok ? 'done' : 'failed';
       message = result.message;
       manageKey = result.manageKey ?? '';
+      // Also on a repeat visit: a mail scanner may have opened the link
+      // first, and the reviewer's own click is the one that holds the
+      // session token. The API starts a session only once either way.
+      if (result.ok) {
+        sessionUntil = (await activateReviewSessions(token)) ?? null;
+      }
     })();
   });
 
-  async function copyKey() {
-    await navigator.clipboard.writeText(manageKey);
-    copied = true;
+  function forgetDevice() {
+    forgetReviewSessions();
+    sessionUntil = null;
   }
 </script>
 
@@ -70,26 +78,15 @@ one browser session.
       <p class="my-3">{message}</p>
 
       {#if manageKey}
-        <div class="border-outline my-4 rounded-lg border-2 p-4">
-          <h2 class="font-bold">Save this key</h2>
-          <!--
-          "withdraw", not "edit or withdraw". Editing has no route and no UI —
-          it was removed deliberately — so the old wording promised something
-          the site has never been able to do.
-        -->
-          <p class="my-2 text-sm">
-            It is the only way to
-            <a href={resolve('/review/withdraw')} class="text-orange underline">withdraw your review</a>
-            later. We cannot recover it for you. By design, nothing links it back to you. We've emailed a copy too.
-          </p>
-          <code class="bg-bg-secondary block break-all rounded-md p-2 text-sm">{manageKey}</code>
-          <button
-            class="border-orange text-orange mt-2 rounded-md border px-3 py-1 text-sm font-bold"
-            onclick={copyKey}
-          >
-            {copied ? 'Copied' : 'Copy key'}
-          </button>
-        </div>
+        <ManageKey {manageKey} />
+      {/if}
+
+      {#if sessionUntil}
+        <p class="my-3 text-sm" role="status">
+          This browser can post reviews without another email until
+          {sessionUntil.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.
+          <button class="text-orange font-bold underline" onclick={forgetDevice}>Forget this device</button>
+        </p>
       {/if}
 
       <p class="text-text-secondary text-sm">
