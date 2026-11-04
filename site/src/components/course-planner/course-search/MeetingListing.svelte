@@ -6,7 +6,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 -->
 <script lang="ts">
   import type { ClassMeeting } from '@jupiterp/jupiterp';
-  import { formatClassDayTime, formatLocation } from '../../../lib/course-planner/Formatting';
+  import { formatClassDayTime, formatLocation, formatUntimedMeeting } from '../../../lib/course-planner/Formatting';
 
   interface Props {
     meeting: ClassMeeting;
@@ -34,7 +34,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
 <div class="flex w-full flex-row text-xs font-medium 2xl:text-base">
   {#if typeof meeting === 'string'}
-    {meeting}
+    {formatUntimedMeeting(meeting)}
   {:else}
     <!-- Classtime -->
     <span class:grow={!condensed}>

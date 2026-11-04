@@ -8,7 +8,7 @@
  */
 
 import { TERM_ID } from '../term';
-import type { Classtime, Location } from '@jupiterp/jupiterp';
+import type { ClassMeeting, Classtime, Location } from '@jupiterp/jupiterp';
 
 /**
  * Format a `Classtime` as a `string`, including the days
@@ -87,6 +87,27 @@ export function formatLocation(location: Location): string {
  */
 export function formatInstructors(instructors: string[]): string {
   return instructors.join(', ');
+}
+
+/**
+ * Format a meeting that has no classtime (e.g. `'OnlineAsync'`) as a
+ * human-readable label. These arrive as raw enum strings from the API.
+ * @param meeting A `ClassMeeting` that is a string rather than a timed meeting
+ * @returns A display label for `meeting`
+ */
+export function formatUntimedMeeting(meeting: Extract<ClassMeeting, string>): string {
+  switch (meeting) {
+    case 'OnlineAsync':
+      return 'Online (asynchronous)';
+    case 'TBA':
+      return 'Time TBA';
+    case 'Unknown':
+      return 'Unknown time';
+    case 'Unspecified':
+      return 'Unspecified time';
+    case 'No Sections':
+      return 'No sections';
+  }
 }
 
 /**
