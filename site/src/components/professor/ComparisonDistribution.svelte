@@ -8,19 +8,11 @@ Grouped, stacked grade bars on one percentage scale, one colour per comparison s
   import {
     BUCKET_LETTERS,
     GRADE_BUCKETS,
+    formatPercent,
     formatSemesterRange,
-    type GradeBucket,
-    type GradeDistribution,
     type LetterGrade,
   } from '../../lib/course-planner/Grades';
   import { PROFESSOR_COLORS, type ComparisonProfessor } from '../../lib/professor/Comparison';
-
-  function formatPercent(distribution: GradeDistribution, bucket: GradeBucket, decimals = 1): string {
-    const count = distribution.buckets[bucket];
-    const percent = (count / distribution.barTotal) * 100;
-    const smallest = 10 ** -decimals;
-    return count > 0 && percent < smallest / 2 ? `<${smallest}` : percent.toFixed(decimals);
-  }
 
   let { professors }: { professors: (ComparisonProfessor | undefined)[] } = $props();
   let series = $derived(professors.flatMap((professor, slot) => (professor ? [{ professor, slot }] : [])));
@@ -46,7 +38,7 @@ Grouped, stacked grade bars on one percentage scale, one colour per comparison s
       name: professor.name,
       letter,
       count: distribution.letters[letter],
-      percent: ((distribution.letters[letter] / distribution.barTotal) * 100).toFixed(1),
+      percent: formatPercent(distribution.letters[letter], distribution.barTotal),
       x: (flip ? bar.left : bar.right) - box.left + (flip ? -10 : 10),
       y: bar.top + bar.height / 2 - box.top,
       flip,
@@ -108,9 +100,10 @@ Grouped, stacked grade bars on one percentage scale, one colour per comparison s
             {@const distribution = professor.distribution}
             {@const available = distribution !== null && distribution.barTotal > 0}
             {@const percent = available ? (distribution.buckets[bucket] / distribution.barTotal) * 100 : 0}
+            {@const exact = available ? `${formatPercent(distribution.buckets[bucket], distribution.barTotal)}%` : '—'}
             <div
               class="flex items-center gap-2"
-              aria-label={`${professor.name}, ${bucket}: ${available ? `${formatPercent(distribution, bucket)}%` : 'unavailable'}`}
+              aria-label={`${professor.name}, ${bucket}: ${available ? exact : 'unavailable'}`}
             >
               <div class="bg-outline/40 h-3 min-w-0 flex-1 overflow-hidden rounded-sm">
                 <div
@@ -119,9 +112,7 @@ Grouped, stacked grade bars on one percentage scale, one colour per comparison s
                   style:background={PROFESSOR_COLORS[slot].dot}
                 ></div>
               </div>
-              <span class="w-12 shrink-0 text-right text-xs font-semibold tabular-nums"
-                >{available ? `${formatPercent(distribution, bucket)}%` : '—'}</span
-              >
+              <span class="w-12 shrink-0 text-right text-xs font-semibold tabular-nums">{exact}</span>
             </div>
           {/each}
         </div>
@@ -137,8 +128,10 @@ Grouped, stacked grade bars on one percentage scale, one colour per comparison s
             {@const distribution = professor.distribution}
             {@const available = distribution !== null && distribution.barTotal > 0}
             {@const percent = available ? (distribution.buckets[bucket] / distribution.barTotal) * 100 : 0}
-            {@const exact = available ? `${formatPercent(distribution, bucket)}%` : '—'}
-            {@const rounded = available ? `${formatPercent(distribution, bucket, compact ? 0 : 1)}%` : '—'}
+            {@const exact = available ? `${formatPercent(distribution.buckets[bucket], distribution.barTotal)}%` : '—'}
+            {@const rounded = available
+              ? `${formatPercent(distribution.buckets[bucket], distribution.barTotal, compact ? 0 : 1)}%`
+              : '—'}
             <div class="group relative min-w-0 flex-1" style:height={`${(percent / maxPercent) * 85}%`}>
               <span
                 class={[

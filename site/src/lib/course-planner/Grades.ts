@@ -204,6 +204,26 @@ export function hasEnoughForGpa(dist: GradeDistribution): dist is GradeDistribut
   return dist.gpa !== null && dist.graded >= MIN_GRADED_FOR_GPA;
 }
 
+/** The GPA to show, or null when there is no distribution or too little behind it. */
+export function gpaOf(dist: GradeDistribution | null | undefined): number | null {
+  return dist && hasEnoughForGpa(dist) ? dist.gpa : null;
+}
+
+/**
+ * Format `count` as a percentage of `total` with `decimals` places.
+ *
+ * A nonzero count too small to show at that precision reads as '<0.1' (or
+ * '<1' with no decimals) rather than '0.0', so a handful of students never
+ * looks like nobody.
+ *
+ * @returns e.g. '62.4', or '<0.1' for nonzero counts that round to 0
+ */
+export function formatPercent(count: number, total: number, decimals = 1): string {
+  const percent = total === 0 ? 0 : (count / total) * 100;
+  const smallest = 10 ** -decimals;
+  return count > 0 && percent < smallest / 2 ? `<${smallest}` : percent.toFixed(decimals);
+}
+
 /**
  * Format a bucket's share of students as a whole-number percentage.
  *
@@ -215,15 +235,7 @@ export function hasEnoughForGpa(dist: GradeDistribution): dist is GradeDistribut
  * @returns e.g. '62', or '<1' for nonzero counts that round to 0
  */
 export function bucketPercent(dist: GradeDistribution, bucket: GradeBucket): string {
-  if (dist.barTotal === 0) {
-    return '0';
-  }
-  const count = dist.buckets[bucket];
-  const percent = Math.round((count / dist.barTotal) * 100);
-  if (percent === 0 && count > 0) {
-    return '<1';
-  }
-  return percent.toString();
+  return formatPercent(dist.buckets[bucket], dist.barTotal, 0);
 }
 
 /** Combine disjoint API summaries without recalculating GPA from letter grades. */

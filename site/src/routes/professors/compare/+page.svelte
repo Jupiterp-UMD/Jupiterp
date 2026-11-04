@@ -19,7 +19,12 @@ Compare up to four professors within a single course, or list all of them.
     type ComparisonProfessor,
   } from '$lib/professor/Comparison';
   import type { CourseMinified } from '@jupiterp/jupiterp';
-  import { hasEnoughForGpa, calculateGpaWithoutActiveProf, type GradeDistribution } from '$lib/course-planner/Grades';
+  import {
+    hasEnoughForGpa,
+    calculateGpaWithoutActiveProf,
+    gpaOf,
+    type GradeDistribution,
+  } from '$lib/course-planner/Grades';
   import ComparisonDistribution from '../../../components/professor/ComparisonDistribution.svelte';
   import ReviewList from '../../../components/professor/ReviewList.svelte';
   import ComparisonRating from '../../../components/professor/ComparisonRating.svelte';
@@ -65,15 +70,21 @@ Compare up to four professors within a single course, or list all of them.
     { id: 'pick', label: 'Pick professors' },
     { id: 'all', label: `All professors (${professors.length})` },
   ]);
-  let plottedProfessors = $derived(professors.filter((professor) => gpaOf(professor) !== null));
+  let plottedProfessors = $derived(professors.filter((professor) => gpaOf(professor.distribution) !== null));
   let scaleMin = $derived(
-    Math.min(2, ...plottedProfessors.map((professor) => Math.floor(gpaOf(professor)!)), Math.floor(courseMean ?? 2))
+    Math.min(
+      2,
+      ...plottedProfessors.map((professor) => Math.floor(gpaOf(professor.distribution)!)),
+      Math.floor(courseMean ?? 2)
+    )
   );
   let gpaScaleLabel = $derived(
     [
       `GPA scale from ${scaleMin} to 4 with ${plottedProfessors.length} professors`,
       `Course mean: ${courseMean?.toFixed(2) ?? 'unavailable'}`,
-      ...compared.map(({ professor }) => `${professor.name}: ${gpaOf(professor)?.toFixed(2) ?? 'unavailable'}`),
+      ...compared.map(
+        ({ professor }) => `${professor.name}: ${gpaOf(professor.distribution)?.toFixed(2) ?? 'unavailable'}`
+      ),
     ].join('. ') + '.'
   );
 
@@ -297,17 +308,12 @@ Compare up to four professors within a single course, or list all of them.
     });
   });
 
-  function gpaOf(professor: ComparisonProfessor | undefined): number | null {
-    const distribution = professor?.distribution;
-    return distribution && hasEnoughForGpa(distribution) ? distribution.gpa : null;
-  }
-
   function position(gpa: number): number {
     return Math.max(0, Math.min(100, ((gpa - scaleMin) / (4 - scaleMin)) * 100));
   }
 
   function deviation(professor: ComparisonProfessor | undefined): number | null {
-    const gpa = gpaOf(professor);
+    const gpa = gpaOf(professor?.distribution);
     const otherMean = calculateGpaWithoutActiveProf(overall, professor?.distribution);
     return gpa === null || otherMean === null || otherMean === 0
       ? null
@@ -478,7 +484,7 @@ Compare up to four professors within a single course, or list all of them.
             class:lg:grid-cols-4={compared.length === 4}
           >
             {#each compared as { professor, slot } (slot)}
-              {@const gpa = gpaOf(professor)}
+              {@const gpa = gpaOf(professor.distribution)}
               {@const delta = gpa === null ? null : deviation(professor)}
               <div>
                 <p class="flex items-center gap-2 font-semibold">
@@ -511,8 +517,8 @@ Compare up to four professors within a single course, or list all of them.
                 {#if !selectionSlugs.includes(professor.slug)}
                   <div
                     class="border-text-secondary bg-bg-primary absolute top-7 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
-                    style:left={`${position(gpaOf(professor)!)}%`}
-                    title={`${professor.name}: ${gpaOf(professor)!.toFixed(2)}`}
+                    style:left={`${position(gpaOf(professor.distribution)!)}%`}
+                    title={`${professor.name}: ${gpaOf(professor.distribution)!.toFixed(2)}`}
                   ></div>
                 {/if}
               {/each}
@@ -524,7 +530,7 @@ Compare up to four professors within a single course, or list all of them.
                 ></div>
               {/if}
               {#each compared as { professor, slot } (slot)}
-                {@const gpa = gpaOf(professor)}
+                {@const gpa = gpaOf(professor.distribution)}
                 {#if gpa !== null}
                   <div
                     class="gpa-marker"
@@ -551,7 +557,9 @@ Compare up to four professors within a single course, or list all of them.
             The line marks the overall course mean. Percentages compare each professor with the other instructors,
             excluding their own students.
           </p>
-          {#if compared.some(({ professor }) => gpaOf(professor) === null)}<p class="text-text-secondary mt-4 text-sm">
+          {#if compared.some(({ professor }) => gpaOf(professor.distribution) === null)}<p
+              class="text-text-secondary mt-4 text-sm"
+            >
               GPA requires at least 20 graded students. Professors without enough data can still be compared through
               reviews.
             </p>{/if}

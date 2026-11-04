@@ -8,7 +8,8 @@ at four; this is how a student finds which four are worth that closer look.
 <script lang="ts">
   import {
     GRADE_BUCKETS,
-    hasEnoughForGpa,
+    formatPercent,
+    gpaOf,
     type GradeBucket,
     type GradeDistribution,
   } from '../../lib/course-planner/Grades';
@@ -69,12 +70,14 @@ at four; this is how a student finds which four are worth that closer look.
     if (kept.length !== checked.length) checked = kept;
   });
 
-  function gpaOf(distribution: GradeDistribution | null): number | null {
-    return distribution && hasEnoughForGpa(distribution) ? distribution.gpa : null;
-  }
-
   function percentA(distribution: GradeDistribution | null): number | null {
     return distribution && distribution.barTotal > 0 ? (distribution.buckets.A / distribution.barTotal) * 100 : null;
+  }
+
+  function share(distribution: GradeDistribution | null, bucket: GradeBucket): string {
+    return distribution && distribution.barTotal > 0
+      ? `${formatPercent(distribution.buckets[bucket], distribution.barTotal)}%`
+      : '—';
   }
 
   function value(professor: ComparisonProfessor, key: SortKey): number | string | null {
@@ -129,9 +132,7 @@ at four; this is how a student finds which four are worth that closer look.
   }
 
   function bucketSummary(distribution: GradeDistribution): string {
-    return GRADE_BUCKETS.map(
-      (bucket) => `${bucket} ${((distribution.buckets[bucket] / distribution.barTotal) * 100).toFixed(1)}%`
-    ).join(', ');
+    return GRADE_BUCKETS.map((bucket) => `${bucket} ${share(distribution, bucket)}`).join(', ');
   }
 
   const columns: { key: SortKey; label: string; numeric: boolean }[] = [
@@ -204,7 +205,7 @@ at four; this is how a student finds which four are worth that closer look.
               {gpaOf(overall)?.toFixed(2) ?? '—'}
             </td>
             <td class="px-3 py-3 text-right">—</td>
-            <td class="px-3 py-3 text-right tabular-nums">{percentA(overall)!.toFixed(1)}%</td>
+            <td class="px-3 py-3 text-right tabular-nums">{share(overall, 'A')}</td>
             <td class="px-3 py-3 text-right tabular-nums">{overall.graded.toLocaleString()}</td>
             <td class="px-3 py-3">
               {@render gradeBar(overall)}
@@ -214,7 +215,6 @@ at four; this is how a student finds which four are worth that closer look.
         {#each rows as professor (professor.slug)}
           {@const gpa = gpaOf(professor.distribution)}
           {@const rating = ratings.get(professor.slug)}
-          {@const a = percentA(professor.distribution)}
           {@const isChecked = checked.includes(professor.slug)}
           <tr class="border-outline hover:bg-hover border-b last:border-b-0" class:bg-hover={isChecked}>
             <td class="px-3 py-3">
@@ -248,7 +248,7 @@ at four; this is how a student finds which four are worth that closer look.
                 <span class="text-sm">({rating.reviews})</span>
               {:else if ratingStatus === 'loading' && !ratings.has(professor.slug)}…{:else}—{/if}
             </td>
-            <td class="px-3 py-3 text-right tabular-nums">{a === null ? '—' : `${a.toFixed(1)}%`}</td>
+            <td class="px-3 py-3 text-right tabular-nums">{share(professor.distribution, 'A')}</td>
             <td class="px-3 py-3 text-right tabular-nums">{professor.distribution?.graded.toLocaleString() ?? '—'}</td>
             <td class="px-3 py-3">
               {#if professor.distribution && professor.distribution.barTotal > 0}
