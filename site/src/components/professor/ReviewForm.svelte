@@ -386,8 +386,8 @@ Copyright (C) 2026 Andrew Cupps
     <label class="flex flex-row items-start gap-2 text-sm">
       <input type="checkbox" bind:checked={rememberDevice} class="accent-orange mt-1" />
       <span>
-        Remember this device for 5 hours after I confirm, so my next reviews don't need another email.
-        <span class="text-text-secondary">Leave this off on a shared or public computer.</span>
+        Skip email confirmation on this device for 24 hours.
+        <span class="text-text-secondary">Leave off on shared computers.</span>
       </span>
     </label>
 
