@@ -9,9 +9,35 @@ import { loadCourseGradeSummaries } from '../course-planner/GradesLoader';
 import { toDistribution, mergeDistributions, calculateGpaWithoutActiveProf } from '../course-planner/Grades';
 import type { Section } from '@jupiterp/jupiterp';
 import type { CourseInstructorGradeSummary } from '../api/types';
-import { comparisonProfessors, loadComparisonProfessors, loadComparisonInstructor, groupGpaDots } from './Comparison';
+import {
+  comparisonProfessors,
+  loadComparisonProfessors,
+  loadComparisonInstructor,
+  loadRatings,
+  loadCourseSuggestions,
+  hasCourseSuggestions,
+  groupGpaDots,
+} from './Comparison';
 
-jest.mock('../client', () => ({ client: { coursesWithSections: jest.fn() } }));
+jest.mock('../client', () => ({
+  client: { coursesWithSections: jest.fn(), instructors: jest.fn(), minifiedCourses: jest.fn() },
+}));
+jest.mock(
+  '@jupiterp/jupiterp',
+  () => ({
+    SortBy: class {
+      keys: string[] = [];
+      ascending(key: string) {
+        this.keys.push(`${key}.asc`);
+        return this;
+      }
+      argsArray() {
+        return this.keys;
+      }
+    },
+  }),
+  { virtual: true }
+);
 jest.mock('../api/JupiterpApi', () => ({ instructorBySlug: jest.fn() }));
 jest.mock('../course-planner/GradesLoader', () => ({ loadCourseGradeSummaries: jest.fn() }));
 
@@ -42,6 +68,68 @@ describe('comparisonProfessors', () => {
   test('keeps different professors with the same name separate', () => {
     const section = { instructors: ['Alex Canonical'], instructorSlugs: ['another-alex'] } as Section;
     expect(comparisonProfessors([history], [section])).toHaveLength(2);
+  });
+});
+
+describe('loadRatings', () => {
+  test('treats a non-finite fallback rating as no rating', async () => {
+    jest.mocked(client.instructors).mockResolvedValue({
+      ok: () => true,
+      data: [{ slug: 'nan-rating', combined_rating: null, average_rating: NaN, pt_review_count: 2 }],
+    } as never);
+    const ratings = await loadRatings(['nan-rating']);
+    expect(ratings.get('nan-rating')).toEqual({ rating: null, reviews: 2 });
+  });
+
+  test('serves a slug from a bulk load without another request', async () => {
+    const instructors = jest.mocked(client.instructors);
+    instructors.mockResolvedValue({
+      ok: () => true,
+      data: [
+        { slug: 'bulk-a', combined_rating: 4.2, average_rating: 4, jupiterp_review_count: 1, pt_review_count: 2 },
+        { slug: 'bulk-b', combined_rating: 3.1, average_rating: 3, jupiterp_review_count: 0, pt_review_count: 5 },
+      ],
+    } as never);
+    await loadRatings(['bulk-a', 'bulk-b']);
+    const requests = instructors.mock.calls.length;
+    const ratings = await loadRatings(['bulk-b']);
+    expect(instructors.mock.calls.length).toBe(requests);
+    expect(ratings.get('bulk-b')).toEqual({ rating: 3.1, reviews: 5 });
+  });
+});
+
+describe('loadCourseSuggestions', () => {
+  test('asks the API for course code order so the limit keeps the first results', async () => {
+    jest.mocked(client.minifiedCourses).mockResolvedValue({ ok: () => true, data: [] } as never);
+    await loadCourseSuggestions('CM');
+    const config = jest.mocked(client.minifiedCourses).mock.calls[0][0];
+    expect(config).toMatchObject({ prefix: 'CM', limit: 50 });
+    expect(config.sortBy?.argsArray()).toEqual(['course_code.asc']);
+  });
+
+  test('evicts the least recently used prefix once the cache is full', async () => {
+    jest.mocked(client.minifiedCourses).mockResolvedValue({ ok: () => true, data: [] } as never);
+    for (let i = 0; i < 50; i++) await loadCourseSuggestions(`K${i}`);
+    await loadCourseSuggestions('K0');
+    await loadCourseSuggestions('K50');
+    expect(hasCourseSuggestions('K0')).toBe(true);
+    expect(hasCourseSuggestions('K1')).toBe(false);
+    expect(hasCourseSuggestions('K50')).toBe(true);
+  });
+
+  test('reuses a cached prefix without another request', async () => {
+    const minifiedCourses = jest.mocked(client.minifiedCourses);
+    minifiedCourses.mockResolvedValue({ ok: () => true, data: [] } as never);
+    await loadCourseSuggestions('RE');
+    const requests = minifiedCourses.mock.calls.length;
+    await loadCourseSuggestions('RE');
+    expect(minifiedCourses.mock.calls.length).toBe(requests);
+  });
+
+  test('does not cache a failed lookup', async () => {
+    jest.mocked(client.minifiedCourses).mockRejectedValueOnce(new Error('offline') as never);
+    await expect(loadCourseSuggestions('FA')).rejects.toThrow('offline');
+    expect(hasCourseSuggestions('FA')).toBe(false);
   });
 });
 

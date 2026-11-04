@@ -7,15 +7,68 @@
 import { client } from '../client';
 import { instructorBySlug } from '../api/JupiterpApi';
 import { loadCourseGradeSummaries } from '../course-planner/GradesLoader';
-import type { Section } from '@jupiterp/jupiterp';
+import { SortBy, type CourseMinified, type Section } from '@jupiterp/jupiterp';
 import type { CourseInstructorGradeSummary } from '../api/types';
 import { toDistribution, mergeDistributions, type GradeDistribution } from '../course-planner/Grades';
+import { combinedRating } from './ProfessorData';
 
 export interface ComparisonProfessor {
   slug: string;
   name: string;
   current: boolean;
   distribution: GradeDistribution | null;
+}
+
+export const MAX_COMPARED = 4;
+
+export const PROFESSOR_COLORS = [
+  {
+    dot: 'var(--orange)',
+    shades: ['var(--grade-strong)', 'var(--grade-mid)', 'var(--grade-soft)'],
+    withdrawn: 'var(--mid-gray)',
+    text: '#000',
+  },
+  { dot: '#38bdf8', shades: ['#0369a1', '#38bdf8', '#bae6fd'], withdrawn: '#647f98', text: '#000' },
+  { dot: '#8b5cf6', shades: ['#5b21b6', '#8b5cf6', '#ddd6fe'], withdrawn: '#7c6f9a', text: '#fff' },
+  { dot: '#14b8a6', shades: ['#0f766e', '#14b8a6', '#99f6e4'], withdrawn: '#5f8a85', text: '#000' },
+] as const;
+
+export interface ProfessorRating {
+  rating: number | null;
+  reviews: number;
+}
+
+const ratings = new Map<string, Promise<ProfessorRating | null>>();
+
+export async function loadRatings(slugs: string[]): Promise<Map<string, ProfessorRating | null>> {
+  const missing = [...new Set(slugs)].filter((slug) => !ratings.has(slug));
+  for (let start = 0; start < missing.length; start += 100) {
+    const chunk = missing.slice(start, start + 100);
+    const request = client
+      .instructors({
+        instructorSlugs: new Set(chunk),
+        columns: ['slug', 'combined_rating', 'average_rating', 'jupiterp_review_count', 'pt_review_count'],
+        limit: 500,
+      })
+      .then((response) => {
+        if (!response.ok() || response.data == null) throw new Error('Ratings could not be loaded');
+        return new Map(response.data.map((row) => [row.slug, row]));
+      });
+    for (const slug of chunk) {
+      const pending = request.then((rows) => {
+        const row = rows.get(slug);
+        if (!row) return null;
+        return {
+          rating: combinedRating(row),
+          reviews: (row.jupiterp_review_count ?? 0) + (row.pt_review_count ?? 0),
+        };
+      });
+      pending.catch(() => ratings.delete(slug));
+      ratings.set(slug, pending);
+    }
+  }
+  const entries = await Promise.all(slugs.map(async (slug) => [slug, await ratings.get(slug)!] as const));
+  return new Map(entries);
 }
 
 export function comparisonProfessors(
@@ -47,6 +100,34 @@ export function comparisonProfessors(
     });
   }
   return [...professors.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+const MAX_CACHED_SUGGESTIONS = 50;
+const suggestions = new Map<string, Promise<CourseMinified[]>>();
+
+export function hasCourseSuggestions(prefix: string): boolean {
+  return suggestions.has(prefix);
+}
+
+export function loadCourseSuggestions(prefix: string): Promise<CourseMinified[]> {
+  let pending = suggestions.get(prefix);
+  if (pending) {
+    suggestions.delete(prefix);
+  } else {
+    if (suggestions.size >= MAX_CACHED_SUGGESTIONS) suggestions.delete(suggestions.keys().next().value!);
+    pending = client
+      .minifiedCourses({ prefix, limit: 50, sortBy: new SortBy().ascending('course_code') })
+      .then((response) => {
+        if (!response.ok() || response.data == null) throw new Error(`Course suggestions failed for ${prefix}`);
+        return response.data;
+      })
+      .catch((error) => {
+        suggestions.delete(prefix);
+        throw error;
+      });
+  }
+  suggestions.set(prefix, pending);
+  return pending;
 }
 
 const currentCourses = new Map<string, ReturnType<typeof client.coursesWithSections>>();
