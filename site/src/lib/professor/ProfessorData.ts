@@ -153,7 +153,7 @@ export interface RatingBreakdown {
 export function ratingBreakdown(instructor: InstructorFull): RatingBreakdown {
   const jupiterpCount = instructor.jupiterp_review_count ?? 0;
   const planetterpCount = instructor.pt_review_count ?? 0;
-  const combined = instructor.combined_rating ?? numeric(instructor.average_rating);
+  const combined = combinedRating(instructor);
 
   return {
     combined,
@@ -174,6 +174,10 @@ export function ratingBreakdown(instructor: InstructorFull): RatingBreakdown {
     // that can be tuned without a deploy.
     displayable: combined !== null,
   };
+}
+
+export function combinedRating(instructor: Pick<InstructorFull, 'combined_rating' | 'average_rating'>): number | null {
+  return instructor.combined_rating ?? numeric(instructor.average_rating);
 }
 
 function numeric(value: number | null | undefined): number | null {

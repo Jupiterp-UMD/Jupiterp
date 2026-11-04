@@ -15,10 +15,11 @@ Grouped, stacked grade bars on one percentage scale, one colour per comparison s
   } from '../../lib/course-planner/Grades';
   import { PROFESSOR_COLORS, type ComparisonProfessor } from '../../lib/professor/Comparison';
 
-  function formatPercent(distribution: GradeDistribution, bucket: GradeBucket): string {
+  function formatPercent(distribution: GradeDistribution, bucket: GradeBucket, decimals = 1): string {
     const count = distribution.buckets[bucket];
     const percent = (count / distribution.barTotal) * 100;
-    return count > 0 && percent < 0.05 ? '<0.1' : percent.toFixed(1);
+    const smallest = 10 ** -decimals;
+    return count > 0 && percent < smallest / 2 ? `<${smallest}` : percent.toFixed(decimals);
   }
 
   let { professors }: { professors: (ComparisonProfessor | undefined)[] } = $props();
@@ -136,17 +137,21 @@ Grouped, stacked grade bars on one percentage scale, one colour per comparison s
             {@const distribution = professor.distribution}
             {@const available = distribution !== null && distribution.barTotal > 0}
             {@const percent = available ? (distribution.buckets[bucket] / distribution.barTotal) * 100 : 0}
-            <div class="relative min-w-0 flex-1" style:height={`${(percent / maxPercent) * 85}%`}>
+            {@const exact = available ? `${formatPercent(distribution, bucket)}%` : '—'}
+            {@const rounded = available ? `${formatPercent(distribution, bucket, compact ? 0 : 1)}%` : '—'}
+            <div class="group relative min-w-0 flex-1" style:height={`${(percent / maxPercent) * 85}%`}>
               <span
                 class={[
-                  'absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-semibold',
+                  'group-hover:bg-bg-primary absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-semibold group-hover:z-20',
                   compact ? '-top-5 text-xs' : '-top-7 text-sm',
-                ]}>{available ? `${formatPercent(distribution, bucket)}%` : '—'}</span
+                ]}
+                ><span class="group-hover:hidden">{rounded}</span><span class="hidden group-hover:inline">{exact}</span
+                ></span
               >
               <div
                 class="flex h-full flex-col overflow-hidden rounded-t-md"
                 role="img"
-                aria-label={`${professor.name}, ${bucket}: ${available ? `${formatPercent(distribution, bucket)}%` : 'unavailable'}`}
+                aria-label={`${professor.name}, ${bucket}: ${available ? exact : 'unavailable'}`}
               >
                 {#if available}
                   {#each BUCKET_LETTERS[bucket] as letter (letter)}

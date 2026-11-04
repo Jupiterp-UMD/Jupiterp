@@ -52,7 +52,7 @@ at four; this is how a student finds which four are worth that closer look.
     loadRatings(slugs)
       .then((result) => {
         if (cancelled) return;
-        ratings = result;
+        ratings = new Map([...ratings, ...result]);
         ratingStatus = 'loaded';
       })
       .catch(() => {
@@ -243,10 +243,10 @@ at four; this is how a student finds which four are worth that closer look.
               {#if gpa !== null}{gpa.toFixed(2)}{:else}<span title="Needs at least 20 graded students">—</span>{/if}
             </td>
             <td class="px-3 py-3 text-right tabular-nums">
-              {#if ratingStatus === 'loading'}…{:else if rating?.rating != null}
+              {#if rating?.rating != null}
                 <span class="text-orange font-semibold">{rating.rating.toFixed(1)}</span>
                 <span class="text-sm">({rating.reviews})</span>
-              {:else}—{/if}
+              {:else if ratingStatus === 'loading' && !ratings.has(professor.slug)}…{:else}—{/if}
             </td>
             <td class="px-3 py-3 text-right tabular-nums">{a === null ? '—' : `${a.toFixed(1)}%`}</td>
             <td class="px-3 py-3 text-right tabular-nums">{professor.distribution?.graded.toLocaleString() ?? '—'}</td>

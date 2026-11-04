@@ -13,6 +13,7 @@ Compare up to four professors within a single course, or list all of them.
     loadComparisonProfessors,
     loadComparisonInstructor,
     loadCourseSuggestions,
+    hasCourseSuggestions,
     MAX_COMPARED,
     PROFESSOR_COLORS,
     type ComparisonProfessor,
@@ -91,19 +92,27 @@ Compare up to four professors within a single course, or list all of them.
       return;
     }
     suggestionsOpen = true;
-    suggestionTimer = setTimeout(async () => {
+    const load = async () => {
       try {
         const results = await loadCourseSuggestions(prefix);
         if (id === suggestionRequest) suggestions = results;
       } catch {
         if (id === suggestionRequest) suggestions = [];
       }
-    }, 150);
+    };
+    if (hasCourseSuggestions(prefix)) void load();
+    else suggestionTimer = setTimeout(load, 150);
+  }
+
+  function clearSuggestions() {
+    clearTimeout(suggestionTimer);
+    suggestionRequest++;
+    suggestions = [];
+    activeSuggestion = -1;
   }
 
   function chooseSuggestion(code: string) {
-    clearTimeout(suggestionTimer);
-    suggestionRequest++;
+    clearSuggestions();
     suggestionsOpen = false;
     input = code;
     validation = '';
@@ -138,7 +147,7 @@ Compare up to four professors within a single course, or list all of them.
 
     url.searchParams.delete('left');
     url.searchParams.delete('right');
-    if (slugs.some(Boolean)) url.searchParams.set('profs', slugs.join(','));
+    if (slugs.length > 2 || slugs.some(Boolean)) url.searchParams.set('profs', slugs.join(','));
     else url.searchParams.delete('profs');
     if (nextView === null) url.searchParams.delete('view');
     else url.searchParams.set('view', nextView);
@@ -157,6 +166,7 @@ Compare up to four professors within a single course, or list all of them.
       return;
     }
     validation = '';
+    clearSuggestions();
     if (!syncUrl(code, [], null)) void loadCourse(code);
   }
 
@@ -179,7 +189,7 @@ Compare up to four professors within a single course, or list all of them.
   }
 
   function compareFromTable(slugs: string[]) {
-    selectionSlugs = slugs.length >= 2 ? slugs.slice(0, MAX_COMPARED) : [...slugs, ''];
+    selectionSlugs = [...slugs];
     view = 'pick';
     reviewTab = 0;
     syncUrl(course, selectionSlugs);
@@ -226,6 +236,7 @@ Compare up to four professors within a single course, or list all of them.
   async function loadCourse(rawCode: string, initialSlugs: string[] = []) {
     const code = rawCode.replace(/\s+/g, '').toUpperCase();
     const id = ++requestId;
+    clearSuggestions();
     if (!/^[A-Z]{4}\d{3}[A-Z]?$/.test(code)) {
       validation = 'Enter a course code, such as CMSC132.';
       status = 'idle';
@@ -271,6 +282,7 @@ Compare up to four professors within a single course, or list all of them.
             : 'current';
       if (!code) {
         requestId++;
+        clearSuggestions();
         input = '';
         course = '';
         professors = [];

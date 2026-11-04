@@ -7,9 +7,10 @@
 import { client } from '../client';
 import { instructorBySlug } from '../api/JupiterpApi';
 import { loadCourseGradeSummaries } from '../course-planner/GradesLoader';
-import type { CourseMinified, Section } from '@jupiterp/jupiterp';
+import { SortBy, type CourseMinified, type Section } from '@jupiterp/jupiterp';
 import type { CourseInstructorGradeSummary } from '../api/types';
 import { toDistribution, mergeDistributions, type GradeDistribution } from '../course-planner/Grades';
+import { combinedRating } from './ProfessorData';
 
 export interface ComparisonProfessor {
   slug: string;
@@ -58,7 +59,7 @@ export async function loadRatings(slugs: string[]): Promise<Map<string, Professo
         const row = rows.get(slug);
         if (!row) return null;
         return {
-          rating: row.combined_rating ?? row.average_rating,
+          rating: combinedRating(row),
           reviews: (row.jupiterp_review_count ?? 0) + (row.pt_review_count ?? 0),
         };
       });
@@ -101,23 +102,31 @@ export function comparisonProfessors(
   return [...professors.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+const MAX_CACHED_SUGGESTIONS = 50;
 const suggestions = new Map<string, Promise<CourseMinified[]>>();
+
+export function hasCourseSuggestions(prefix: string): boolean {
+  return suggestions.has(prefix);
+}
 
 export function loadCourseSuggestions(prefix: string): Promise<CourseMinified[]> {
   let pending = suggestions.get(prefix);
-  if (!pending) {
+  if (pending) {
+    suggestions.delete(prefix);
+  } else {
+    if (suggestions.size >= MAX_CACHED_SUGGESTIONS) suggestions.delete(suggestions.keys().next().value!);
     pending = client
-      .minifiedCourses({ prefix, limit: 50 })
+      .minifiedCourses({ prefix, limit: 50, sortBy: new SortBy().ascending('course_code') })
       .then((response) => {
         if (!response.ok() || response.data == null) throw new Error(`Course suggestions failed for ${prefix}`);
-        return [...response.data].sort((a, b) => a.courseCode.localeCompare(b.courseCode));
+        return response.data;
       })
       .catch((error) => {
         suggestions.delete(prefix);
         throw error;
       });
-    suggestions.set(prefix, pending);
   }
+  suggestions.set(prefix, pending);
   return pending;
 }
 
