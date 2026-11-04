@@ -18,6 +18,7 @@ Compare two professors within a single course.
   import ComparisonDistribution from '../../../components/professor/ComparisonDistribution.svelte';
   import ReviewList from '../../../components/professor/ReviewList.svelte';
   import ComparisonRating from '../../../components/professor/ComparisonRating.svelte';
+  import GpaDots from '../../../components/professor/GpaDots.svelte';
   import ProfessorPicker from '../../../components/professor/ProfessorPicker.svelte';
 
   let input = $state('');
@@ -171,10 +172,6 @@ Compare two professors within a single course.
     return distribution && hasEnoughForGpa(distribution) ? distribution.gpa : null;
   }
 
-  function position(gpa: number): number {
-    return Math.max(0, Math.min(100, ((gpa - scaleMin) / (4 - scaleMin)) * 100));
-  }
-
   function deviation(professor: ComparisonProfessor | undefined): number | null {
     const gpa = gpaOf(professor);
     const otherMean = calculateGpaWithoutActiveProf(overall, professor?.distribution);
@@ -288,45 +285,31 @@ Compare two professors within a single course.
             {/each}
           </div>
           <div class="mx-3">
-            <div
-              class="relative h-14"
-              role="img"
-              aria-label={`GPA scale from ${scaleMin} to 4 with ${plottedProfessors.length} professors. Course mean: ${courseMean?.toFixed(2) ?? 'unavailable'}. ${left?.name}: ${gpaOf(left)?.toFixed(2) ?? 'unavailable'}. ${right?.name}: ${gpaOf(right)?.toFixed(2) ?? 'unavailable'}.`}
-            >
-              <div class="bg-outline absolute inset-x-0 top-7 h-0.5 rounded-full"></div>
-              {#each plottedProfessors as professor (professor.slug)}
-                {#if professor.slug !== leftSlug && professor.slug !== rightSlug}
-                  <div
-                    class="border-text-secondary bg-bg-primary absolute top-7 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
-                    style:left={`${position(gpaOf(professor)!)}%`}
-                    title={`${professor.name}: ${gpaOf(professor)!.toFixed(2)}`}
-                  ></div>
-                {/if}
-              {/each}
-              {#if courseMean !== null}
-                <div
-                  class="bg-text-primary absolute top-3 h-8 w-0.5 -translate-x-1/2"
-                  style:left={`${position(courseMean)}%`}
-                  title={`Course mean: ${courseMean.toFixed(2)}`}
-                ></div>
-              {/if}
-              {#each selected as professor, index (index)}
-                {@const gpa = gpaOf(professor)}
-                {#if gpa !== null}
-                  <div
-                    class="gpa-marker"
-                    class:second={index === 1}
-                    style:left={`${position(gpa)}%`}
-                    title={`${professor?.name}: ${gpa.toFixed(2)}`}
-                  >
-                    <span>{index + 1}</span>
-                  </div>
-                {/if}
-              {/each}
-            </div>
-            <div class="text-text-secondary flex justify-between text-sm">
-              {#each [scaleMin, (scaleMin + 4) / 2, 4] as tick (tick)}<span>{tick.toFixed(1)}</span>{/each}
-            </div>
+            <GpaDots
+              professors={plottedProfessors.flatMap((professor) =>
+                professor.slug !== leftSlug && professor.slug !== rightSlug
+                  ? [{ slug: professor.slug, name: professor.name, gpa: gpaOf(professor)! }]
+                  : []
+              )}
+              courseCode={course}
+              mean={courseMean}
+              meanLabel="Course mean"
+              min={scaleMin}
+              showMidpoint
+              markers={selected.flatMap((professor, index) => {
+                const gpa = gpaOf(professor);
+                return professor && gpa !== null
+                  ? [
+                      {
+                        gpa,
+                        label: String(index + 1),
+                        name: professor.name,
+                        color: index === 1 ? '#38bdf8' : 'var(--orange)',
+                      },
+                    ]
+                  : [];
+              })}
+            />
           </div>
           <p class="text-text-secondary mt-4 text-sm">
             Gray dots: other professors · Vertical line: course mean {courseMean === null
@@ -439,24 +422,5 @@ Compare two professors within a single course.
   }
   .comparison-dot.second {
     background: var(--marker-color);
-  }
-  .gpa-marker {
-    --marker-color: var(--orange);
-    position: absolute;
-    display: grid;
-    place-items: center;
-    width: 1.4rem;
-    height: 1.4rem;
-    top: 1.75rem;
-    transform: translate(-50%, -50%);
-    border: 2px solid var(--bg-primary);
-    border-radius: 50%;
-    background: var(--marker-color);
-    color: #000;
-    font-size: 0.7rem;
-    font-weight: 700;
-  }
-  .gpa-marker.second {
-    --marker-color: #38bdf8;
   }
 </style>

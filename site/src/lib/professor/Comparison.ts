@@ -103,9 +103,9 @@ export interface ProfessorGpa {
   gpa: number;
 }
 
-export function groupGpaDots(professors: ProfessorGpa[], scaleWidth: number) {
+export function groupGpaDots(professors: ProfessorGpa[], scaleWidth: number, min = 2) {
   const width = Math.max(44, scaleWidth);
-  const position = (gpa: number) => Math.max(22, Math.min(width - 22, ((gpa - 2) / 2) * width));
+  const position = (gpa: number) => Math.max(22, Math.min(width - 22, ((gpa - min) / (4 - min)) * width));
   const groups: ProfessorGpa[][] = [];
   for (const professor of [...professors].sort((a, b) => a.gpa - b.gpa)) {
     const group = groups.at(-1);
