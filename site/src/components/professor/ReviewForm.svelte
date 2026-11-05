@@ -11,6 +11,8 @@ Copyright (C) 2026 Andrew Cupps
   import { forgetReviewSessions, hasReviewSessions, submitReview } from '../../lib/api/JupiterpApi';
   import StarRatingInput from './StarRatingInput.svelte';
   import ManageKey from './ManageKey.svelte';
+  import CoursePicker from './CoursePicker.svelte';
+  import SearchableSelect from './SearchableSelect.svelte';
 
   interface Props {
     instructorSlug: string;
@@ -282,53 +284,42 @@ Copyright (C) 2026 Andrew Cupps
     </div>
 
     <div class="flex flex-row flex-wrap gap-3">
-      <label class="flex flex-col gap-1">
-        <span class="text-sm font-bold">Course</span>
-        <!--
-          A select, matching Term and Grade beside it. This was an input with a
-          datalist, which renders as a text box with a browser-drawn suggestion
-          popup: a different height, a different control, and a dropdown that
-          floats away from the field rather than under it.
+      <div class="flex flex-col gap-1">
+        <label for="review-course" class="text-sm font-bold">Course</label>
+        <CoursePicker
+          codes={courseCodes}
+          bind:selected={() => courseCode || null, (code) => (courseCode = code ?? '')}
+          id="review-course"
+          allowAll={false}
+          placeholder="Select"
+          widthClass="w-32"
+          compact
+        />
+      </div>
 
-          The options are every course this professor is teaching now plus
-          every one they have grade history for, so a student reviewing a
-          course they took has it.
-        -->
-        <select
-          bind:value={courseCode}
-          required
-          class="border-outline bg-bg-primary rounded-md border-2 py-1 pl-2 pr-8"
-        >
-          <option value="" disabled>Select</option>
-          {#each courseCodes as code (code)}
-            <option value={code}>{code}</option>
-          {/each}
-        </select>
-      </label>
+      <div class="flex flex-col gap-1">
+        <label for="review-term" class="text-sm font-bold">Term</label>
+        <SearchableSelect
+          options={TERMS.map((option) => ({ value: String(option.value), label: option.label }))}
+          bind:selected={() => term || null, (value) => (term = value ?? '')}
+          id="review-term"
+          label="Term"
+          widthClass="w-36"
+          compact
+        />
+      </div>
 
-      <label class="flex flex-col gap-1">
-        <span class="text-sm font-bold">Term</span>
-        <select bind:value={term} required class="border-outline bg-bg-primary rounded-md border-2 py-1 pl-2 pr-8">
-          <option value="" disabled>Select</option>
-          {#each TERMS as option (option.value)}
-            <option value={option.value}>{option.label}</option>
-          {/each}
-        </select>
-      </label>
-
-      <label class="flex flex-col gap-1">
-        <span class="text-sm font-bold">Your grade</span>
-        <select
-          bind:value={expectedGrade}
-          required
-          class="border-outline bg-bg-primary rounded-md border-2 py-1 pl-2 pr-8"
-        >
-          <option value="" disabled>Select</option>
-          {#each GRADES as grade (grade)}
-            <option value={grade}>{grade}</option>
-          {/each}
-        </select>
-      </label>
+      <div class="flex flex-col gap-1">
+        <label for="review-grade" class="text-sm font-bold">Your grade</label>
+        <SearchableSelect
+          options={GRADES.map((grade) => ({ value: grade, label: grade }))}
+          bind:selected={() => expectedGrade || null, (value) => (expectedGrade = value ?? '')}
+          id="review-grade"
+          label="Your grade"
+          widthClass="w-22"
+          compact
+        />
+      </div>
     </div>
 
     <p class="text-text-secondary text-sm">

@@ -39,9 +39,11 @@ renders it.
 
   let totalCourses = $derived(courses.filter((course) => hasEnoughForGpa(course.distribution)));
 
-  let allCourseCodes = $derived([
-    ...new Set([...data.currentCourseCodes, ...data.courses.map((course) => course.courseCode)]),
-  ]);
+  let allCourseCodes = $derived(
+    [...new Set([...data.currentCourseCodes, ...data.courses.map((course) => course.courseCode)])].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true })
+    )
+  );
 
   let selectedCode = $state<string | null>(
     untrack(() =>
