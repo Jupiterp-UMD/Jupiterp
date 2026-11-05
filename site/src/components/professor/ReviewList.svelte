@@ -5,7 +5,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 Copyright (C) 2026 Andrew Cupps
 -->
 <script lang="ts">
-  import { GlobeOutline } from 'flowbite-svelte-icons';
+  import { ArrowUpRightFromSquareOutline, GlobeOutline } from 'flowbite-svelte-icons';
   import { reportReview, reviewsFor, type ReviewSort } from '../../lib/api/JupiterpApi';
   import type { Review } from '../../lib/api/types';
   import { formatSemester } from '../../lib/course-planner/Grades';
@@ -16,9 +16,17 @@ Copyright (C) 2026 Andrew Cupps
     courseCode: string | null;
     reviewsEl?: HTMLElement | null;
     id?: string;
+    /** Shown beside the heading in place of the count, when there is no count. */
+    planetterpUrl?: string | null;
   }
 
-  let { instructorSlug, courseCode, reviewsEl = $bindable(null), id = 'reviews' }: Props = $props();
+  let {
+    instructorSlug,
+    courseCode,
+    reviewsEl = $bindable(null),
+    id = 'reviews',
+    planetterpUrl = null,
+  }: Props = $props();
 
   const PAGE_SIZE = 10;
   const PREVIEW_LENGTH = 500;
@@ -121,10 +129,21 @@ Copyright (C) 2026 Andrew Cupps
 </script>
 
 <section bind:this={reviewsEl} {id} aria-label="Student reviews" class="mt-8 flex scroll-mt-16 flex-col gap-3">
-  <div class="flex flex-row items-baseline justify-between">
+  <div class="flex flex-row items-baseline justify-between gap-4">
     <h3 class="text-lg font-bold">Reviews{courseCode === null ? '' : ` for ${courseCode}`}</h3>
     {#if total !== null && (total > 0 || filtered)}
       <span class="text-text-secondary text-sm">{total} {filtered ? 'matching' : 'total'}</span>
+    {:else if planetterpUrl !== null}
+      <a
+        href={planetterpUrl}
+        target="_blank"
+        rel="external noopener noreferrer"
+        class="text-text-secondary hover:text-orange inline-flex flex-row items-center gap-1 whitespace-nowrap text-sm hover:underline"
+      >
+        View on PlanetTerp
+        <span class="sr-only">(opens in a new tab)</span>
+        <ArrowUpRightFromSquareOutline class="h-3.5 w-3.5" aria-hidden="true" />
+      </a>
     {/if}
   </div>
 

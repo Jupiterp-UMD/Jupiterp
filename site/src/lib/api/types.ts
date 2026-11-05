@@ -138,6 +138,13 @@ export interface InstructorFull {
   /** Retained for v0 compatibility. Prefer `combined_rating`. */
   average_rating: number | null;
 
+  /**
+   * PlanetTerp's slug for this professor, for linking to their PlanetTerp
+   * page. Not Jupiterp's `slug`: `joseph-conroy` here is `conroy_joseph` there.
+   * Null when no PlanetTerp record is linked.
+   */
+  pt_slug: string | null;
+
   /** PlanetTerp's rating, frozen at `pt_snapshot_at` and never updated. */
   pt_average_rating: number | null;
   pt_review_count: number | null;
