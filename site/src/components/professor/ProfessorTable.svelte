@@ -86,8 +86,11 @@ at four; this is how a student finds which four are worth that closer look.
         return professor.name;
       case 'gpa':
         return gpaOf(professor.distribution);
+      // The ranking score, not the average printed in the column: sorting by
+      // the average would put a professor with one 5-star review above one
+      // with sixty 4.8s, which is what the ranking score exists to prevent.
       case 'rating':
-        return ratings.get(professor.slug)?.rating ?? null;
+        return ratings.get(professor.slug)?.ranking ?? null;
       case 'a':
         return percentA(professor.distribution);
       case 'graded':
@@ -243,8 +246,8 @@ at four; this is how a student finds which four are worth that closer look.
               {#if gpa !== null}{gpa.toFixed(2)}{:else}<span title="Needs at least 20 graded students">—</span>{/if}
             </td>
             <td class="px-3 py-3 text-right tabular-nums">
-              {#if rating?.rating != null}
-                <span class="text-orange font-semibold">{rating.rating.toFixed(1)}</span>
+              {#if rating?.display != null}
+                <span class="text-orange font-semibold">{rating.display.toFixed(1)}</span>
                 <span class="text-sm">({rating.reviews})</span>
               {:else if ratingStatus === 'loading' && !ratings.has(professor.slug)}…{:else}—{/if}
             </td>

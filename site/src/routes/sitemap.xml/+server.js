@@ -8,6 +8,7 @@
  */
 
 import { client } from '../../lib/client';
+import { displayRating, withDisplayRating } from '../../lib/professor/Rating';
 
 const STATIC_PAGES = [
   { url: '/', changefreq: 'daily', priority: 0.7 },
@@ -41,20 +42,21 @@ const MAX_PROFESSOR_URLS = 45000;
  * how a site earns a thin-content problem, which is the one thing a sitemap
  * can actively make worse.
  *
+ * The rating is the one the page shows, `display_rating`, not the ranking
+ * score: a professor below `min_weight_to_display` has no ranking score but
+ * still shows their average, and would be left out of the sitemap for it.
+ *
  * `is_active` rather than a grade lookup because it is one column on a row
  * already being fetched, where per-professor grade counts would be fifteen
  * thousand extra queries to build one file. It is a proxy and it is the cheap
  * one: a professor teaching right now has a page students are looking for even
  * before any grades are attributed to them.
  *
- * @param {{ combined_rating?: number | null, is_active?: boolean }} instructor
+ * @param {{ display_rating?: number | null, combined_rating?: number | null, is_active?: boolean }} instructor
  * @returns {boolean}
  */
 function worthIndexing(instructor) {
-  return (
-    (typeof instructor.combined_rating === 'number' && Number.isFinite(instructor.combined_rating)) ||
-    instructor.is_active === true
-  );
+  return displayRating(instructor) !== null || instructor.is_active === true;
 }
 
 /**
@@ -76,20 +78,38 @@ async function professorSlugs(fetchFn) {
   /** @type {string[]} */
   const slugs = [];
   let offset = 0;
+  // Decided by the first page: `display_rating` if the API knows it, and the
+  // ranking score alone if it answers that column with a 400.
+  /** @type {string[] | null} */
+  let columns = null;
 
   while (slugs.length < MAX_PROFESSOR_URLS) {
-    const params = new URLSearchParams({
-      limit: String(PAGE_SIZE),
-      offset: String(offset),
-      sortBy: 'slug.asc',
-      // Only the columns this needs. The rest of the row is seventeen columns
-      // of provenance and timestamps, fetched thirty times over and discarded.
-      columns: 'slug,combined_rating,is_active',
-    });
-    // `/v1`, like the rest of the site. This was the last `/v0` caller left in
-    // the site after the planner moved, which quietly made "the site makes zero
-    // /v0 requests" untrue.
-    const response = await fetchFn(`${client.dbUrl}/v1/instructors?${params.toString()}`);
+    /** @param {string[]} names */
+    const fetchPage = (names) => {
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        offset: String(offset),
+        sortBy: 'slug.asc',
+        // Only the columns this needs. The rest of the row is eighteen columns
+        // of provenance and timestamps, fetched thirty times over and discarded.
+        columns: names.join(','),
+      });
+      // `/v1`, like the rest of the site. This was the last `/v0` caller left
+      // in the site after the planner moved, which quietly made "the site makes
+      // zero /v0 requests" untrue.
+      return fetchFn(`${client.dbUrl}/v1/instructors?${params.toString()}`);
+    };
+    /** @type {Response} */
+    let response;
+    if (columns === null) {
+      ({ response, columns } = await withDisplayRating(
+        ['slug', 'combined_rating', 'is_active'],
+        fetchPage,
+        (r) => r.status === 400
+      ));
+    } else {
+      response = await fetchPage(columns);
+    }
     if (!response.ok) {
       // A sitemap missing its professor pages is far better than a 500 that
       // makes a crawler drop the whole file, so this degrades rather than

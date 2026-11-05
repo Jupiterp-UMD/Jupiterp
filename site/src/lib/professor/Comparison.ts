@@ -10,7 +10,7 @@ import { loadCourseGradeSummaries } from '../course-planner/GradesLoader';
 import { SortBy, type CourseMinified, type Section } from '@jupiterp/jupiterp';
 import type { CourseInstructorGradeSummary } from '../api/types';
 import { toDistribution, mergeDistributions, type GradeDistribution } from '../course-planner/Grades';
-import { combinedRating } from './ProfessorData';
+import { displayRating, rankingRating, withDisplayRating } from './Rating';
 
 export interface ComparisonProfessor {
   slug: string;
@@ -33,8 +33,14 @@ export const PROFESSOR_COLORS = [
   { dot: '#14b8a6', shades: ['#0f766e', '#14b8a6', '#99f6e4'], withdrawn: '#5f8a85', text: '#000' },
 ] as const;
 
+/**
+ * Both ratings, because the table sorts and the cards print: `display` is the
+ * reviews' average and is what gets shown, `ranking` is the shrunk score and
+ * is what orders professors. See `lib/professor/Rating`.
+ */
 export interface ProfessorRating {
-  rating: number | null;
+  display: number | null;
+  ranking: number | null;
   reviews: number;
 }
 
@@ -44,22 +50,21 @@ export async function loadRatings(slugs: string[]): Promise<Map<string, Professo
   const missing = [...new Set(slugs)].filter((slug) => !ratings.has(slug));
   for (let start = 0; start < missing.length; start += 100) {
     const chunk = missing.slice(start, start + 100);
-    const request = client
-      .instructors({
-        instructorSlugs: new Set(chunk),
-        columns: ['slug', 'combined_rating', 'average_rating', 'jupiterp_review_count', 'pt_review_count'],
-        limit: 500,
-      })
-      .then((response) => {
-        if (!response.ok() || response.data == null) throw new Error('Ratings could not be loaded');
-        return new Map(response.data.map((row) => [row.slug, row]));
-      });
+    const request = withDisplayRating(
+      ['slug', 'combined_rating', 'average_rating', 'jupiterp_review_count', 'pt_review_count'],
+      (names) => client.instructors({ instructorSlugs: new Set(chunk), columns: names, limit: 500 }),
+      (response) => response.statusCode === 400
+    ).then(({ response }) => {
+      if (!response.ok() || response.data == null) throw new Error('Ratings could not be loaded');
+      return new Map(response.data.map((row) => [row.slug, row]));
+    });
     for (const slug of chunk) {
       const pending = request.then((rows) => {
         const row = rows.get(slug);
         if (!row) return null;
         return {
-          rating: combinedRating(row),
+          display: displayRating(row),
+          ranking: rankingRating(row),
           reviews: (row.jupiterp_review_count ?? 0) + (row.pt_review_count ?? 0),
         };
       });

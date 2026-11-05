@@ -7,9 +7,9 @@
  * @fileoverview Which rating a professor page shows.
  */
 
-import { describe, expect, test } from '@jest/globals';
+import { describe, expect, jest, test } from '@jest/globals';
 import type { InstructorFull } from '../api/types';
-import { ratingBreakdown } from './Rating';
+import { displayRating, rankingRating, ratingBreakdown, withDisplayRating } from './Rating';
 
 function instructor(overrides: Partial<InstructorFull>): InstructorFull {
   return {
@@ -46,33 +46,86 @@ describe('ratingBreakdown', () => {
       })
     );
     expect(rating.display).toBe(5);
+    expect(rating.displayIsRanking).toBe(false);
     expect(rating.combined).toBe(3.92);
-    expect(rating.displayable).toBe(true);
     expect(rating.planetterpCount).toBe(1);
     expect(rating.jupiterpCount).toBe(0);
+    expect(rating.count).toBe(1);
   });
 
   // Before the migration adding the column is applied, the API omits it.
-  test('falls back to the ranking score when display_rating is absent', () => {
+  test('falls back to the ranking score when display_rating is absent, and says so', () => {
     const row = instructor({ combined_rating: 3.92, average_rating: 3.92 });
     delete row.display_rating;
     const rating = ratingBreakdown(row);
     expect(rating.display).toBe(3.92);
-    expect(rating.displayable).toBe(true);
+    expect(rating.displayIsRanking).toBe(true);
   });
 
   // `combined_rating` is gated on `min_weight_to_display`; `display_rating`
   // is not, and a low review count is no reason to hide an honest average.
-  test('is displayable when only the display rating exists', () => {
+  test('shows the display rating when there is no ranking score', () => {
     const rating = ratingBreakdown(instructor({ display_rating: 4.5, jupiterp_rating: 4.5, jupiterp_review_count: 1 }));
     expect(rating.display).toBe(4.5);
     expect(rating.combined).toBeNull();
-    expect(rating.displayable).toBe(true);
   });
 
-  test('is not displayable with no reviews at all', () => {
+  test('has nothing to show with no reviews at all', () => {
     const rating = ratingBreakdown(instructor({}));
     expect(rating.display).toBeNull();
-    expect(rating.displayable).toBe(false);
+    expect(rating.displayIsRanking).toBe(false);
+    expect(rating.count).toBe(0);
+  });
+
+  test('counts reviews from both sources', () => {
+    const rating = ratingBreakdown(instructor({ jupiterp_review_count: 3, pt_review_count: 9, display_rating: 4 }));
+    expect(rating.count).toBe(12);
+  });
+});
+
+describe('displayRating', () => {
+  test('a present null is nothing to show, not a reason to fall back', () => {
+    expect(displayRating({ display_rating: null, combined_rating: 3.9, average_rating: 3.9 })).toBeNull();
+  });
+
+  test('falls back through the ranking score to its legacy alias', () => {
+    // The planner's lookup carries `average_rating` and not `combined_rating`.
+    expect(displayRating({ average_rating: 4.1 })).toBe(4.1);
+  });
+
+  test('treats a non-finite value as no rating', () => {
+    expect(displayRating({ display_rating: NaN })).toBeNull();
+    expect(rankingRating({ combined_rating: null, average_rating: NaN })).toBeNull();
+  });
+});
+
+describe('withDisplayRating', () => {
+  type Response = { status: number };
+
+  test('asks for display_rating alongside the given columns', async () => {
+    const request = jest.fn(async (): Promise<Response> => ({ status: 200 }));
+    const { columns } = await withDisplayRating(['slug', 'name'], request, (r) => r.status === 400);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request).toHaveBeenCalledWith(['slug', 'name', 'display_rating']);
+    expect(columns).toEqual(['slug', 'name', 'display_rating']);
+  });
+
+  // An API without the column rejects the whole request. Losing the new column
+  // is fine; losing every rating with it is not.
+  test('retries without display_rating when the API rejects it', async () => {
+    const request = jest.fn(async (columns: string[]): Promise<Response> => ({
+      status: columns.includes('display_rating') ? 400 : 200,
+    }));
+    const { response, columns } = await withDisplayRating(['slug'], request, (r) => r.status === 400);
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(response.status).toBe(200);
+    expect(columns).toEqual(['slug']);
+  });
+
+  test('does not retry other failures', async () => {
+    const request = jest.fn(async (): Promise<Response> => ({ status: 500 }));
+    const { response } = await withDisplayRating(['slug'], request, (r) => r.status === 400);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(500);
   });
 });

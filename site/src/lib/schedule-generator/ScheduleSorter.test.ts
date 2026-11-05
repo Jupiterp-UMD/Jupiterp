@@ -17,6 +17,7 @@ function withMetrics(metrics: Partial<ScheduleMetrics>): GeneratedSchedule {
     selections: [],
     metrics: {
       avgInstructorRating: null,
+      avgDisplayRating: null,
       ratedSectionCount: 0,
       sectionCount: 0,
       minCredits: 0,

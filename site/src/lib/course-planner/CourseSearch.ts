@@ -8,9 +8,9 @@
  */
 
 import type { Course, InstructorsResponse } from '@jupiterp/jupiterp';
-import type { PlannerInstructor } from '../api/types';
 import { client } from '$lib/client';
 import { CourseDataCache, type RequestInput } from './CourseDataCache';
+import { withDisplayRating } from '../professor/Rating';
 import {
   DepartmentsStore,
   DeptSuggestionsStore,
@@ -18,7 +18,7 @@ import {
   ProfsLookupStore,
   CourseSearchFilterStore,
 } from '../../stores/CoursePlannerStores';
-import type { FilterParams } from '../../types';
+import type { FilterParams, PlannerInstructor } from '../../types';
 
 const cache = new CourseDataCache();
 
@@ -423,19 +423,23 @@ export async function loadInstructorLookup(): Promise<void> {
     // is the average the stars show, and `average_rating` -- the legacy alias
     // of `combined_rating` -- is the shrunk score the schedule generator ranks
     // by. Showing the shrunk one put a single 5-star review on screen as 3.9.
-    const columns = ['slug', 'name', 'average_rating', 'display_rating'];
-
+    //
+    // `display_rating` is asked for separately, and dropped if the API does not
+    // know it: a 400 here would otherwise leave the lookup empty, which is no
+    // stars, no rating sort and no `@professor` search. The rest of the pages
+    // ask for whatever the first one got.
+    //
     // The first page also asks for the total, which is what makes the rest
     // parallel. Without it the only way to find the end is to request pages
     // until one comes back short, and that is necessarily sequential: six
     // round trips, each waiting on the last, before the planner has any
     // ratings at all.
-    const first: InstructorsResponse = await client.activeInstructors({
-      limit,
-      offset: 0,
-      columns,
-      count: true,
-    });
+    const { response: first, columns } = await withDisplayRating(
+      ['slug', 'name', 'average_rating'],
+      (names): Promise<InstructorsResponse> =>
+        client.activeInstructors({ limit, offset: 0, columns: names, count: true }),
+      (response) => response.statusCode === 400
+    );
     if (!first.ok() || first.data == null) {
       // format-check exempt 3
       throw new Error(

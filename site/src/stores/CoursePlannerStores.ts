@@ -7,9 +7,8 @@
 
 import type { Course, Department } from '@jupiterp/jupiterp';
 import { writable, type Writable } from 'svelte/store';
-import type { CourseSectionPair, FilterParams, ScheduleSelection, StoredSchedule } from '../types';
+import type { CourseSectionPair, FilterParams, PlannerInstructor, ScheduleSelection, StoredSchedule } from '../types';
 import type { CourseGrades } from '../lib/course-planner/GradesLoader';
-import type { PlannerInstructor } from '../lib/api/types';
 
 /**
  * Shared planner state for components.

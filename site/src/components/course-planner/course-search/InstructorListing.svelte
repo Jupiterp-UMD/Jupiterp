@@ -8,6 +8,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import { clickoutside } from '@svelte-put/clickoutside';
   import { resolve } from '$app/paths';
   import { courseQuery } from '../../../lib/professor/ProfessorData';
+  import { displayRating } from '../../../lib/professor/Rating';
   import { CourseGradesStore, ProfsLookupStore } from '../../../stores/CoursePlannerStores';
   import { hasEnoughForGpa } from '../../../lib/course-planner/Grades';
   import GradesPopover from './GradesPopover.svelte';
@@ -69,8 +70,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     const profData = profs?.[slug];
     // The unshrunk average, not `average_rating`: that is the ranking score,
     // pulled toward the site-wide mean, and showed a single 5-star review as
-    // 3.9 stars. Falls back to it only until the column is deployed.
-    const rating = profData?.display_rating ?? profData?.average_rating ?? null;
+    // 3.9 stars. Falls back to it only when the API did not send the column.
+    const rating = profData ? displayRating(profData) : null;
     return {
       name,
       slug,

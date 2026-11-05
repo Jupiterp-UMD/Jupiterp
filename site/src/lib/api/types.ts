@@ -18,8 +18,6 @@
  * layer in front of every endpoint for no benefit.
  */
 
-import type { Instructor } from '@jupiterp/jupiterp';
-
 /** The fifteen grade buckets as the database stores and reports them. */
 export interface GradeCounts {
   a_plus: number;
@@ -151,11 +149,12 @@ export interface InstructorFull {
 
   /**
    * The rating to show: the recency-weighted average of both sources, with
-   * nothing else mixed in. Null only when there are no reviews at all.
+   * nothing else mixed in. Null when no review counts toward it: none on
+   * Jupiterp, and none on PlanetTerp recent enough to carry any weight.
    *
-   * Optional because it arrives with scraper migration 20261015120000; until
+   * Optional because it arrives with scraper migration 20261104120000; until
    * that is applied the column is absent and readers fall back to
-   * `combined_rating`.
+   * `combined_rating`. See `displayRating` in `lib/professor/Rating`.
    */
   display_rating?: number | null;
 
@@ -171,13 +170,6 @@ export interface InstructorFull {
   last_seen_term: number | null;
   is_active: boolean;
 }
-
-/**
- * An instructor as the planner's lookup holds it: the npm client's
- * `Instructor`, plus `display_rating`, which the published client does not
- * declare yet.
- */
-export type PlannerInstructor = Instructor & Pick<InstructorFull, 'display_rating'>;
 
 /** A page of results, with the total when the caller asked for one. */
 export interface Page<T> {

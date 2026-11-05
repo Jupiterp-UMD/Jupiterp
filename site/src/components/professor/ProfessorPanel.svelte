@@ -111,8 +111,6 @@ renders it.
   let showForm = $state(false);
   let reviewSent = $state(false);
 
-  let reviewCount = $derived(rating.jupiterpCount + rating.planetterpCount);
-
   // For the hero section wrapping (68px + 2 error margins)
   let heroSectionHeight = $state(0);
   let isWrapped = $derived(heroSectionHeight > 70);
@@ -137,9 +135,10 @@ renders it.
   </div>
 
   <!-- Dynamic padding and item placement toggled exactly by the wrap state.
-       A div rather than one big button: the breakdown's info button sits
-       inside it, and a button cannot contain another. The count and the stars
-       are each their own button to the reviews instead. -->
+       A section rather than one big button: the breakdown's info button sits
+       inside it, and a button cannot contain another. The count, the stars and
+       "Not enough reviews yet" are each their own button to the reviews
+       instead. -->
   <section
     aria-label="Rating"
     class="flex shrink-0 flex-col items-end gap-x-2 sm:w-auto"
@@ -147,11 +146,11 @@ renders it.
     class:justify-between={isWrapped}
     class:flex-row-reverse={isWrapped}
   >
-    {#if rating.displayable && rating.display !== null}
+    {#if rating.display !== null}
       <span class="flex flex-row items-center gap-1.5 pb-0.5 pt-2.5">
         <button onclick={scrollToReviews} class="whitespace-nowrap text-sm hover:underline">
-          {reviewCount}
-          {reviewCount === 1 ? 'review' : 'reviews'}
+          {rating.count}
+          {rating.count === 1 ? 'review' : 'reviews'}
         </button>
         <RatingBreakdownCard {rating} />
       </span>
@@ -165,7 +164,9 @@ renders it.
     {:else}
       <!-- Needs two elements to maintain the layout -->
       <span></span>
-      <p class="text-text-secondary whitespace-nowrap py-2 text-sm">Not enough reviews yet.</p>
+      <button onclick={scrollToReviews} class="text-text-secondary whitespace-nowrap py-2 text-sm hover:underline">
+        Not enough reviews yet.
+      </button>
     {/if}
   </section>
 </section>
@@ -196,7 +197,7 @@ renders it.
           </div>
         {/if}
       </div>
-      {#if stuck && rating.displayable && rating.display !== null}
+      {#if stuck && rating.display !== null}
         <div class="flex min-w-0 flex-1 flex-row items-center justify-end gap-2" transition:fade={{ duration: 150 }}>
           <span class="min-w-0 truncate text-lg font-bold max-sm:hidden">{data.instructor.name}</span>
           <span class="bg-outline h-8 w-px shrink-0 max-sm:hidden" aria-hidden="true"></span>

@@ -132,17 +132,3 @@ export function departmentsOf(courses: ProfessorCourse[]): string[] {
   }
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([dept]) => dept);
 }
-
-/**
- * The ranking score, for callers that hold only the rating columns.
- */
-export function combinedRating(instructor: Pick<InstructorFull, 'combined_rating' | 'average_rating'>): number | null {
-  return instructor.combined_rating ?? numeric(instructor.average_rating);
-}
-
-function numeric(value: number | null | undefined): number | null {
-  if (value == null || !Number.isFinite(value)) {
-    return null;
-  }
-  return value;
-}

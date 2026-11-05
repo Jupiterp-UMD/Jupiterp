@@ -11,6 +11,18 @@ own reviews, and a PlanetTerp average frozen when it was imported. This lays
 them out side by side, with the counts, so a reader can see which one they are
 mostly looking at.
 -->
+<script module lang="ts">
+  // Each card's id is its own, so two on one page cannot answer for each
+  // other's `aria-controls`. Only rendered while open, which is only ever in
+  // the browser, so the server and client counts never need to agree.
+  let instances = 0;
+
+  function nextCardId(): string {
+    instances += 1;
+    return `rating-breakdown-${instances}`;
+  }
+</script>
+
 <script lang="ts">
   import { clickoutside } from '@svelte-put/clickoutside';
   import type { RatingBreakdown } from '../../lib/professor/Rating';
@@ -22,7 +34,7 @@ mostly looking at.
   let { rating }: Props = $props();
 
   let open = $state(false);
-  const cardId = 'rating-breakdown';
+  const cardId = nextCardId();
 
   /** "Sep 2026". UTC so the server and the browser render the same month. */
   let asOf = $derived(
@@ -48,7 +60,10 @@ mostly looking at.
   // Only worth explaining when it would change what the reader sees. With
   // plenty of reviews the two round to the same number.
   let rankingDiffers = $derived(
-    rating.combined !== null && rating.display !== null && rating.combined.toFixed(1) !== rating.display.toFixed(1)
+    !rating.displayIsRanking &&
+      rating.combined !== null &&
+      rating.display !== null &&
+      rating.combined.toFixed(1) !== rating.display.toFixed(1)
   );
 
   function plural(count: number): string {
@@ -57,7 +72,6 @@ mostly looking at.
 
   function handleKeydown(event: KeyboardEvent) {
     if (open && event.key === 'Escape') {
-      event.stopPropagation();
       open = false;
     }
   }
@@ -73,7 +87,7 @@ mostly looking at.
       : 'border-text-secondary text-text-secondary'}"
     aria-label="How this rating is calculated"
     aria-expanded={open}
-    aria-controls={cardId}
+    aria-controls={open ? cardId : undefined}
     onclick={() => (open = !open)}
   >
     i
@@ -108,14 +122,17 @@ mostly looking at.
               {/if}
             </tr>
           {/each}
-          {#if rating.display !== null}
+          <!-- No Overall row while the ranking score stands in for the
+               average: it would label the shrunk number "the average of
+               both", a 3.9 under a single 5-star review. -->
+          {#if rating.display !== null && !rating.displayIsRanking}
             <tr class="border-outline border-t align-baseline">
               <th scope="row" class="pb-1 pr-2 pt-2 text-left font-semibold">Overall</th>
               <td class="text-orange whitespace-nowrap pb-1 pr-2 pt-2 text-right font-bold">
                 ★ {rating.display.toFixed(1)}
               </td>
               <td class="text-text-secondary pb-1 pt-2 text-right text-xs">
-                {plural(rating.jupiterpCount + rating.planetterpCount)}
+                {plural(rating.count)}
               </td>
             </tr>
           {/if}
@@ -123,8 +140,14 @@ mostly looking at.
       </table>
 
       <p class="text-text-secondary mt-2 text-xs leading-snug">
-        Overall is the average of both, with recent reviews counting more. PlanetTerp's rating is a snapshot from when
-        it was imported, so it counts for less over time as Jupiterp reviews come in.
+        {#if rating.displayIsRanking}
+          The rating shown blends both, with recent reviews counting more, and leans toward the site-wide average until
+          a professor has more reviews.
+        {:else}
+          Overall is the average of both, with recent reviews counting more.
+        {/if}
+        PlanetTerp's rating is a snapshot from when it was imported, so it counts for less over time as Jupiterp reviews come
+        in.
       </p>
       {#if rankingDiffers && rating.combined !== null}
         <p class="text-text-secondary mt-2 text-xs leading-snug">

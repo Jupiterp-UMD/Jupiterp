@@ -10,7 +10,7 @@ https://github.com/atcupps/Jupiterp/LICENSE.
     loadComparisonInstructor,
     type ComparisonProfessor,
   } from '../../lib/professor/Comparison';
-  import { ratingBreakdown } from '../../lib/professor/Rating';
+  import { displayRating } from '../../lib/professor/Rating';
   import { hasEnoughForGpa } from '../../lib/course-planner/Grades';
 
   let {
@@ -123,7 +123,7 @@ https://github.com/atcupps/Jupiterp/LICENSE.
     Promise.all(
       options.map(async (professor) => {
         const instructor = await loadComparisonInstructor(professor.slug).catch(() => null);
-        return [professor.slug, instructor ? ratingBreakdown(instructor).combined : null] as const;
+        return [professor.slug, instructor ? displayRating(instructor) : null] as const;
       })
     ).then((entries) => {
       if (!cancelled) ratings = { ...ratings, ...Object.fromEntries(entries) };
