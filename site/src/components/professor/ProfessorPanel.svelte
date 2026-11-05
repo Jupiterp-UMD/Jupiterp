@@ -13,7 +13,7 @@ renders it.
   import { untrack } from 'svelte';
   import { fade } from 'svelte/transition';
   import { hasEnoughForGpa } from '../../lib/course-planner/Grades';
-  import { ratingBreakdown, type ProfessorData } from '../../lib/professor/ProfessorData';
+  import { compareCourseCodes, ratingBreakdown, type ProfessorData } from '../../lib/professor/ProfessorData';
   import CoursePicker from './CoursePicker.svelte';
   import GpaScale from './GpaScale.svelte';
   import GradeDistribution from './GradeDistribution.svelte';
@@ -39,9 +39,13 @@ renders it.
 
   let totalCourses = $derived(courses.filter((course) => hasEnoughForGpa(course.distribution)));
 
-  let allCourseCodes = $derived([
-    ...new Set([...data.currentCourseCodes, ...data.courses.map((course) => course.courseCode)]),
-  ]);
+  let allCourseCodes = $derived(
+    [...new Set([...data.currentCourseCodes, ...data.courses.map((course) => course.courseCode)])].sort(
+      compareCourseCodes
+    )
+  );
+
+  let compareDefault = $derived(data.currentCourseCodes[0] ?? data.courses[0]?.courseCode ?? null);
 
   let selectedCode = $state<string | null>(
     untrack(() =>
@@ -198,7 +202,7 @@ renders it.
           slug={data.instructor.slug}
           name={data.instructor.name}
           courses={allCourseCodes}
-          preferredCourse={selectedCode ?? initialCourse}
+          preferredCourse={selectedCode ?? initialCourse ?? compareDefault}
         />
       </div>
     </div>
@@ -209,7 +213,7 @@ renders it.
       slug={data.instructor.slug}
       name={data.instructor.name}
       courses={allCourseCodes}
-      preferredCourse={selectedCode ?? initialCourse}
+      preferredCourse={selectedCode ?? initialCourse ?? compareDefault}
     />
   </div>
 {/if}

@@ -11,6 +11,8 @@ Copyright (C) 2026 Andrew Cupps
   import { forgetReviewSessions, hasReviewSessions, submitReview } from '../../lib/api/JupiterpApi';
   import StarRatingInput from './StarRatingInput.svelte';
   import ManageKey from './ManageKey.svelte';
+  import CoursePicker from './CoursePicker.svelte';
+  import { AngleDownOutline } from 'flowbite-svelte-icons';
 
   interface Props {
     instructorSlug: string;
@@ -282,54 +284,58 @@ Copyright (C) 2026 Andrew Cupps
     </div>
 
     <div class="flex flex-row flex-wrap gap-3">
-      <label class="flex flex-col gap-1">
-        <span class="text-sm font-bold">Course</span>
-        <!--
-          A select, matching Term and Grade beside it. This was an input with a
-          datalist, which renders as a text box with a browser-drawn suggestion
-          popup: a different height, a different control, and a dropdown that
-          floats away from the field rather than under it.
-
-          The options are every course this professor is teaching now plus
-          every one they have grade history for, so a student reviewing a
-          course they took has it.
-        -->
-        <select
-          bind:value={courseCode}
-          required
-          class="border-outline bg-bg-primary rounded-md border-2 py-1 pl-2 pr-8"
-        >
-          <option value="" disabled>Select</option>
-          {#each courseCodes as code (code)}
-            <option value={code}>{code}</option>
-          {/each}
-        </select>
-      </label>
+      <div class="flex flex-col gap-1">
+        <label for="review-course" class="text-sm font-bold">Course</label>
+        <CoursePicker
+          codes={courseCodes}
+          bind:selected={() => courseCode || null, (code) => (courseCode = code ?? '')}
+          id="review-course"
+          allowAll={false}
+          placeholder="Select"
+          widthClass="w-32"
+          compact
+        />
+      </div>
 
       <label class="flex flex-col gap-1">
         <span class="text-sm font-bold">Term</span>
-        <select bind:value={term} required class="border-outline bg-bg-primary rounded-md border-2 py-1 pl-2 pr-8">
-          <option value="" disabled>Select</option>
-          {#each TERMS as option (option.value)}
-            <option value={option.value}>{option.label}</option>
-          {/each}
-        </select>
+        <div class="relative w-36">
+          <select
+            id="review-term"
+            bind:value={term}
+            required
+            class="border-outline bg-bg-primary text-orange h-8 w-full appearance-none rounded-lg border-2 bg-none py-1 pl-2 pr-8 font-semibold"
+          >
+            <option value="" disabled>Select</option>
+            {#each TERMS as option (option.value)}
+              <option value={String(option.value)}>{option.label}</option>
+            {/each}
+          </select>
+          <AngleDownOutline class="pointer-events-none absolute right-2 top-2 h-4 w-4" />
+        </div>
       </label>
 
       <label class="flex flex-col gap-1">
         <span class="text-sm font-bold">Your grade</span>
-        <select
-          bind:value={expectedGrade}
-          required
-          class="border-outline bg-bg-primary rounded-md border-2 py-1 pl-2 pr-8"
-        >
-          <option value="" disabled>Select</option>
-          {#each GRADES as grade (grade)}
-            <option value={grade}>{grade}</option>
-          {/each}
-        </select>
+        <div class="w-22 relative">
+          <select
+            id="review-grade"
+            bind:value={expectedGrade}
+            required
+            class="border-outline bg-bg-primary h-8 w-full appearance-none rounded-lg border-2 bg-none py-1 pl-2 pr-8 font-semibold"
+            class:text-orange={expectedGrade !== ''}
+          >
+            <option value="" disabled>Select</option>
+            {#each GRADES as grade (grade)}
+              <option value={grade}>{grade}</option>
+            {/each}
+          </select>
+          <AngleDownOutline class="pointer-events-none absolute right-2 top-2 h-4 w-4" />
+        </div>
       </label>
     </div>
+
+    <p class="text-text-secondary text-sm">Reviews can only be left for Fall and Spring terms.</p>
 
     <label class="flex flex-col gap-1">
       <span class="flex flex-row justify-between text-sm">

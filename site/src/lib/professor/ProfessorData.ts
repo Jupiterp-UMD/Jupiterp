@@ -25,6 +25,7 @@ import { toDistribution, type GradeDistribution } from '../course-planner/Grades
 type Fetch = typeof globalThis.fetch;
 
 export const COURSE_PARAM = 'course';
+export const compareCourseCodes = new Intl.Collator('en', { numeric: true }).compare;
 
 export function courseQuery(courseCode?: string | null): string {
   return courseCode ? `?${COURSE_PARAM}=${encodeURIComponent(courseCode)}` : '';
