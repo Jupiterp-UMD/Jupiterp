@@ -36,7 +36,7 @@ import type { CourseRequest } from './types';
 const RELAXATION_MAX_NODES = 50_000;
 
 /** Fetch full, up-to-date courses (with all sections) by course code. */
-async function fetchFullCourses(courseCodes: Set<string>): Promise<Record<string, Course>> {
+export async function fetchFullCourses(courseCodes: Set<string>): Promise<Record<string, Course>> {
   const config: CoursesConfig = { courseCodes };
   const response = await client.coursesWithSections(config);
   if (!response.ok() || !response.data) {

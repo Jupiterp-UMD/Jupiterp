@@ -200,8 +200,28 @@ export function formatSemesterRange(dist: GradeDistribution): string | null {
  * The alternative is presenting a confident-looking 4.00 computed from three
  * students, which is worse than showing nothing.
  */
-export function hasEnoughForGpa(dist: GradeDistribution): boolean {
+export function hasEnoughForGpa(dist: GradeDistribution): dist is GradeDistribution & { gpa: number } {
   return dist.gpa !== null && dist.graded >= MIN_GRADED_FOR_GPA;
+}
+
+/** The GPA to show, or null when there is no distribution or too little behind it. */
+export function gpaOf(dist: GradeDistribution | null | undefined): number | null {
+  return dist && hasEnoughForGpa(dist) ? dist.gpa : null;
+}
+
+/**
+ * Format `count` as a percentage of `total` with `decimals` places.
+ *
+ * A nonzero count too small to show at that precision reads as '<0.1' (or
+ * '<1' with no decimals) rather than '0.0', so a handful of students never
+ * looks like nobody.
+ *
+ * @returns e.g. '62.4', or '<0.1' for nonzero counts that round to 0
+ */
+export function formatPercent(count: number, total: number, decimals = 1): string {
+  const percent = total === 0 ? 0 : (count / total) * 100;
+  const smallest = 10 ** -decimals;
+  return count > 0 && percent < smallest / 2 ? `<${smallest}` : percent.toFixed(decimals);
 }
 
 /**
@@ -215,13 +235,41 @@ export function hasEnoughForGpa(dist: GradeDistribution): boolean {
  * @returns e.g. '62', or '<1' for nonzero counts that round to 0
  */
 export function bucketPercent(dist: GradeDistribution, bucket: GradeBucket): string {
-  if (dist.barTotal === 0) {
-    return '0';
-  }
-  const count = dist.buckets[bucket];
-  const percent = Math.round((count / dist.barTotal) * 100);
-  if (percent === 0 && count > 0) {
-    return '<1';
-  }
-  return percent.toString();
+  return formatPercent(dist.buckets[bucket], dist.barTotal, 0);
+}
+
+/** Combine disjoint API summaries without recalculating GPA from letter grades. */
+export function mergeDistributions(a: GradeDistribution, b: GradeDistribution): GradeDistribution {
+  const graded = a.graded + b.graded;
+  const letters = { ...a.letters };
+  for (const letter of Object.keys(letters) as LetterGrade[]) letters[letter] += b.letters[letter];
+  const buckets = { ...a.buckets };
+  for (const bucket of GRADE_BUCKETS) buckets[bucket] += b.buckets[bucket];
+  const firstTerms = [a.firstTerm, b.firstTerm].filter((term): term is number => term !== null);
+  const lastTerms = [a.lastTerm, b.lastTerm].filter((term): term is number => term !== null);
+  return {
+    letters,
+    buckets,
+    graded,
+    barTotal: a.barTotal + b.barTotal,
+    total: a.total + b.total,
+    otherCount: a.otherCount + b.otherCount,
+    sectionCount: a.sectionCount + b.sectionCount,
+    firstTerm: firstTerms.length ? Math.min(...firstTerms) : null,
+    lastTerm: lastTerms.length ? Math.max(...lastTerms) : null,
+    gpa:
+      graded === 0 || (a.graded > 0 && a.gpa === null) || (b.graded > 0 && b.gpa === null)
+        ? null
+        : ((a.gpa ?? 0) * a.graded + (b.gpa ?? 0) * b.graded) / graded,
+  };
+}
+
+export function calculateGpaWithoutActiveProf(
+  course: Pick<GradeDistribution, 'gpa' | 'graded'> | null | undefined,
+  own: Pick<GradeDistribution, 'gpa' | 'graded'> | null | undefined
+): number | null {
+  if (course?.gpa == null || course.graded < MIN_GRADED_FOR_GPA) return null;
+  if (own?.gpa == null) return course.gpa;
+  const restGraded = course.graded - own.graded;
+  return restGraded < MIN_GRADED_FOR_GPA ? null : (course.gpa * course.graded - own.gpa * own.graded) / restGraded;
 }

@@ -25,6 +25,7 @@ import { toDistribution, type GradeDistribution } from '../course-planner/Grades
 type Fetch = typeof globalThis.fetch;
 
 export const COURSE_PARAM = 'course';
+export const compareCourseCodes = new Intl.Collator('en', { numeric: true }).compare;
 
 export function courseQuery(courseCode?: string | null): string {
   return courseCode ? `?${COURSE_PARAM}=${encodeURIComponent(courseCode)}` : '';
@@ -130,4 +131,18 @@ export function departmentsOf(courses: ProfessorCourse[]): string[] {
     counts.set(dept, (counts.get(dept) ?? 0) + 1);
   }
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([dept]) => dept);
+}
+
+/**
+ * The ranking score, for callers that hold only the rating columns.
+ */
+export function combinedRating(instructor: Pick<InstructorFull, 'combined_rating' | 'average_rating'>): number | null {
+  return instructor.combined_rating ?? numeric(instructor.average_rating);
+}
+
+function numeric(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(value)) {
+    return null;
+  }
+  return value;
 }

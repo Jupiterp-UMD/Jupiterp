@@ -15,15 +15,18 @@ Copyright (C) 2026 Andrew Cupps
     instructorSlug: string;
     courseCode: string | null;
     reviewsEl?: HTMLElement | null;
+    id?: string;
   }
 
-  let { instructorSlug, courseCode, reviewsEl = $bindable(null) }: Props = $props();
+  let { instructorSlug, courseCode, reviewsEl = $bindable(null), id = 'reviews' }: Props = $props();
 
   const PAGE_SIZE = 10;
+  const PREVIEW_LENGTH = 500;
 
   let reviews = $state<Review[]>([]);
   let total = $state<number | null>(null);
   let status = $state<'loading' | 'loaded' | 'error'>('loading');
+  let expandedIds = $state<Set<string>>(new Set());
   let reportingId = $state<string | null>(null);
   let reportReason = $state('');
   let reportedIds = $state<Set<string>>(new Set());
@@ -72,6 +75,7 @@ Copyright (C) 2026 Andrew Cupps
         fetch
       );
       if (id !== requestId) return;
+      if (!append) expandedIds = new Set();
       reviews = append ? [...reviews, ...page.data] : page.data;
       total = page.total;
       shown = query;
@@ -116,7 +120,7 @@ Copyright (C) 2026 Andrew Cupps
   let hasMore = $derived(total !== null && reviews.length < total);
 </script>
 
-<section bind:this={reviewsEl} id="reviews" aria-label="Student reviews" class="mt-8 flex scroll-mt-16 flex-col gap-3">
+<section bind:this={reviewsEl} {id} aria-label="Student reviews" class="mt-8 flex scroll-mt-16 flex-col gap-3">
   <div class="flex flex-row items-baseline justify-between">
     <h3 class="text-lg font-bold">Reviews{courseCode === null ? '' : ` for ${courseCode}`}</h3>
     {#if total !== null && (total > 0 || filtered)}
@@ -176,6 +180,9 @@ Copyright (C) 2026 Andrew Cupps
       aria-busy={status === 'loading'}
     >
       {#each reviews as review (review.id)}
+        {@const bodyCharacters = Array.from(review.body ?? '')}
+        {@const isLong = bodyCharacters.length > PREVIEW_LENGTH}
+        {@const expanded = expandedIds.has(review.id)}
         {@const details = [
           review.course_code,
           review.term ? formatSemester(review.term) : null,
@@ -221,7 +228,25 @@ Copyright (C) 2026 Andrew Cupps
             {/if}
 
             {#if review.body}
-              <p class="mt-3 whitespace-pre-wrap leading-7">{review.body}</p>
+              <p id={`${id}-body-${review.id}`} class="mt-3 whitespace-pre-wrap break-words leading-7">
+                {isLong && !expanded ? `${bodyCharacters.slice(0, PREVIEW_LENGTH).join('')}…` : review.body}
+              </p>
+              {#if isLong}
+                <button
+                  type="button"
+                  class="text-orange mt-2 self-end text-sm font-semibold hover:underline"
+                  aria-expanded={expanded}
+                  aria-controls={`${id}-body-${review.id}`}
+                  onclick={() => {
+                    const next = new Set(expandedIds);
+                    if (expanded) next.delete(review.id);
+                    else next.add(review.id);
+                    expandedIds = next;
+                  }}
+                >
+                  {expanded ? 'Show less' : 'Show more'}
+                </button>
+              {/if}
             {/if}
 
             <!-- Reporting is the entirety of a professor's recourse, so it is a

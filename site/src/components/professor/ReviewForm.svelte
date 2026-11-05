@@ -8,8 +8,11 @@ Copyright (C) 2026 Andrew Cupps
   import { onMount } from 'svelte';
   import { resolve } from '$app/paths';
   import { env } from '$env/dynamic/public';
-  import { submitReview } from '../../lib/api/JupiterpApi';
+  import { forgetReviewSessions, hasReviewSessions, submitReview } from '../../lib/api/JupiterpApi';
   import StarRatingInput from './StarRatingInput.svelte';
+  import ManageKey from './ManageKey.svelte';
+  import CoursePicker from './CoursePicker.svelte';
+  import { AngleDownOutline } from 'flowbite-svelte-icons';
 
   interface Props {
     instructorSlug: string;
@@ -60,9 +63,27 @@ Copyright (C) 2026 Andrew Cupps
   let body = $state('');
   let email = $state('');
   let agreed = $state(false);
+  /**
+   * Opt-in, because whoever uses this browser next can type the same address
+   * and inherit the session. Starts ticked only if this browser is already
+   * keeping one, which means the reviewer ticked it last time.
+   */
+  let rememberDevice = $state(false);
+  let forgotten = $state(false);
 
-  let status = $state<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  onMount(() => {
+    rememberDevice = hasReviewSessions();
+  });
+
+  function forgetDevice() {
+    forgetReviewSessions();
+    forgotten = true;
+  }
+
+  let status = $state<'idle' | 'sending' | 'sent' | 'submitted' | 'error'>('idle');
   let errorMessage = $state('');
+  /** Only when a reviewer session skipped the email; shown once. */
+  let manageKey = $state('');
 
   /* ============================== captcha ============================== */
 
@@ -183,23 +204,27 @@ Copyright (C) 2026 Andrew Cupps
     status = 'sending';
     errorMessage = '';
 
-    const result = await submitReview({
-      instructor_slug: instructorSlug,
-      course_code: courseCode,
-      term: Number(term),
-      rating,
-      expected_grade: expectedGrade,
-      title: title.trim(),
-      body: body.trim(),
-      email: email.trim(),
-      // Held in state by the widget's callback rather than scraped out of the
-      // DOM. Undefined only when no site key is configured, which is the case
-      // the API treats as captcha satisfied.
-      captcha_token: captchaToken === '' ? undefined : captchaToken,
-    });
+    const result = await submitReview(
+      {
+        instructor_slug: instructorSlug,
+        course_code: courseCode,
+        term: Number(term),
+        rating,
+        expected_grade: expectedGrade,
+        title: title.trim(),
+        body: body.trim(),
+        email: email.trim(),
+        // Held in state by the widget's callback rather than scraped out of the
+        // DOM. Undefined only when no site key is configured, which is the case
+        // the API treats as captcha satisfied.
+        captcha_token: captchaToken === '' ? undefined : captchaToken,
+      },
+      { rememberDevice }
+    );
 
     if (result.ok) {
-      status = 'sent';
+      manageKey = result.manageKey ?? '';
+      status = result.submitted ? 'submitted' : 'sent';
       onsent?.();
       return;
     }
@@ -217,7 +242,25 @@ Copyright (C) 2026 Andrew Cupps
   }
 </script>
 
-{#if status === 'sent'}
+{#if status === 'submitted'}
+  <!-- A reviewer session from a recently confirmed review vouched for this
+       address, so there is no email to wait for. -->
+  <div class="border-outline rounded-lg border-2 p-4">
+    <h3 class="text-lg font-bold">Thanks, your review is in the queue</h3>
+    <p class="my-2 text-sm">
+      You confirmed your UMD address recently, so this one didn't need another email. A moderator reads every review
+      before it appears.
+    </p>
+    {#if manageKey}
+      <ManageKey {manageKey} headingLevel={4} />
+    {/if}
+    {#if forgotten}
+      <p class="text-text-secondary text-sm" role="status">This browser will ask for email confirmation next time.</p>
+    {:else}
+      <button class="text-orange text-sm font-bold underline" onclick={forgetDevice}>Forget this device</button>
+    {/if}
+  </div>
+{:else if status === 'sent'}
   <!-- Deliberately says nothing about whether this address had already
        reviewed this professor. The API answers identically either way, and
        leaking the difference here would undo that. -->
@@ -241,46 +284,58 @@ Copyright (C) 2026 Andrew Cupps
     </div>
 
     <div class="flex flex-row flex-wrap gap-3">
-      <label class="flex flex-col gap-1">
-        <span class="text-sm font-bold">Course</span>
-        <!--
-          A select, matching Term and Grade beside it. This was an input with a
-          datalist, which renders as a text box with a browser-drawn suggestion
-          popup: a different height, a different control, and a dropdown that
-          floats away from the field rather than under it.
-
-          The options are every course this professor is teaching now plus
-          every one they have grade history for, so a student reviewing a
-          course they took has it.
-        -->
-        <select bind:value={courseCode} required class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1">
-          <option value="" disabled>Select</option>
-          {#each courseCodes as code (code)}
-            <option value={code}>{code}</option>
-          {/each}
-        </select>
-      </label>
+      <div class="flex flex-col gap-1">
+        <label for="review-course" class="text-sm font-bold">Course</label>
+        <CoursePicker
+          codes={courseCodes}
+          bind:selected={() => courseCode || null, (code) => (courseCode = code ?? '')}
+          id="review-course"
+          allowAll={false}
+          placeholder="Select"
+          widthClass="w-32"
+          compact
+        />
+      </div>
 
       <label class="flex flex-col gap-1">
         <span class="text-sm font-bold">Term</span>
-        <select bind:value={term} required class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1">
-          <option value="" disabled>Select</option>
-          {#each TERMS as option (option.value)}
-            <option value={option.value}>{option.label}</option>
-          {/each}
-        </select>
+        <div class="relative w-36">
+          <select
+            id="review-term"
+            bind:value={term}
+            required
+            class="border-outline bg-bg-primary text-orange h-8 w-full appearance-none rounded-lg border-2 bg-none py-1 pl-2 pr-8 font-semibold"
+          >
+            <option value="" disabled>Select</option>
+            {#each TERMS as option (option.value)}
+              <option value={String(option.value)}>{option.label}</option>
+            {/each}
+          </select>
+          <AngleDownOutline class="pointer-events-none absolute right-2 top-2 h-4 w-4" />
+        </div>
       </label>
 
       <label class="flex flex-col gap-1">
         <span class="text-sm font-bold">Your grade</span>
-        <select bind:value={expectedGrade} required class="border-outline bg-bg-primary rounded-md border-2 px-2 py-1">
-          <option value="" disabled>Select</option>
-          {#each GRADES as grade (grade)}
-            <option value={grade}>{grade}</option>
-          {/each}
-        </select>
+        <div class="w-22 relative">
+          <select
+            id="review-grade"
+            bind:value={expectedGrade}
+            required
+            class="border-outline bg-bg-primary h-8 w-full appearance-none rounded-lg border-2 bg-none py-1 pl-2 pr-8 font-semibold"
+            class:text-orange={expectedGrade !== ''}
+          >
+            <option value="" disabled>Select</option>
+            {#each GRADES as grade (grade)}
+              <option value={grade}>{grade}</option>
+            {/each}
+          </select>
+          <AngleDownOutline class="pointer-events-none absolute right-2 top-2 h-4 w-4" />
+        </div>
       </label>
     </div>
+
+    <p class="text-text-secondary text-sm">Reviews can only be left for Fall and Spring terms.</p>
 
     <label class="flex flex-col gap-1">
       <span class="flex flex-row justify-between text-sm">
@@ -331,6 +386,14 @@ Copyright (C) 2026 Andrew Cupps
         Your Terpmail is used only to verify that you’re a UMD student and prevent duplicate reviews. We <b
           ><u>CANNOT</u></b
         > see your email after verification or link it to your review, and neither can professors or other users.
+      </span>
+    </label>
+
+    <label class="flex flex-row items-start gap-2 text-sm">
+      <input type="checkbox" bind:checked={rememberDevice} class="accent-orange mt-1" />
+      <span>
+        Skip email confirmation on this device for 24 hours.
+        <span class="text-text-secondary">Leave off on shared computers.</span>
       </span>
     </label>
 

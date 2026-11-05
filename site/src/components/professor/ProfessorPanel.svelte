@@ -13,7 +13,7 @@ renders it.
   import { untrack } from 'svelte';
   import { fade } from 'svelte/transition';
   import { hasEnoughForGpa } from '../../lib/course-planner/Grades';
-  import type { ProfessorData } from '../../lib/professor/ProfessorData';
+  import { compareCourseCodes, type ProfessorData } from '../../lib/professor/ProfessorData';
   import { ratingBreakdown } from '../../lib/professor/Rating';
   import CoursePicker from './CoursePicker.svelte';
   import GpaScale from './GpaScale.svelte';
@@ -22,6 +22,7 @@ renders it.
   import RatingBreakdownCard from './RatingBreakdownCard.svelte';
   import ReviewForm from './ReviewForm.svelte';
   import ReviewList from './ReviewList.svelte';
+  import CompareWith from './CompareWith.svelte';
   import StarRating from './StarRating.svelte';
 
   interface Props {
@@ -40,9 +41,13 @@ renders it.
 
   let totalCourses = $derived(courses.filter((course) => hasEnoughForGpa(course.distribution)));
 
-  let allCourseCodes = $derived([
-    ...new Set([...data.currentCourseCodes, ...data.courses.map((course) => course.courseCode)]),
-  ]);
+  let allCourseCodes = $derived(
+    [...new Set([...data.currentCourseCodes, ...data.courses.map((course) => course.courseCode)])].sort(
+      compareCourseCodes
+    )
+  );
+
+  let compareDefault = $derived(data.currentCourseCodes[0] ?? data.courses[0]?.courseCode ?? null);
 
   let selectedCode = $state<string | null>(
     untrack(() =>
@@ -177,7 +182,7 @@ renders it.
   >
     <!-- Once the bar sticks, the header has scrolled away, so the bar carries
            the name and rating to keep the reader oriented. -->
-    <div class="mx-auto flex w-full max-w-3xl flex-row items-center gap-4">
+    <div class="mx-auto flex w-full max-w-3xl flex-row flex-wrap items-center gap-2 sm:gap-4">
       <div class="shrink-0">
         {#if totalCourses.length > 1}
           <CoursePicker
@@ -202,7 +207,24 @@ renders it.
           >
         </div>
       {/if}
+      <div class="ml-auto">
+        <CompareWith
+          slug={data.instructor.slug}
+          name={data.instructor.name}
+          courses={allCourseCodes}
+          preferredCourse={selectedCode ?? initialCourse ?? compareDefault}
+        />
+      </div>
     </div>
+  </div>
+{:else if allCourseCodes.length > 0}
+  <div class="mt-6 flex justify-end">
+    <CompareWith
+      slug={data.instructor.slug}
+      name={data.instructor.name}
+      courses={allCourseCodes}
+      preferredCourse={selectedCode ?? initialCourse ?? compareDefault}
+    />
   </div>
 {/if}
 

@@ -14,7 +14,7 @@ the professor is in the panel, which the planner's modal shows too.
   import { ratingBreakdown } from '../../../lib/professor/Rating';
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
-  import { replaceState } from '$app/navigation';
+  import { goto } from '$app/navigation';
   import type { PageData } from './$types';
   import { AngleDownOutline } from 'flowbite-svelte-icons';
 
@@ -26,8 +26,9 @@ the professor is in the panel, which the planner's modal shows too.
       url.searchParams.set(COURSE_PARAM, code);
     }
 
+    if (url.href === page.url.href) return;
     // eslint-disable-next-line svelte/no-navigation-without-resolve
-    replaceState(url, page.state);
+    void goto(url, { replaceState: true, keepFocus: true, noScroll: true });
   }
 
   interface Props {
@@ -140,7 +141,7 @@ the professor is in the panel, which the planner's modal shows too.
      this area (cqw) rather than the viewport (vw), which includes the
      scrollbar and would overflow sideways. -->
 <main
-  class="custom-scrollbar @container *:max-w-200 fixed inset-x-0 bottom-0 top-12 overflow-y-auto py-6 *:mx-auto *:px-4"
+  class="professor-page custom-scrollbar @container *:max-w-200 fixed inset-x-0 bottom-0 top-12 overflow-y-auto py-6 *:mx-auto *:px-4"
 >
   <nav class="pb-4">
     <a
@@ -160,3 +161,9 @@ the professor is in the panel, which the planner's modal shows too.
     />
   {/key}
 </main>
+
+<style>
+  :global(html:has(.professor-page)) {
+    min-width: 320px;
+  }
+</style>

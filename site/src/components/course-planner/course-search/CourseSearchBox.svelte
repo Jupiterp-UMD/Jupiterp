@@ -66,7 +66,9 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     beforeInput = undefined,
   }: Props = $props();
 
-  let searchResults: Course[] = $state([]);
+  // Raw for the same reason as in CourseSearch.svelte: deep-proxying the full
+  // result set on every store update is the bulk of search latency.
+  let searchResults: Course[] = $state.raw([]);
   SearchResultsStore.subscribe((results) => {
     searchResults = results;
   });

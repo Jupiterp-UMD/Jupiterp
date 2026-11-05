@@ -14,7 +14,7 @@
 import type { ScheduleBlock, StoredSchedule } from '../../types';
 import { resolveSelections, resolveStoredSchedules } from './CourseLoad';
 
-const SELECTED_SECTIONS_KEY = 'selectedSections';
+export const SELECTED_SECTIONS_KEY = 'selectedSections';
 const SCHEDULE_NAME_KEY = 'scheduleName';
 const NONSELECTED_SCHEDULES_KEY = 'nonselectedSchedules';
 

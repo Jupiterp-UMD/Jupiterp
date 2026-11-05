@@ -1,17 +1,38 @@
 import adapterNode from '@sveltejs/adapter-node';
+import adapterStatic from '@sveltejs/adapter-static';
 import adapterVercel from '@sveltejs/adapter-vercel';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 const isVercel = process.env.VERCEL === '1' || process.env.NOW_BUILDER === '1';
 
+/**
+ * GitHub Pages serves static files only, so that build is a client-rendered
+ * SPA: every route falls back to `404.html`, which GitHub Pages serves for
+ * unknown paths. It is served at the root of jupiterp.com; set `BASE_PATH`
+ * (e.g. `/Jupiterp`) only when deploying to a `<user>.github.io/<repo>` URL.
+ */
+const isGhPages = process.env.GH_PAGES === '1';
+
+function pickAdapter() {
+  if (isGhPages) return adapterStatic({ fallback: '404.html', strict: false });
+  if (isVercel) return adapterVercel();
+  return adapterNode();
+}
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   preprocess: vitePreprocess(),
   kit: {
-    adapter: isVercel ? adapterVercel() : adapterNode(),
+    adapter: pickAdapter(),
+
+    paths: {
+      base: isGhPages ? (process.env.BASE_PATH ?? '') : '',
+    },
 
     prerender: {
       handleHttpError: 'warn',
+      // Nothing is prerendered for Pages: the SPA fallback serves every route.
+      ...(isGhPages && { entries: [] }),
     },
   },
 };
