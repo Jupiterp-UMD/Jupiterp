@@ -331,6 +331,11 @@ Copyright (C) 2026 Andrew Cupps
       </label>
     </div>
 
+    <p class="text-text-secondary text-sm">
+      Grade distribution data currently covers Fall and Spring <strong>ONLY</strong>; Winter and Summer terms are
+      <strong>NOT</strong> included.
+    </p>
+
     <label class="flex flex-col gap-1">
       <span class="flex flex-row justify-between text-sm">
         <span class="font-bold">Title</span>
