@@ -7,7 +7,8 @@
  * @fileoverview Types and interfaces used in Jupiterp
  */
 
-import type { ClassMeeting, CourseBasic, GenEd, Section } from '@jupiterp/jupiterp';
+import type { ClassMeeting, CourseBasic, GenEd, Instructor, Section } from '@jupiterp/jupiterp';
+import type { InstructorFull } from './lib/api/types';
 
 /**
  * A section of a class selected by the user, along with metadata used for
@@ -279,3 +280,11 @@ export interface ClientSideFilterParams {
   maxCredits?: number;
   onlyOpen?: boolean;
 }
+
+/**
+ * An instructor as the planner's lookup holds it: the npm client's
+ * `Instructor`, plus `display_rating`, which the published client does not
+ * declare yet. Here rather than in `lib/api/types`, whose types are written to
+ * move into that client unchanged and so cannot depend on it.
+ */
+export type PlannerInstructor = Instructor & Pick<InstructorFull, 'display_rating'>;

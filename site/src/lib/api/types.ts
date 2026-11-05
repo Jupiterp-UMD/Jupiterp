@@ -147,7 +147,23 @@ export interface InstructorFull {
   jupiterp_rating: number | null;
   jupiterp_review_count: number;
 
-  /** The blend of the two. See the rating model in CHANGES_.md section 11. */
+  /**
+   * The rating to show: the recency-weighted average of both sources, with
+   * nothing else mixed in. Null when no review counts toward it: none on
+   * Jupiterp, and none on PlanetTerp recent enough to carry any weight.
+   *
+   * Optional because it arrives with scraper migration 20261104120000; until
+   * that is applied the column is absent and readers fall back to
+   * `combined_rating`. See `displayRating` in `lib/professor/Rating`.
+   */
+  display_rating?: number | null;
+
+  /**
+   * The rating to rank by: `display_rating` shrunk toward the site-wide mean
+   * by a fixed number of notional reviews, so one 5-star review does not
+   * outrank sixty 4.8s. Not the number to show a reader -- with one real
+   * review it is mostly the site-wide mean.
+   */
   combined_rating: number | null;
 
   first_seen_term: number | null;

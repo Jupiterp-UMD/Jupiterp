@@ -63,8 +63,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     <span>{metrics.daysWithClasses} days</span>
     <span>Gaps: {formatGap(metrics.totalGapMinutes)}</span>
     <span>
-      {#if metrics.avgInstructorRating !== null}
-        ★ {metrics.avgInstructorRating.toFixed(1)}
+      {#if metrics.avgDisplayRating !== null}
+        ★ {metrics.avgDisplayRating.toFixed(1)}
         ({metrics.ratedSectionCount}/{metrics.sectionCount} rated)
       {:else}
         Unrated

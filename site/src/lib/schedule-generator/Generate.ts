@@ -25,7 +25,8 @@ import {
 } from '../../stores/GeneratorStores';
 import { generate } from './ScheduleGenerator';
 import { singleRelaxations } from './Relaxation';
-import type { CourseRequest } from './types';
+import type { CourseRequest, InstructorRating } from './types';
+import { displayRating, rankingRating } from '../professor/Rating';
 
 /**
  * Node budget for relaxation probes. Each zero-result generation re-runs the
@@ -50,7 +51,7 @@ export async function fetchFullCourses(courseCodes: Set<string>): Promise<Record
 }
 
 /**
- * Build a name -> average-rating map from the loaded instructor lookup.
+ * Build a name -> rating map from the loaded instructor lookup.
  *
  * Keyed by name because that is what the engine matches sections on, but
  * *resolved* by slug: `section.instructorSlugs[i]` is the instructor the API
@@ -58,9 +59,9 @@ export async function fetchFullCourses(courseCodes: Set<string>): Promise<Record
  * their canonical record still gets their rating, and two professors sharing
  * a name are no longer both dropped.
  */
-function buildRatings(requests: CourseRequest[]): Map<string, number> {
+function buildRatings(requests: CourseRequest[]): Map<string, InstructorRating> {
   const lookup = get(ProfsLookupStore);
-  const ratings = new Map<string, number>();
+  const ratings = new Map<string, InstructorRating>();
   for (const request of requests) {
     for (const section of request.course.sections ?? []) {
       section.instructors.forEach((name, index) => {
@@ -74,11 +75,21 @@ function buildRatings(requests: CourseRequest[]): Map<string, number> {
         // `average_rating` is a number: the column is a Postgres `real` and
         // PostgREST sends it as JSON. It was declared `string` in the client
         // until now, so this used to go through parseFloat, which coerced it
-        // and hid the mismatch. The finite check stays -- a null or a NaN
-        // should leave the professor unrated rather than poison the sort.
-        const raw = lookup[slug]?.average_rating;
-        if (raw != null && Number.isFinite(raw)) {
-          ratings.set(name, raw);
+        // and hid the mismatch. `rankingRating` keeps the finite check -- a
+        // null or a NaN should leave the professor unrated rather than poison
+        // the sort.
+        //
+        // The sort ranks by `average_rating` (the legacy alias of
+        // `combined_rating`), because the shrunk score is the one that stops a
+        // single 5-star review outranking sixty 4.8s. The card prints
+        // `display_rating`, which is what the professor's own page shows.
+        const row = lookup[slug];
+        if (!row) {
+          return;
+        }
+        const ranking = rankingRating(row);
+        if (ranking !== null) {
+          ratings.set(name, { ranking, display: displayRating(row) ?? ranking });
         }
       });
     }

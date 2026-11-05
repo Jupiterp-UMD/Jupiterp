@@ -310,7 +310,7 @@ describe('metrics', () => {
     const b = course('BBB200', [section('BBB200', '0101', [meeting('MWF', 11, 12)])], {
       minCredits: 4,
     });
-    const ratings = new Map([['Prof 0101', 4]]);
+    const ratings = new Map([['Prof 0101', { ranking: 3.9, display: 4.5 }]]);
     const result = generateFromCourses([a, b], defaultConstraints(), ratings);
     const m = result.schedules[0].metrics;
 
@@ -319,7 +319,9 @@ describe('metrics', () => {
     expect(m.daysWithClasses).toBe(3);
     expect(m.earliestStartMinutes).toBe(540);
     expect(m.latestEndMinutes).toBe(720);
-    expect(m.avgInstructorRating).toBe(4);
+    // The sort's number and the card's are averaged over the same sections.
+    expect(m.avgInstructorRating).toBe(3.9);
+    expect(m.avgDisplayRating).toBe(4.5);
     expect(m.ratedSectionCount).toBe(2);
   });
 

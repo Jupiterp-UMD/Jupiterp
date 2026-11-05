@@ -15,6 +15,7 @@ instructor set.
   import { onMount } from 'svelte';
   import { searchInstructors } from '../../lib/api/JupiterpApi';
   import type { InstructorFull } from '../../lib/api/types';
+  import { displayRating } from '../../lib/professor/Rating';
   import { resolve } from '$app/paths';
   import SolarSystemLoader from '../../components/course-planner/course-search/SolarSystemLoader.svelte';
   import { TERM_NAME } from '../../lib/term';
@@ -82,16 +83,6 @@ instructor set.
   }
 
   onMount(() => void run(false));
-
-  function ratingOf(instructor: InstructorFull): number | null {
-    if (instructor.combined_rating !== null && instructor.combined_rating !== undefined) {
-      return instructor.combined_rating;
-    }
-    if (instructor.average_rating == null || !Number.isFinite(instructor.average_rating)) {
-      return null;
-    }
-    return instructor.average_rating;
-  }
 
   // Shortcut "/" for searching
   onMount(() => {
@@ -188,6 +179,9 @@ instructor set.
       {#if results.length > 0}
         <ul class="flex flex-col gap-1 pt-3">
           {#each results as instructor (instructor.slug)}
+            <!-- The reviews' average, not the ranking score: this is printed
+                 beside each name, and the list is sorted by name. -->
+            {@const rating = displayRating(instructor)}
             <li>
               <a
                 href={resolve('/professor/[slug]', { slug: instructor.slug })}
@@ -195,8 +189,8 @@ instructor set.
               >
                 <span class="font-bold">{instructor.name}</span>
                 <span class="text-text-secondary text-sm">
-                  {#if ratingOf(instructor) !== null}
-                    <span class="text-text-primary">{ratingOf(instructor)?.toFixed(1)}</span>
+                  {#if rating !== null}
+                    <span class="text-text-primary">{rating.toFixed(1)}</span>
                     <span class="text-orange">★</span>
                   {:else}
                     No rating yet

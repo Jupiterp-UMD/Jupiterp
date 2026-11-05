@@ -21,6 +21,7 @@ import type {
   GeneratedSchedule,
   GenerationResult,
   HardConstraints,
+  InstructorRating,
   OverriddenFilter,
   PinNotice,
   ScheduleMetrics,
@@ -194,13 +195,18 @@ function toScheduleSelection(candidate: Candidate, colorNumber: number): Schedul
   };
 }
 
+/** Arithmetic mean of a non-empty list. */
+function mean(values: number[]): number {
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
 /** Sum of the minimum credits across a combination of candidates. */
 function sumMinCredits(combo: Candidate[]): number {
   return combo.reduce((total, c) => total + c.course.minCredits, 0);
 }
 
 /** Compute, once, the ranking metrics for a found combination. */
-function computeMetrics(combo: Candidate[], ratings: Map<string, number>): ScheduleMetrics {
+function computeMetrics(combo: Candidate[], ratings: Map<string, InstructorRating>): ScheduleMetrics {
   const slots = combo.flatMap((c) => c.slots);
 
   const slotsByDay = new Map<EngineDay, MinuteSlot[]>();
@@ -230,26 +236,30 @@ function computeMetrics(combo: Candidate[], ratings: Map<string, number>): Sched
   }
 
   // A section's rating is the mean of its rated instructors; unrated
-  // sections are excluded from the average rather than counted as zero.
-  const sectionRatings: number[] = [];
+  // sections are excluded from the average rather than counted as zero. Both
+  // ratings are averaged over the same sections, so the card's number and the
+  // sort's number describe the same instructors.
+  const sectionRankings: number[] = [];
+  const sectionDisplays: number[] = [];
   for (const candidate of combo) {
     const rated = candidate.section.instructors
       .map((name) => ratings.get(name))
-      .filter((r): r is number => r !== undefined);
+      .filter((r): r is InstructorRating => r !== undefined);
     if (rated.length > 0) {
-      const sum = rated.reduce((a, b) => a + b, 0);
-      sectionRatings.push(sum / rated.length);
+      sectionRankings.push(mean(rated.map((r) => r.ranking)));
+      sectionDisplays.push(mean(rated.map((r) => r.display)));
     }
   }
-  const avgInstructorRating =
-    sectionRatings.length === 0 ? null : sectionRatings.reduce((a, b) => a + b, 0) / sectionRatings.length;
+  const avgInstructorRating = sectionRankings.length === 0 ? null : mean(sectionRankings);
+  const avgDisplayRating = sectionDisplays.length === 0 ? null : mean(sectionDisplays);
 
   const starts = slots.map((s) => s.start);
   const ends = slots.map((s) => s.end);
 
   return {
     avgInstructorRating,
-    ratedSectionCount: sectionRatings.length,
+    avgDisplayRating,
+    ratedSectionCount: sectionRankings.length,
     sectionCount: combo.length,
     minCredits: sumMinCredits(combo),
     maxCredits: combo.reduce((total, c) => total + (c.course.maxCredits ?? c.course.minCredits), 0),
@@ -281,7 +291,7 @@ function dedupePinNotices(notices: PinNotice[]): PinNotice[] {
  *
  * @param requests The courses to schedule, with required/optional and pins.
  * @param constraints Hard constraints every schedule must satisfy.
- * @param instructorRatings Instructor name -> average rating, for metrics.
+ * @param instructorRatings Instructor name -> ranking and display ratings, for metrics.
  * @param maxResults Cap on returned schedules.
  * @param maxNodes Hard cap on explored search nodes; defaults to MAX_NODES.
  *   Pass a smaller value for lightweight probes (e.g. relaxation hints) to
@@ -290,7 +300,7 @@ function dedupePinNotices(notices: PinNotice[]): PinNotice[] {
 export function generate(
   requests: CourseRequest[],
   constraints: HardConstraints,
-  instructorRatings: Map<string, number> = new Map(),
+  instructorRatings: Map<string, InstructorRating> = new Map(),
   maxResults: number = DEFAULT_MAX_RESULTS,
   maxNodes: number = MAX_NODES
 ): GenerationResult {
@@ -445,7 +455,7 @@ export function generate(
 export function generateFromCourses(
   courses: Course[],
   constraints: HardConstraints,
-  instructorRatings: Map<string, number> = new Map(),
+  instructorRatings: Map<string, InstructorRating> = new Map(),
   maxResults: number = DEFAULT_MAX_RESULTS
 ): GenerationResult {
   const requests: CourseRequest[] = courses.map((course) => ({

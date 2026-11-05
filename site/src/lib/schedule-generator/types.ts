@@ -77,11 +77,29 @@ export interface PinNotice {
 }
 
 /**
+ * An instructor's two ratings, which answer different questions. `ranking` is
+ * the shrunk score schedules are sorted by, so one 5-star review does not
+ * outrank sixty 4.8s; `display` is the reviews' own average, which is what a
+ * schedule card prints. See `lib/professor/Rating`.
+ */
+export interface InstructorRating {
+  ranking: number;
+  display: number;
+}
+
+/**
  * Computed once per schedule so re-sorting never regenerates. Time metrics
  * are null when all meetings are async/TBA.
  */
 export interface ScheduleMetrics {
+  /** The mean of rated sections' ranking scores. What the rating sort uses. */
   avgInstructorRating: number | null;
+  /**
+   * The same mean over the same sections, of their display ratings. What the
+   * card prints: the ranking mean showed a schedule whose only rated instructor
+   * had one 5-star review as 3.9.
+   */
+  avgDisplayRating: number | null;
   ratedSectionCount: number;
   sectionCount: number;
   minCredits: number;

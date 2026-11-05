@@ -78,7 +78,7 @@ describe('loadRatings', () => {
       data: [{ slug: 'nan-rating', combined_rating: null, average_rating: NaN, pt_review_count: 2 }],
     } as never);
     const ratings = await loadRatings(['nan-rating']);
-    expect(ratings.get('nan-rating')).toEqual({ rating: null, reviews: 2 });
+    expect(ratings.get('nan-rating')).toEqual({ display: null, ranking: null, reviews: 2 });
   });
 
   test('serves a slug from a bulk load without another request', async () => {
@@ -94,7 +94,34 @@ describe('loadRatings', () => {
     const requests = instructors.mock.calls.length;
     const ratings = await loadRatings(['bulk-b']);
     expect(instructors.mock.calls.length).toBe(requests);
-    expect(ratings.get('bulk-b')).toEqual({ rating: 3.1, reviews: 5 });
+    expect(ratings.get('bulk-b')).toEqual({ display: 3.1, ranking: 3.1, reviews: 5 });
+  });
+
+  // One 5-star review: the reviews' average is 5.0, the ranking score 3.9.
+  // The comparison view prints the first and sorts by the second.
+  test('shows display_rating and ranks by combined_rating', async () => {
+    jest.mocked(client.instructors).mockResolvedValue({
+      ok: () => true,
+      data: [
+        { slug: 'one-review', display_rating: 5, combined_rating: 3.92, average_rating: 3.92, pt_review_count: 1 },
+      ],
+    } as never);
+    const ratings = await loadRatings(['one-review']);
+    expect(ratings.get('one-review')).toEqual({ display: 5, ranking: 3.92, reviews: 1 });
+    expect(jest.mocked(client.instructors).mock.calls.at(-1)?.[0].columns).toContain('display_rating');
+  });
+
+  test('retries without display_rating when the API rejects the column', async () => {
+    const instructors = jest.mocked(client.instructors);
+    instructors.mockReset();
+    instructors.mockResolvedValueOnce({ ok: () => false, statusCode: 400, data: null } as never).mockResolvedValueOnce({
+      ok: () => true,
+      data: [{ slug: 'old-api', combined_rating: 3.92, average_rating: 3.92, pt_review_count: 1 }],
+    } as never);
+    const ratings = await loadRatings(['old-api']);
+    expect(instructors).toHaveBeenCalledTimes(2);
+    expect(instructors.mock.calls[1][0].columns).not.toContain('display_rating');
+    expect(ratings.get('old-api')).toEqual({ display: 3.92, ranking: 3.92, reviews: 1 });
   });
 });
 

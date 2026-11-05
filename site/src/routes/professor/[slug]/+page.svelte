@@ -10,7 +10,8 @@ the professor is in the panel, which the planner's modal shows too.
 <script lang="ts">
   import ProfessorPanel from '../../../components/professor/ProfessorPanel.svelte';
   import { hasEnoughForGpa } from '../../../lib/course-planner/Grades';
-  import { COURSE_PARAM, ratingBreakdown } from '../../../lib/professor/ProfessorData';
+  import { COURSE_PARAM } from '../../../lib/professor/ProfessorData';
+  import { ratingBreakdown } from '../../../lib/professor/Rating';
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
@@ -50,8 +51,8 @@ the professor is in the panel, which the planner's modal shows too.
     if (professor.courses.length > 0) {
       parts.push(`${professor.courses.length} courses at the University of Maryland`);
     }
-    if (rating.displayable && rating.combined !== null) {
-      parts.push(`rated ${rating.combined.toFixed(1)} out of 5`);
+    if (rating.display !== null) {
+      parts.push(`rated ${rating.display.toFixed(1)} out of 5`);
     }
     return parts.length > 0
       ? `${professor.instructor.name}: ${parts.join(', ')}.`
@@ -61,9 +62,11 @@ the professor is in the panel, which the planner's modal shows too.
   /**
    * Structured data, so a search result can show the rating.
    *
-   * `aggregateRating` is only emitted when there is a rating worth standing
-   * behind. Claiming one built on a single review is the kind of thing that
-   * gets structured data ignored altogether.
+   * `aggregateRating` is emitted whenever the page shows the reviews' average,
+   * including one built on a single review: `ratingCount` says how many it
+   * rests on, as the page does beside the stars. It is left out while the
+   * ranking score stands in for a missing `display_rating`, because that is
+   * not an average of the reviews it would be counted against.
    */
   let jsonLd = $derived.by(() => {
     const person: Record<string, unknown> = {
@@ -76,13 +79,16 @@ the professor is in the panel, which the planner's modal shows too.
         name: 'University of Maryland',
       },
     };
-    if (rating.displayable && rating.combined !== null) {
+    // The reviews' own average, as schema.org defines `ratingValue`. The
+    // ranking score is pulled toward the site-wide mean and is not an average
+    // of anything a search result could show beside it.
+    if (rating.display !== null && !rating.displayIsRanking) {
       person.aggregateRating = {
         '@type': 'AggregateRating',
-        ratingValue: rating.combined,
+        ratingValue: rating.display,
         bestRating: 5,
         worstRating: 1,
-        ratingCount: rating.jupiterpCount + rating.planetterpCount,
+        ratingCount: rating.count,
       };
     }
     // Escape `<` as its unicode form.
