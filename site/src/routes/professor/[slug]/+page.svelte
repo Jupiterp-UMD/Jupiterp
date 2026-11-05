@@ -41,9 +41,11 @@ the professor is in the panel, which the planner's modal shows too.
   let rating = $derived(ratingBreakdown(professor.instructor));
 
   // Jupiterp's slugs are its own; PlanetTerp's is kept separately, and only for
-  // professors PlanetTerp lists.
+  // professors PlanetTerp lists. Most of those -- about two in three -- have no
+  // PlanetTerp reviews, and a link to an empty page is a dead end, so the link
+  // needs reviews behind it too.
   let planetterpUrl = $derived(
-    professor.instructor.pt_slug
+    professor.instructor.pt_slug && (professor.instructor.pt_review_count ?? 0) > 0
       ? `https://planetterp.com/professor/${encodeURIComponent(professor.instructor.pt_slug)}`
       : null
   );
@@ -169,6 +171,7 @@ the professor is in the panel, which the planner's modal shows too.
         class="text-text-secondary hover:text-orange inline-flex flex-row items-center gap-1 whitespace-nowrap text-sm hover:underline"
       >
         View on PlanetTerp
+        <span class="sr-only">(opens in a new tab)</span>
         <ArrowUpRightFromSquareOutline class="h-3.5 w-3.5" aria-hidden="true" />
       </a>
     {/if}

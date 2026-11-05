@@ -140,7 +140,8 @@ export interface InstructorFull {
 
   /**
    * PlanetTerp's slug for this professor, for linking to their PlanetTerp
-   * page. Null for professors PlanetTerp has never listed.
+   * page. Not Jupiterp's `slug`: `joseph-conroy` here is `conroy_joseph` there.
+   * Null when no PlanetTerp record is linked.
    */
   pt_slug: string | null;
 
