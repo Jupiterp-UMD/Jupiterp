@@ -108,6 +108,20 @@ renders it.
     reviewsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  // Where to read this professor's reviews when Jupiterp has none of its own.
+  // The list below shows only Jupiterp's, so for a professor nobody has
+  // reviewed here yet, PlanetTerp is the only place their reviews are.
+  //
+  // PlanetTerp's slug, not Jupiterp's: they diverged when Jupiterp's were
+  // regenerated from names. And only with PlanetTerp reviews behind it --
+  // about two in three professors PlanetTerp lists have none, and a link to an
+  // empty page is a dead end.
+  let planetterpUrl = $derived(
+    data.instructor.jupiterp_review_count === 0 && data.instructor.pt_slug && (data.instructor.pt_review_count ?? 0) > 0
+      ? `https://planetterp.com/professor/${encodeURIComponent(data.instructor.pt_slug)}`
+      : null
+  );
+
   let showForm = $state(false);
   let reviewSent = $state(false);
 
@@ -259,7 +273,7 @@ renders it.
 {/if}
 
 <!-- Reviews -->
-<ReviewList instructorSlug={data.instructor.slug} courseCode={selectedCode} bind:reviewsEl />
+<ReviewList instructorSlug={data.instructor.slug} courseCode={selectedCode} {planetterpUrl} bind:reviewsEl />
 
 <section aria-label="Write a review" class="mt-4 flex flex-col gap-2">
   {#if showForm}
