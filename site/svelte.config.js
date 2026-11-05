@@ -1,9 +1,6 @@
 import adapterNode from '@sveltejs/adapter-node';
 import adapterStatic from '@sveltejs/adapter-static';
-import adapterVercel from '@sveltejs/adapter-vercel';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-
-const isVercel = process.env.VERCEL === '1' || process.env.NOW_BUILDER === '1';
 
 /**
  * GitHub Pages serves static files only, so that build is a client-rendered
@@ -15,7 +12,6 @@ const isGhPages = process.env.GH_PAGES === '1';
 
 function pickAdapter() {
   if (isGhPages) return adapterStatic({ fallback: '404.html', strict: false });
-  if (isVercel) return adapterVercel();
   return adapterNode();
 }
 
