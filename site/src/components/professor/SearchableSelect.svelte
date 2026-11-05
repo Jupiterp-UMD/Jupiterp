@@ -147,7 +147,10 @@ Generic searchable single-select dropdown.
             {id}
             aria-label={label}
             bind:value={query}
-            oninput={() => (active = 0)}
+            oninput={() => {
+              active = 0;
+              if (listElement) listElement.scrollTop = 0;
+            }}
             onkeydown={onKeydown}
             type="text"
             placeholder={selectedLabel}

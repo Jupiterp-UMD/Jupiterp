@@ -308,7 +308,7 @@ Copyright (C) 2026 Andrew Cupps
           >
             <option value="" disabled>Select</option>
             {#each TERMS as option (option.value)}
-              <option value={option.value}>{option.label}</option>
+              <option value={String(option.value)}>{option.label}</option>
             {/each}
           </select>
           <AngleDownOutline class="pointer-events-none absolute right-2 top-2 h-4 w-4" />
