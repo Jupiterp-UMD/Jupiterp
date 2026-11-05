@@ -61,8 +61,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
         target="_blank"
         rel="external noopener noreferrer"
         class="text-orange underline">PlanetTerp</a
-      >, captured once as a historical baseline. PlanetTerp is no longer being actively updated, so these ratings are
-      frozen and will gradually carry less weight as Jupiterp collects its own.
+      >, captured once as a historical baseline.
     </p>
     <p>
       Ratings are based on anonymous student reviews and vary in accuracy and reliability. They are subjective and may
