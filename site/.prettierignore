@@ -8,7 +8,6 @@ bun.lockb
 # Dependencies and Build Directories
 node_modules/
 .svelte-kit/
-.vercel/
 build/
 dist/
 
