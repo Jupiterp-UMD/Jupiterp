@@ -146,8 +146,6 @@ mostly looking at.
         {:else}
           Overall is the average of both, with recent reviews counting more.
         {/if}
-        PlanetTerp's rating is a snapshot from when it was imported, so it counts for less over time as Jupiterp reviews come
-        in.
       </p>
       {#if rankingDiffers && rating.combined !== null}
         <p class="text-text-secondary mt-2 text-xs leading-snug">
