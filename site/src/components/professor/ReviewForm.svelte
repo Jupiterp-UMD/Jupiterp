@@ -12,7 +12,7 @@ Copyright (C) 2026 Andrew Cupps
   import StarRatingInput from './StarRatingInput.svelte';
   import ManageKey from './ManageKey.svelte';
   import CoursePicker from './CoursePicker.svelte';
-  import SearchableSelect from './SearchableSelect.svelte';
+  import { AngleDownOutline } from 'flowbite-svelte-icons';
 
   interface Props {
     instructorSlug: string;
@@ -297,35 +297,45 @@ Copyright (C) 2026 Andrew Cupps
         />
       </div>
 
-      <div class="flex flex-col gap-1">
-        <label for="review-term" class="text-sm font-bold">Term</label>
-        <SearchableSelect
-          options={TERMS.map((option) => ({ value: String(option.value), label: option.label }))}
-          bind:selected={() => term || null, (value) => (term = value ?? '')}
-          id="review-term"
-          label="Term"
-          widthClass="w-36"
-          compact
-        />
-      </div>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm font-bold">Term</span>
+        <div class="relative w-36">
+          <select
+            id="review-term"
+            bind:value={term}
+            required
+            class="border-outline bg-bg-primary text-orange h-8 w-full appearance-none rounded-lg border-2 bg-none py-1 pl-2 pr-8 font-semibold"
+          >
+            <option value="" disabled>Select</option>
+            {#each TERMS as option (option.value)}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
+          <AngleDownOutline class="pointer-events-none absolute right-2 top-2 h-4 w-4" />
+        </div>
+      </label>
 
-      <div class="flex flex-col gap-1">
-        <label for="review-grade" class="text-sm font-bold">Your grade</label>
-        <SearchableSelect
-          options={GRADES.map((grade) => ({ value: grade, label: grade }))}
-          bind:selected={() => expectedGrade || null, (value) => (expectedGrade = value ?? '')}
-          id="review-grade"
-          label="Your grade"
-          widthClass="w-22"
-          compact
-        />
-      </div>
+      <label class="flex flex-col gap-1">
+        <span class="text-sm font-bold">Your grade</span>
+        <div class="w-22 relative">
+          <select
+            id="review-grade"
+            bind:value={expectedGrade}
+            required
+            class="border-outline bg-bg-primary h-8 w-full appearance-none rounded-lg border-2 bg-none py-1 pl-2 pr-8 font-semibold"
+            class:text-orange={expectedGrade !== ''}
+          >
+            <option value="" disabled>Select</option>
+            {#each GRADES as grade (grade)}
+              <option value={grade}>{grade}</option>
+            {/each}
+          </select>
+          <AngleDownOutline class="pointer-events-none absolute right-2 top-2 h-4 w-4" />
+        </div>
+      </label>
     </div>
 
-    <p class="text-text-secondary text-sm">
-      Grade distribution data covers Fall and Spring <strong>ONLY</strong>; Winter and Summer terms are
-      <strong>NOT</strong> currently included.
-    </p>
+    <p class="text-text-secondary text-sm">Reviews can only be left for Fall and Spring terms.</p>
 
     <label class="flex flex-col gap-1">
       <span class="flex flex-row justify-between text-sm">

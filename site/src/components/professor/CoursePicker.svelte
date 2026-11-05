@@ -3,8 +3,11 @@ This file is part of Jupiterp. For terms of use, please see the file
 called LICENSE at the top level of the Jupiterp source tree (online at
 https://github.com/atcupps/Jupiterp/LICENSE).
 Copyright (C) 2026 Andrew Cupps
+
+Course dropdown with alphabetical sorting and an optional All courses entry.
 -->
 <script lang="ts">
+  import { compareCourseCodes } from '../../lib/professor/ProfessorData';
   import SearchableSelect from './SearchableSelect.svelte';
 
   interface Props {
@@ -31,9 +34,7 @@ Copyright (C) 2026 Andrew Cupps
 
   let options = $derived([
     ...(allowAll ? [{ value: null, label: 'All courses' }] : []),
-    ...[...codes]
-      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-      .map((code) => ({ value: code, label: code })),
+    ...[...codes].sort(compareCourseCodes).map((code) => ({ value: code, label: code })),
   ]);
 </script>
 

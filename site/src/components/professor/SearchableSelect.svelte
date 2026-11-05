@@ -4,9 +4,10 @@ called LICENSE at the top level of the Jupiterp source tree (online at
 https://github.com/atcupps/Jupiterp/LICENSE).
 Copyright (C) 2026 Andrew Cupps
 
+Generic searchable single-select dropdown.
 -->
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import { AngleDownOutline } from 'flowbite-svelte-icons';
 
   interface Props {
@@ -87,24 +88,13 @@ Copyright (C) 2026 Andrew Cupps
   }
 
   function scrollActiveIntoView() {
-    if (!listElement) return;
-    const activeEl = listElement.children[active] as HTMLElement;
-    if (!activeEl) return;
-
-    const { scrollTop, clientHeight } = listElement;
-    const { offsetTop, offsetHeight } = activeEl;
-
-    if (offsetTop < scrollTop) {
-      listElement.scrollTop = offsetTop;
-    } else if (offsetTop + offsetHeight > scrollTop + clientHeight) {
-      listElement.scrollTop = offsetTop + offsetHeight - clientHeight;
-    }
+    listElement?.children[active]?.scrollIntoView({ block: 'nearest' });
   }
 
   $effect(() => {
-    if (open) {
-      input?.focus();
-      scrollActiveIntoView();
+    if (open && input && listElement) {
+      input.focus();
+      untrack(scrollActiveIntoView);
     }
   });
 </script>
@@ -131,7 +121,7 @@ Copyright (C) 2026 Andrew Cupps
         <button
           bind:this={button}
           {id}
-          aria-label={label}
+          aria-label={`${label}: ${selectedLabel}`}
           class="border-outline hover:bg-hover flex h-8 w-full flex-row items-center justify-between gap-2 rounded-lg border-2 py-1 font-semibold transition-colors {compact
             ? 'px-2'
             : 'px-4'}"
@@ -191,9 +181,8 @@ Copyright (C) 2026 Andrew Cupps
               id="{LIST_ID}-{i}"
               role="option"
               aria-selected={i === active}
-              class="cursor-pointer select-none px-4 py-1"
-              class:bg-hover={i === active ||
-                (option.value === selected && active === options.findIndex((option) => option.value === selected))}
+              class="cursor-pointer select-none py-1 {compact ? 'px-2' : 'px-4'}"
+              class:bg-hover={i === active}
               class:text-orange={option.value === selected}
               class:font-semibold={option.value === selected}
               class:underline={option.value === selected}
