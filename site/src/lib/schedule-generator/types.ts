@@ -21,6 +21,12 @@ import type { ScheduleSelection } from '../../types';
  */
 export type EngineDay = 'M' | 'Tu' | 'W' | 'Th' | 'F' | 'Sa' | 'Su';
 
+export interface BlockedTime {
+  day: EngineDay;
+  start: number;
+  end: number;
+}
+
 /**
  * Hard constraints a generated schedule must satisfy. Times are minutes since
  * midnight (9:30 AM = 570).
@@ -29,6 +35,7 @@ export interface HardConstraints {
   earliestStartMinutes: number | null;
   latestEndMinutes: number | null;
   daysOff: Set<EngineDay>;
+  blockedTimes: BlockedTime[];
   onlyOpenSeats: boolean;
   minGapMinutes: number;
   minCredits: number | null;
@@ -43,6 +50,7 @@ export function defaultConstraints(): HardConstraints {
     earliestStartMinutes: null,
     latestEndMinutes: null,
     daysOff: new Set<EngineDay>(),
+    blockedTimes: [],
     onlyOpenSeats: true,
     minGapMinutes: 0,
     minCredits: null,
@@ -67,7 +75,7 @@ export interface CourseRequest {
 }
 
 /** A per-section filter that a pinned section was kept despite violating. */
-export type OverriddenFilter = 'earliestStart' | 'latestEnd' | 'dayOff' | 'openSeats';
+export type OverriddenFilter = 'earliestStart' | 'latestEnd' | 'dayOff' | 'blockedTime' | 'openSeats';
 
 /** Raised when a pinned section was kept despite violating active filters. */
 export interface PinNotice {
