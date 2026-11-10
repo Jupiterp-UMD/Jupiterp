@@ -54,11 +54,16 @@ jobs:
 
           # --cpu-throttling is request-based billing. Pass it every time:
           # gcloud keeps whatever an earlier deploy set.
+          #
+          # --no-invoker-iam-check is what makes the service public. The
+          # organization's policy rejects an `allUsers` binding, so
+          # --allow-unauthenticated fails here; the preview services are
+          # exposed the same way.
           gcloud run deploy jupiterp-site \
             --source site \
             --region "$GCP_REGION" \
             --platform managed \
-            --allow-unauthenticated \
+            --no-invoker-iam-check \
             --cpu-throttling \
             --min-instances=0 \
             --max-instances=5 \
