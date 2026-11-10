@@ -63,6 +63,8 @@ export function overriddenFilterLabel(filter: OverriddenFilter): string {
       return 'ends later than your latest-end time';
     case 'dayOff':
       return 'meets on a day you marked off';
+    case 'blockedTime':
+      return 'meets during a time you blocked off';
     case 'openSeats':
       return 'has no open seats';
   }

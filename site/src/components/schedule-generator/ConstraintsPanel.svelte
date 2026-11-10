@@ -30,6 +30,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     earliestStartMinutes: null,
     latestEndMinutes: null,
     daysOff: new Set(),
+    blockedTimes: [],
     onlyOpenSeats: true,
     minGapMinutes: 0,
     minCredits: null,

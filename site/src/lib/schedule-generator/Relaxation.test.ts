@@ -19,6 +19,7 @@ describe('singleRelaxations', () => {
       earliestStartMinutes: 9 * 60,
       latestEndMinutes: 17 * 60,
       daysOff,
+      blockedTimes: [],
       onlyOpenSeats: true,
       minGapMinutes: 15,
       minCredits: 12,
