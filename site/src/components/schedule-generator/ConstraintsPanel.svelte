@@ -7,6 +7,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <script lang="ts">
   import { AdjustmentsHorizontalOutline } from 'flowbite-svelte-icons';
   import { slide } from 'svelte/transition';
+  import BlockedTimesGrid from './BlockedTimesGrid.svelte';
   import GeneratorSelect from './GeneratorSelect.svelte';
   import { GeneratorConstraintsStore } from '../../stores/GeneratorStores';
   import type { HardConstraints } from '../../lib/schedule-generator/types';
@@ -44,6 +45,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     if (c.earliestStartMinutes !== null) count++;
     if (c.latestEndMinutes !== null) count++;
     count += c.daysOff.size;
+    if (c.blockedTimes.length > 0) count++;
     if (c.onlyOpenSeats) count++;
     if (c.minGapMinutes > 0) count++;
     if (c.minCredits !== null) count++;
@@ -72,6 +74,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       earliestStartMinutes: null,
       latestEndMinutes: null,
       daysOff: new SvelteSet<EngineDay>(),
+      blockedTimes: [],
       minGapMinutes: 0,
       minCredits: null,
     }));
@@ -143,6 +146,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
           {/each}
         </div>
       </div>
+
+      <BlockedTimesGrid blockedTimes={constraints.blockedTimes} onChange={(blockedTimes) => patch({ blockedTimes })} />
 
       <!-- Only open seats -->
       <label class="flex flex-row items-center gap-2">
