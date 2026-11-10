@@ -1,0 +1,66 @@
+# Deploy the site to Cloud Run as a server-rendered Node app.
+#
+# With neither `GH_PAGES` nor `VERCEL` set, svelte.config.js picks
+# adapter-node. `gcloud run deploy --source` builds it with Google's Node
+# buildpack (`npm run build`, then `npm start`), the same way preview.yml
+# builds PR previews. This runs alongside pages.yml until www.jupiterp.com is
+# pointed at this service; after that, pages.yml can be retired.
+name: Deploy site to Cloud Run
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Let a running deploy finish instead of cancelling it half-way.
+concurrency:
+  group: deploy-site
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Deploy
+        env:
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          # Optional repository variable. The review form reads the key at
+          # runtime; it is left as-is on the service when the variable is unset.
+          TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+        run: |
+          # ORIGIN tells adapter-node the public address, since requests reach
+          # the service through a proxy.
+          ENV_VARS="ORIGIN=https://www.jupiterp.com"
+          if [ -n "$TURNSTILE_SITE_KEY" ]; then
+            ENV_VARS="$ENV_VARS,PUBLIC_TURNSTILE_SITE_KEY=$TURNSTILE_SITE_KEY"
+          fi
+
+          # --cpu-throttling is request-based billing. Pass it every time:
+          # gcloud keeps whatever an earlier deploy set.
+          gcloud run deploy jupiterp-site \
+            --source site \
+            --region "$GCP_REGION" \
+            --platform managed \
+            --allow-unauthenticated \
+            --cpu-throttling \
+            --min-instances=0 \
+            --max-instances=5 \
+            --memory=512Mi \
+            --update-env-vars="$ENV_VARS"
