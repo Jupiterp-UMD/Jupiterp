@@ -39,21 +39,39 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     goto(resolve('/'));
   }
 
-  // Whether the full-size preview popup is open for this card.
+  // Whether the full-page view of the generated schedules is open, started
+  // from this card.
   let previewOpen = $state(false);
+
+  // The whole card opens the view, except its Apply button.
+  function handleCardClick(event: MouseEvent) {
+    if (event.target instanceof Element && event.target.closest('button')) {
+      return;
+    }
+    previewOpen = true;
+  }
+
+  function handleCardKeydown(event: KeyboardEvent) {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      previewOpen = true;
+    }
+  }
 </script>
 
-<div class="border-border bg-bg-primary shadow-xs flex flex-col gap-2 rounded-xl border p-3">
+<div
+  class="border-border bg-bg-primary shadow-xs hover:border-orange flex cursor-pointer flex-col gap-2 rounded-xl border p-3"
+  role="button"
+  tabindex="0"
+  aria-label="View schedule {rank} in detail"
+  onclick={handleCardClick}
+  onkeydown={handleCardKeydown}
+>
   <div class="flex flex-row items-center justify-between">
     <span class="text-sm font-semibold opacity-60">#{rank}</span>
-    <button
-      class="border-outline hover:border-orange hover:text-orange ml-auto mr-2 rounded-md border px-3 py-1 text-sm"
-      onclick={() => (previewOpen = true)}
-      aria-haspopup="dialog"
-      title="See this schedule full size, with professors and times"
-    >
-      Preview
-    </button>
     <button
       class="border-orange text-orange enabled:hover:bg-orange rounded-md border px-3 py-1 text-sm font-semibold enabled:hover:text-white"
       onclick={apply}
@@ -85,6 +103,6 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   </div>
 
   {#if previewOpen}
-    <SchedulePreview {schedule} {rank} onapply={apply} onclose={() => (previewOpen = false)} />
+    <SchedulePreview initialIndex={rank - 1} onclose={() => (previewOpen = false)} />
   {/if}
 </div>

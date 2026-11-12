@@ -175,7 +175,9 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       </div>
       {#if time}
         <div class="@max-[5.5rem]:hidden w-full truncate px-1.5">{timeLabel(cm)}</div>
-        <div class="@max-[5.5rem]:block hidden w-full px-0.5">{time.start} –<br />{time.end}</div>
+        <div class="@max-[5.5rem]:block hidden w-full whitespace-nowrap px-0.5 tracking-tight">
+          {time.start}–<br />{time.end}
+        </div>
       {:else}
         <div class="@max-[5.5rem]:px-0.5 w-full truncate px-1.5">{timeLabel(cm)}</div>
       {/if}
