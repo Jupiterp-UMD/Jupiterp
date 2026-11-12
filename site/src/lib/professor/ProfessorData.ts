@@ -21,6 +21,24 @@ import {
 } from '../api/JupiterpApi';
 import type { InstructorFull } from '../api/types';
 import { toDistribution, type GradeDistribution } from '../course-planner/Grades';
+import { ratingBreakdown, type RatingBreakdown } from './Rating';
+
+const breakdowns = new Map<string, Promise<RatingBreakdown | null>>();
+
+/**
+ * One professor's rating breakdown, fetched on demand. For places like the
+ * planner and the comparison page, whose bulk rating queries carry only the
+ * shown number; the breakdown is fetched only when someone opens it.
+ */
+export function loadRatingBreakdown(slug: string): Promise<RatingBreakdown | null> {
+  let pending = breakdowns.get(slug);
+  if (pending === undefined) {
+    pending = instructorBySlug(slug).then((row) => (row === null ? null : ratingBreakdown(row)));
+    pending.catch(() => breakdowns.delete(slug));
+    breakdowns.set(slug, pending);
+  }
+  return pending;
+}
 
 type Fetch = typeof globalThis.fetch;
 

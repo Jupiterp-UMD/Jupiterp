@@ -238,6 +238,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
           slug={courseInfoSection.instructorSlugs?.[i]}
           profsHover={false}
           removeHoverSection={() => {}}
+          ratingInfo
         />
       {/each}
       <div class="text-sm 2xl:text-base">

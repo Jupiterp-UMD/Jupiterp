@@ -118,7 +118,7 @@ renders it.
   // empty page is a dead end.
   let planetterpUrl = $derived(
     data.instructor.jupiterp_review_count === 0 && data.instructor.pt_slug && (data.instructor.pt_review_count ?? 0) > 0
-      ? `https://planetterp.com/professor/${encodeURIComponent(data.instructor.pt_slug)}`
+      ? rating.planetterpUrl
       : null
   );
 

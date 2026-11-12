@@ -5,12 +5,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 Copyright (C) 2026 Andrew Cupps
 -->
 <script lang="ts">
-  import {
-    formatSemesterRange,
-    hasEnoughForGpa,
-    MIN_GRADED_FOR_GPA,
-    type GradeDistribution,
-  } from '../../../lib/course-planner/Grades';
+  import { hasEnoughForGpa, MIN_GRADED_FOR_GPA, type GradeDistribution } from '../../../lib/course-planner/Grades';
   import GradeDistributionBars from './GradeDistributionBars.svelte';
   import { resolve } from '$app/paths';
   import { courseQuery } from '../../../lib/professor/ProfessorData';
@@ -117,7 +112,6 @@ Copyright (C) 2026 Andrew Cupps
     leftOffset = left - anchorRect.left;
   });
 
-  let semesterRange = $derived(formatSemesterRange(distribution));
   let showGpa = $derived(hasEnoughForGpa(distribution));
 
   function handleKeydown(event: KeyboardEvent) {
@@ -180,12 +174,4 @@ Copyright (C) 2026 Andrew Cupps
   {/if}
 
   <GradeDistributionBars {distribution} />
-
-  <div class="text-text-secondary mt-1 text-[10px] leading-tight">
-    {#if semesterRange != null}
-      {semesterRange} &middot;
-    {/if}
-    Percentages over {distribution.barTotal.toLocaleString()} students including withdrawals; GPA excludes them.
-    <span class="block">Grade data from UMD's Office of the Registrar.</span>
-  </div>
 </div>

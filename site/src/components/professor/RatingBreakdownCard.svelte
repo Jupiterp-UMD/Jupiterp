@@ -25,20 +25,49 @@ mostly looking at.
 
 <script lang="ts">
   import { clickoutside } from '@svelte-put/clickoutside';
+  import { loadRatingBreakdown } from '../../lib/professor/ProfessorData';
   import type { RatingBreakdown } from '../../lib/professor/Rating';
 
   interface Props {
-    rating: RatingBreakdown;
+    /** The breakdown, when the caller already has it. */
+    rating?: RatingBreakdown;
+    /** Otherwise the professor's slug, and it is fetched on first open. */
+    slug?: string;
+    /** Which edge of the button the card lines up with. */
+    align?: 'left' | 'right';
   }
 
-  let { rating }: Props = $props();
+  let { rating: given, slug, align = 'right' }: Props = $props();
 
   let open = $state(false);
   const cardId = nextCardId();
 
+  let fetched = $state<RatingBreakdown | null>(null);
+  let status = $state<'idle' | 'loading' | 'error'>('idle');
+  let rating = $derived(given ?? fetched);
+
+  $effect(() => {
+    if (!open || given !== undefined || slug === undefined || fetched !== null) return;
+    const wanted = slug;
+    let cancelled = false;
+    status = 'loading';
+    loadRatingBreakdown(wanted)
+      .then((result) => {
+        if (cancelled) return;
+        fetched = result;
+        status = result === null ? 'error' : 'idle';
+      })
+      .catch(() => {
+        if (!cancelled) status = 'error';
+      });
+    return () => {
+      cancelled = true;
+    };
+  });
+
   /** "Sep 2026". UTC so the server and the browser render the same month. */
   let asOf = $derived(
-    rating.planetterpAsOf === null
+    rating == null || rating.planetterpAsOf === null
       ? null
       : new Date(rating.planetterpAsOf).toLocaleDateString('en-US', {
           month: 'short',
@@ -47,20 +76,26 @@ mostly looking at.
         })
   );
 
-  let sources = $derived([
-    { name: 'Jupiterp', value: rating.jupiterp, count: rating.jupiterpCount, note: null },
-    {
-      name: 'PlanetTerp',
-      value: rating.planetterp,
-      count: rating.planetterpCount,
-      note: asOf === null ? null : `imported ${asOf}`,
-    },
-  ]);
+  let sources = $derived(
+    rating == null
+      ? []
+      : [
+          { name: 'Jupiterp', value: rating.jupiterp, count: rating.jupiterpCount, note: null, href: null },
+          {
+            name: 'PlanetTerp',
+            value: rating.planetterp,
+            count: rating.planetterpCount,
+            note: asOf === null ? null : `imported ${asOf}`,
+            href: rating.planetterpUrl,
+          },
+        ]
+  );
 
   // Only worth explaining when it would change what the reader sees. With
   // plenty of reviews the two round to the same number.
   let rankingDiffers = $derived(
-    !rating.displayIsRanking &&
+    rating != null &&
+      !rating.displayIsRanking &&
       rating.combined !== null &&
       rating.display !== null &&
       rating.combined.toFixed(1) !== rating.display.toFixed(1)
@@ -79,7 +114,7 @@ mostly looking at.
 
 <svelte:window onkeydown={handleKeydown} />
 
-<span class="relative inline-flex" use:clickoutside onclickoutside={() => (open = false)}>
+<span class="relative inline-flex align-middle" use:clickoutside onclickoutside={() => (open = false)}>
   <button
     type="button"
     class="hover:border-orange hover:text-orange inline-flex h-4 w-4 items-center justify-center rounded-full border text-[0.625rem] font-bold leading-none transition-colors {open
@@ -98,60 +133,81 @@ mostly looking at.
       id={cardId}
       role="dialog"
       aria-label="Rating breakdown"
-      class="border-outline bg-bg-primary text-text-primary absolute right-0 top-full z-[60] mt-2 w-72 max-w-[calc(100vw-2rem)] cursor-default rounded-lg border-2 p-3 text-left text-sm font-normal shadow-lg"
+      class="border-outline bg-bg-primary text-text-primary absolute top-full z-[60] mt-2 w-72 max-w-[calc(100vw-2rem)] cursor-default rounded-lg border-2 p-3 text-left text-sm font-normal normal-case shadow-lg {align ===
+      'left'
+        ? 'left-0'
+        : 'right-0'}"
     >
       <div class="pb-2 text-xs font-bold">How this rating is calculated</div>
 
-      <table class="w-full border-collapse">
-        <tbody>
-          {#each sources as source (source.name)}
-            <tr class="align-baseline">
-              <th scope="row" class="py-1 pr-2 text-left font-semibold">{source.name}</th>
-              {#if source.value !== null && source.count > 0}
-                <td class="text-orange whitespace-nowrap py-1 pr-2 text-right font-bold">
-                  ★ {source.value.toFixed(1)}
-                </td>
-                <td class="text-text-secondary py-1 text-right text-xs">
-                  {plural(source.count)}
-                  {#if source.note !== null}
-                    <span class="block">{source.note}</span>
+      {#if rating == null}
+        <p class="text-text-secondary text-xs">
+          {status === 'error' ? 'The breakdown could not be loaded.' : 'Loading…'}
+        </p>
+      {:else}
+        <table class="w-full border-collapse">
+          <tbody>
+            {#each sources as source (source.name)}
+              <tr class="align-baseline">
+                <th scope="row" class="py-1 pr-2 text-left font-semibold">
+                  {#if source.href !== null}
+                    <a
+                      href={source.href}
+                      class="text-orange underline"
+                      target="_blank"
+                      rel="external noopener noreferrer"
+                      title="View on PlanetTerp">{source.name}</a
+                    >
+                  {:else}
+                    {source.name}
                   {/if}
-                </td>
-              {:else}
-                <td colspan="2" class="text-text-secondary py-1 text-right text-xs">No reviews yet</td>
-              {/if}
-            </tr>
-          {/each}
-          <!-- No Overall row while the ranking score stands in for the
+                </th>
+                {#if source.value !== null && source.count > 0}
+                  <td class="text-orange whitespace-nowrap py-1 pr-2 text-right font-bold">
+                    ★ {source.value.toFixed(1)}
+                  </td>
+                  <td class="text-text-secondary py-1 text-right text-xs">
+                    {plural(source.count)}
+                    {#if source.note !== null}
+                      <span class="block">{source.note}</span>
+                    {/if}
+                  </td>
+                {:else}
+                  <td colspan="2" class="text-text-secondary py-1 text-right text-xs">No reviews yet</td>
+                {/if}
+              </tr>
+            {/each}
+            <!-- No Overall row while the ranking score stands in for the
                average: it would label the shrunk number "the average of
                both", a 3.9 under a single 5-star review. -->
-          {#if rating.display !== null && !rating.displayIsRanking}
-            <tr class="border-outline border-t align-baseline">
-              <th scope="row" class="pb-1 pr-2 pt-2 text-left font-semibold">Overall</th>
-              <td class="text-orange whitespace-nowrap pb-1 pr-2 pt-2 text-right font-bold">
-                ★ {rating.display.toFixed(1)}
-              </td>
-              <td class="text-text-secondary pb-1 pt-2 text-right text-xs">
-                {plural(rating.count)}
-              </td>
-            </tr>
-          {/if}
-        </tbody>
-      </table>
+            {#if rating.display !== null && !rating.displayIsRanking}
+              <tr class="border-outline border-t align-baseline">
+                <th scope="row" class="pb-1 pr-2 pt-2 text-left font-semibold">Overall</th>
+                <td class="text-orange whitespace-nowrap pb-1 pr-2 pt-2 text-right font-bold">
+                  ★ {rating.display.toFixed(1)}
+                </td>
+                <td class="text-text-secondary pb-1 pt-2 text-right text-xs">
+                  {plural(rating.count)}
+                </td>
+              </tr>
+            {/if}
+          </tbody>
+        </table>
 
-      <p class="text-text-secondary mt-2 text-xs leading-snug">
-        {#if rating.displayIsRanking}
-          The rating shown blends both, with recent reviews counting more, and leans toward the site-wide average until
-          a professor has more reviews.
-        {:else}
-          Overall is the average of both, with recent reviews counting more.
-        {/if}
-      </p>
-      {#if rankingDiffers && rating.combined !== null}
         <p class="text-text-secondary mt-2 text-xs leading-snug">
-          When ranking professors, Jupiterp uses {rating.combined.toFixed(1)}, which leans toward the site-wide average
-          until a professor has more reviews.
+          {#if rating.displayIsRanking}
+            The rating shown blends both, with recent reviews counting more, and leans toward the site-wide average
+            until a professor has more reviews.
+          {:else}
+            Overall is the average of both, with recent reviews counting more.
+          {/if}
         </p>
+        {#if rankingDiffers && rating.combined !== null}
+          <p class="text-text-secondary mt-2 text-xs leading-snug">
+            When ranking professors, Jupiterp uses {rating.combined.toFixed(1)}, which leans toward the site-wide
+            average until a professor has more reviews.
+          </p>
+        {/if}
       {/if}
     </div>
   {/if}

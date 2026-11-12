@@ -4,6 +4,7 @@ https://github.com/atcupps/Jupiterp/LICENSE.
 -->
 <script lang="ts">
   import { loadRatings, type ProfessorRating } from '../../lib/professor/Comparison';
+  import RatingBreakdownCard from './RatingBreakdownCard.svelte';
   import StarRating from './StarRating.svelte';
 
   let { slug }: { slug: string } = $props();
@@ -39,7 +40,10 @@ https://github.com/atcupps/Jupiterp/LICENSE.
       <span class="text-orange text-xl font-bold">{rating.display.toFixed(1)}</span>
       <span class="text-text-secondary text-xs">out of 5</span>
     </div>
-    <span class="text-text-secondary text-sm">{rating.reviews} {rating.reviews === 1 ? 'review' : 'reviews'}</span>
+    <span class="flex items-center gap-1.5">
+      <span class="text-text-secondary text-sm">{rating.reviews} {rating.reviews === 1 ? 'review' : 'reviews'}</span>
+      <RatingBreakdownCard {slug} />
+    </span>
   {:else}
     <p class="text-text-secondary text-sm">{status === 'error' ? 'Rating unavailable' : 'Not enough reviews yet'}</p>
   {/if}

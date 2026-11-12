@@ -93,6 +93,8 @@ export interface RatingBreakdown {
   planetterp: number | null;
   planetterpCount: number;
   planetterpAsOf: string | null;
+  /** This professor's PlanetTerp page, when a PlanetTerp record is linked. */
+  planetterpUrl: string | null;
   /** Reviews from both sources. */
   count: number;
 }
@@ -122,8 +124,17 @@ export function ratingBreakdown(instructor: InstructorFull): RatingBreakdown {
     planetterp: instructor.pt_average_rating,
     planetterpCount,
     planetterpAsOf: instructor.pt_snapshot_at,
+    planetterpUrl: planetterpProfessorUrl(instructor.pt_slug),
     count: jupiterpCount + planetterpCount,
   };
+}
+
+/**
+ * A professor's PlanetTerp page. Takes PlanetTerp's slug (`pt_slug`), not
+ * Jupiterp's: they diverged when Jupiterp's were regenerated from names.
+ */
+export function planetterpProfessorUrl(ptSlug: string | null | undefined): string | null {
+  return ptSlug ? `https://planetterp.com/professor/${encodeURIComponent(ptSlug)}` : null;
 }
 
 function numeric(value: number | null | undefined): number | null {

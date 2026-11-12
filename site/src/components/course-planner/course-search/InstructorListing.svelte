@@ -12,6 +12,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import { CourseGradesStore, ProfsLookupStore } from '../../../stores/CoursePlannerStores';
   import { hasEnoughForGpa } from '../../../lib/course-planner/Grades';
   import GradesPopover from './GradesPopover.svelte';
+  import RatingBreakdownCard from '../../professor/RatingBreakdownCard.svelte';
 
   // 1. Properly define the component props type contract
   interface Props {
@@ -30,6 +31,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     courseCode?: string;
     profsHover: boolean;
     removeHoverSection: () => void;
+    /** Show the rating breakdown's info button beside the stars. */
+    ratingInfo?: boolean;
   }
 
   let {
@@ -39,6 +42,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     // eslint-disable-next-line no-useless-assignment
     profsHover = $bindable(),
     removeHoverSection,
+    ratingInfo = false,
   }: Props = $props();
 
   let profs = $derived($ProfsLookupStore);
@@ -173,6 +177,9 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       <!-- The stars are a CSS gradient over text; the value itself has to be
            readable by a screen reader some other way. -->
       <span class="sr-only">Rated {currentProf.rating} out of 5</span>
+      {#if ratingInfo}
+        <RatingBreakdownCard slug={currentProf.slug} align="left" />
+      {/if}
     {/if}
   {:else}
     {instructor ?? 'No instructor'}
