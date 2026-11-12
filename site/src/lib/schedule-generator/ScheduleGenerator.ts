@@ -62,6 +62,10 @@ function slotsConflict(a: MinuteSlot, b: MinuteSlot, minGapMinutes: number): boo
   return a.day === b.day && a.start - minGapMinutes < b.end && a.end + minGapMinutes > b.start;
 }
 
+/**
+ * Whether a slot overlaps any blocked time. Intervals are half-open, so a
+ * class that ends exactly when a block starts is still allowed.
+ */
 function overlapsBlockedTime(slot: MinuteSlot, blockedTimes: BlockedTime[]): boolean {
   return blockedTimes.some((block) => block.day === slot.day && slot.start < block.end && slot.end > block.start);
 }

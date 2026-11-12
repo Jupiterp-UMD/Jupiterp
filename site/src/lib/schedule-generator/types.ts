@@ -21,6 +21,10 @@ import type { ScheduleSelection } from '../../types';
  */
 export type EngineDay = 'M' | 'Tu' | 'W' | 'Th' | 'F' | 'Sa' | 'Su';
 
+/**
+ * A stretch of one day the student is busy, in minutes since midnight. A
+ * class that overlaps it is excluded from generated schedules.
+ */
 export interface BlockedTime {
   day: EngineDay;
   start: number;

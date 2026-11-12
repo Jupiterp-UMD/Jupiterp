@@ -17,6 +17,10 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import { minutesToLabel } from '../../lib/schedule-generator/GeneratorFormat';
   import type { BlockedTime, EngineDay } from '../../lib/schedule-generator/types';
 
+  /**
+   * A When2Meet-style grid for marking times the student is busy. Dragging
+   * across empty cells paints them; dragging from a painted cell erases.
+   */
   interface Props {
     blockedTimes: BlockedTime[];
     onChange: (blockedTimes: BlockedTime[]) => void;
@@ -24,11 +28,14 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   let { blockedTimes, onChange }: Props = $props();
 
+  // The drag in progress, if any. `adding` is decided by the cell the drag
+  // starts on, so one drag never mixes painting and erasing.
   let drag = $state<{ day: EngineDay; start: number; toDay: EngineDay; toStart: number; adding: boolean } | null>(null);
 
   let saved = $derived(blocksToKeys(blockedTimes));
   let dragged = $derived(drag ? new Set(rectangleKeys(drag.day, drag.start, drag.toDay, drag.toStart)) : new Set());
 
+  /** Whether a cell shows as blocked, including the preview of a drag. */
   function isBlocked(day: EngineDay, start: number): boolean {
     const key = cellKey(day, start);
     if (drag && dragged.has(key)) {
@@ -37,6 +44,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     return saved.has(key);
   }
 
+  /** Paints or erases the given cells and reports the new blocked times. */
   function update(keys: string[], adding: boolean) {
     const next = new SvelteSet(saved);
     for (const key of keys) {
@@ -61,6 +69,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     if (!drag) {
       return;
     }
+    // Look the cell up by position: a touch drag keeps firing on the cell it
+    // started on, so the event target is not the cell under the finger.
     const target = document.elementFromPoint(event.clientX, event.clientY);
     const cell = target instanceof HTMLElement ? target.closest<HTMLElement>('[data-day]') : null;
     if (cell) {
@@ -76,6 +86,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   }
 
   function onKeyClick(event: MouseEvent, day: EngineDay, start: number) {
+    // Mouse and touch are handled by the pointer events above. A click with no
+    // detail comes from Enter or Space on a focused cell.
     if (event.detail === 0) {
       update([cellKey(day, start)], !saved.has(cellKey(day, start)));
     }
