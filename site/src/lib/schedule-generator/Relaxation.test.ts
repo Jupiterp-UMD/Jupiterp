@@ -43,6 +43,25 @@ describe('singleRelaxations', () => {
     expect(forM?.constraints.daysOff.has('F')).toBe(true);
   });
 
+  test('blocked times are relaxed all at once', () => {
+    const relaxations = singleRelaxations({
+      ...defaultConstraints(),
+      onlyOpenSeats: false,
+      blockedTimes: [
+        { day: 'Tu', start: 14 * 60, end: 16 * 60 },
+        { day: 'Th', start: 14 * 60, end: 16 * 60 },
+      ],
+    });
+    expect(relaxations).toHaveLength(1);
+    expect(relaxations[0].kind).toBe('blockedTimes');
+    expect(relaxations[0].constraints.blockedTimes).toEqual([]);
+  });
+
+  test('no blocked times relaxation without blocked times', () => {
+    const kinds = singleRelaxations(defaultConstraints()).map((r) => r.kind);
+    expect(kinds).not.toContain('blockedTimes');
+  });
+
   test('min credits listed as a relaxation', () => {
     const relaxations = singleRelaxations({
       ...defaultConstraints(),

@@ -79,6 +79,8 @@ export function relaxationLabel(relaxation: Relaxation): string {
       return 'Allow later classes';
     case 'dayOff':
       return relaxation.day ? `Allow ${engineDayLong(relaxation.day)} classes` : 'Allow classes on a day off';
+    case 'blockedTimes':
+      return 'Allow classes during your blocked times';
     case 'openSeats':
       return 'Include full (closed) sections';
     case 'minGap':

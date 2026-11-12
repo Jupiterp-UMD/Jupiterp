@@ -141,7 +141,8 @@ export interface GenerationResult {
 }
 
 /** A single constraint loosened from a `HardConstraints`. */
-export type RelaxationKind = 'earliestStart' | 'latestEnd' | 'dayOff' | 'openSeats' | 'minGap' | 'minCredits';
+export type RelaxationKind =
+  'earliestStart' | 'latestEnd' | 'dayOff' | 'blockedTimes' | 'openSeats' | 'minGap' | 'minCredits';
 
 /** A constraint set differing from the original by one loosened restriction. */
 export interface Relaxation {
