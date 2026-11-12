@@ -8,6 +8,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import MiniSchedule from './MiniSchedule.svelte';
+  import SchedulePreview from './SchedulePreview.svelte';
   import { applyGeneratedSchedule } from '../../lib/schedule-generator/ApplySchedule';
   import { formatCredits } from '../../lib/course-planner/Formatting';
   import type { GeneratedSchedule } from '../../lib/schedule-generator/types';
@@ -37,11 +38,22 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     applyGeneratedSchedule(schedule);
     goto(resolve('/'));
   }
+
+  // Whether the full-size preview popup is open for this card.
+  let previewOpen = $state(false);
 </script>
 
 <div class="border-border bg-bg-primary shadow-xs flex flex-col gap-2 rounded-xl border p-3">
   <div class="flex flex-row items-center justify-between">
     <span class="text-sm font-semibold opacity-60">#{rank}</span>
+    <button
+      class="border-outline hover:border-orange hover:text-orange ml-auto mr-2 rounded-md border px-3 py-1 text-sm"
+      onclick={() => (previewOpen = true)}
+      aria-haspopup="dialog"
+      title="See this schedule full size, with professors and times"
+    >
+      Preview
+    </button>
     <button
       class="border-orange text-orange enabled:hover:bg-orange rounded-md border px-3 py-1 text-sm font-semibold enabled:hover:text-white"
       onclick={apply}
@@ -71,4 +83,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       {/if}
     </span>
   </div>
+
+  {#if previewOpen}
+    <SchedulePreview {schedule} {rank} onapply={apply} onclose={() => (previewOpen = false)} />
+  {/if}
 </div>
