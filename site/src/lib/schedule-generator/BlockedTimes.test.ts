@@ -8,8 +8,8 @@
  */
 
 import { describe, expect, test } from '@jest/globals';
-import { blocksToKeys, cellKey, keysToBlocks, rectangleKeys } from './BlockedTimes';
-import type { BlockedTime } from './types';
+import { blocksToKeys, cellDimmedByConstraints, cellKey, keysToBlocks, rectangleKeys } from './BlockedTimes';
+import type { BlockedTime, EngineDay } from './types';
 
 describe('blocksToKeys', () => {
   test('expands a block into one key per half hour', () => {
@@ -62,9 +62,36 @@ describe('keysToBlocks', () => {
     ]);
   });
 
-  test('drops cells outside the grid', () => {
-    const keys = new Set([cellKey('Sa', 600), cellKey('M', 6 * 60)]);
+  test('keeps weekend cells on the grid', () => {
+    const keys = new Set([cellKey('Sa', 600), cellKey('Su', 630)]);
+    expect(keysToBlocks(keys)).toEqual([
+      { day: 'Sa', start: 600, end: 630 },
+      { day: 'Su', start: 630, end: 660 },
+    ]);
+  });
+
+  test('drops cells outside the time range', () => {
+    const keys = new Set([cellKey('M', 6 * 60)]);
     expect(keysToBlocks(keys)).toEqual([]);
+  });
+});
+
+describe('cellDimmedByConstraints', () => {
+  const none = new Set<EngineDay>();
+
+  test('dims a day marked off', () => {
+    expect(cellDimmedByConstraints('F', 10 * 60, new Set<EngineDay>(['F']), null, null)).toBe(true);
+    expect(cellDimmedByConstraints('Th', 10 * 60, new Set<EngineDay>(['F']), null, null)).toBe(false);
+  });
+
+  test('dims cells before the earliest-start cutoff', () => {
+    expect(cellDimmedByConstraints('M', 9 * 60, none, 10 * 60, null)).toBe(true);
+    expect(cellDimmedByConstraints('M', 10 * 60, none, 10 * 60, null)).toBe(false);
+  });
+
+  test('dims cells at or after the latest-end cutoff', () => {
+    expect(cellDimmedByConstraints('M', 17 * 60, none, null, 17 * 60)).toBe(true);
+    expect(cellDimmedByConstraints('M', 16 * 60 + 30, none, null, 17 * 60)).toBe(false);
   });
 });
 

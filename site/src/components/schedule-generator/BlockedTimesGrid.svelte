@@ -8,6 +8,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import { SvelteSet } from 'svelte/reactivity';
   import {
     blocksToKeys,
+    cellDimmedByConstraints,
     cellKey,
     GRID_DAYS,
     GRID_STARTS,
@@ -20,13 +21,17 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   /**
    * A When2Meet-style grid for marking times the student is busy. Dragging
    * across empty cells paints them; dragging from a painted cell erases.
+   * Cells covered by Days off / No class before / No class after are dimmed.
    */
   interface Props {
     blockedTimes: BlockedTime[];
+    daysOff: ReadonlySet<EngineDay>;
+    earliestStartMinutes: number | null;
+    latestEndMinutes: number | null;
     onChange: (blockedTimes: BlockedTime[]) => void;
   }
 
-  let { blockedTimes, onChange }: Props = $props();
+  let { blockedTimes, daysOff, earliestStartMinutes, latestEndMinutes, onChange }: Props = $props();
 
   // The drag in progress, if any. `adding` is decided by the cell the drag
   // starts on, so one drag never mixes painting and erasing.
@@ -34,20 +39,29 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   let saved = $derived(blocksToKeys(blockedTimes));
   let dragged = $derived(drag ? new Set(rectangleKeys(drag.day, drag.start, drag.toDay, drag.toStart)) : new Set());
+  let lastDay = GRID_DAYS[GRID_DAYS.length - 1];
+
+  function isDimmed(day: EngineDay, start: number): boolean {
+    return cellDimmedByConstraints(day, start, daysOff, earliestStartMinutes, latestEndMinutes);
+  }
 
   /** Whether a cell shows as blocked, including the preview of a drag. */
   function isBlocked(day: EngineDay, start: number): boolean {
     const key = cellKey(day, start);
-    if (drag && dragged.has(key)) {
+    if (drag && dragged.has(key) && !isDimmed(day, start)) {
       return drag.adding;
     }
     return saved.has(key);
   }
 
-  /** Paints or erases the given cells and reports the new blocked times. */
+  /** Paints or erases paintable cells and reports the new blocked times. */
   function update(keys: string[], adding: boolean) {
     const next = new SvelteSet(saved);
     for (const key of keys) {
+      const [day, startText] = key.split(':');
+      if (isDimmed(day as EngineDay, Number(startText))) {
+        continue;
+      }
       if (adding) {
         next.add(key);
       } else {
@@ -58,7 +72,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   }
 
   function onDown(event: PointerEvent, day: EngineDay, start: number) {
-    if (event.button !== 0) {
+    if (event.button !== 0 || isDimmed(day, start)) {
       return;
     }
     event.preventDefault();
@@ -88,7 +102,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   function onKeyClick(event: MouseEvent, day: EngineDay, start: number) {
     // Mouse and touch are handled by the pointer events above. A click with no
     // detail comes from Enter or Space on a focused cell.
-    if (event.detail === 0) {
+    if (event.detail === 0 && !isDimmed(day, start)) {
       update([cellKey(day, start)], !saved.has(cellKey(day, start)));
     }
   }
@@ -98,7 +112,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
 <div class="flex flex-col gap-1">
   <span class="opacity-70">Blocked times:</span>
-  <div class="grid select-none grid-cols-[3.5rem_repeat(5,1fr)] text-[10px]">
+  <div class="grid select-none grid-cols-[3.5rem_repeat(7,1fr)] text-[10px]">
     <div></div>
     {#each GRID_DAYS as day (day)}
       <div class="text-center font-semibold opacity-70">{day}</div>
@@ -108,16 +122,18 @@ https://github.com/atcupps/Jupiterp/LICENSE).
         {start % 60 === 0 ? minutesToLabel(start) : ''}
       </div>
       {#each GRID_DAYS as day (day)}
+        {@const dimmed = isDimmed(day, start)}
         <button
           data-day={day}
           data-start={start}
+          disabled={dimmed}
           aria-label={`${day} ${minutesToLabel(start)}`}
           aria-pressed={isBlocked(day, start)}
           class="border-outline h-2.5 touch-none border-l
             {start % 60 === 0 ? 'border-t' : ''}
-            {day === 'F' ? 'border-r' : ''}
+            {day === lastDay ? 'border-r' : ''}
             {start === GRID_STARTS[GRID_STARTS.length - 1] ? 'border-b' : ''}
-            {isBlocked(day, start) ? 'bg-orange' : 'hover:bg-hover'}"
+            {dimmed ? 'bg-mid-gray/40' : isBlocked(day, start) ? 'bg-orange' : 'hover:bg-hover'}"
           onpointerdown={(e) => onDown(e, day, start)}
           onpointermove={onMove}
           onclick={(e) => onKeyClick(e, day, start)}

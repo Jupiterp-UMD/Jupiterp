@@ -147,7 +147,13 @@ https://github.com/atcupps/Jupiterp/LICENSE).
         </div>
       </div>
 
-      <BlockedTimesGrid blockedTimes={constraints.blockedTimes} onChange={(blockedTimes) => patch({ blockedTimes })} />
+      <BlockedTimesGrid
+        blockedTimes={constraints.blockedTimes}
+        daysOff={constraints.daysOff}
+        earliestStartMinutes={constraints.earliestStartMinutes}
+        latestEndMinutes={constraints.latestEndMinutes}
+        onChange={(blockedTimes) => patch({ blockedTimes })}
+      />
 
       <!-- Only open seats -->
       <label class="flex flex-row items-center gap-2">

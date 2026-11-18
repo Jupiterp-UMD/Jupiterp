@@ -15,8 +15,8 @@ import type { BlockedTime, EngineDay } from './types';
 /** Minutes covered by one row of the grid. */
 export const STEP = 30;
 
-/** The days shown as columns in the grid, in display order. */
-export const GRID_DAYS: EngineDay[] = ['M', 'Tu', 'W', 'Th', 'F'];
+/** The days shown as columns in the grid, matching Days off (Mon–Sun). */
+export const GRID_DAYS: EngineDay[] = ['M', 'Tu', 'W', 'Th', 'F', 'Sa', 'Su'];
 
 /** Start time in minutes of every row in the grid, from 7 AM to 10 PM. */
 export const GRID_STARTS: number[] = [];
@@ -27,6 +27,21 @@ for (let minutes = 7 * 60; minutes < 22 * 60; minutes += STEP) {
 /** A string identifying one cell, used to keep cells in a `Set`. */
 export function cellKey(day: EngineDay, start: number): string {
   return `${day}:${start}`;
+}
+
+/** True when Days off / No class before / No class after already cover this cell. */
+export function cellDimmedByConstraints(
+  day: EngineDay,
+  start: number,
+  daysOff: ReadonlySet<EngineDay>,
+  earliestStartMinutes: number | null,
+  latestEndMinutes: number | null
+): boolean {
+  return (
+    daysOff.has(day) ||
+    (earliestStartMinutes !== null && start < earliestStartMinutes) ||
+    (latestEndMinutes !== null && start >= latestEndMinutes)
+  );
 }
 
 /** Expands blocked time ranges into the keys of every cell they cover. */
