@@ -11,7 +11,7 @@ import { describe, expect, test } from '@jest/globals';
 import type { ClassMeeting, Course, Section } from '@jupiterp/jupiterp';
 import { generate, generateFromCourses } from './ScheduleGenerator';
 import { defaultConstraints } from './types';
-import type { CourseRequest, HardConstraints, SectionPin } from './types';
+import type { CourseRequest, EngineDay, HardConstraints, SectionPin } from './types';
 
 // --- Fixture builders ------------------------------------------------------
 
@@ -176,6 +176,80 @@ describe('per-section filters', () => {
     expect(result.schedules).toHaveLength(1);
     expect(result.schedules[0].selections).toHaveLength(2);
   });
+
+  test('blocked times filter overlapping sections', () => {
+    const c = course('AAA101', [
+      section('AAA101', '0101', [meeting('TuTh', 14, 15)]),
+      section('AAA101', '0201', [meeting('TuTh', 9, 10)]),
+    ]);
+    const result = generateFromCourses([c], {
+      ...defaultConstraints(),
+      blockedTimes: [{ day: 'Tu', start: 14 * 60, end: 16 * 60 }],
+    });
+    expect(result.schedules).toHaveLength(1);
+    expect(result.schedules[0].selections[0].section.sectionCode).toBe('0201');
+  });
+
+  test('blocked times filter partial overlaps', () => {
+    const c = course('AAA101', [
+      section('AAA101', '0101', [meeting('Tu', hours(13, 30), hours(14, 15))]),
+      section('AAA101', '0201', [meeting('Tu', hours(15, 45), hours(16, 30))]),
+      section('AAA101', '0301', [meeting('Tu', 9, 10)]),
+    ]);
+    const result = generateFromCourses([c], {
+      ...defaultConstraints(),
+      blockedTimes: [{ day: 'Tu', start: 14 * 60, end: 16 * 60 }],
+    });
+    expect(result.schedules).toHaveLength(1);
+    expect(result.schedules[0].selections[0].section.sectionCode).toBe('0301');
+  });
+
+  test('blocked times allow classes that only touch the edge', () => {
+    const c = course('AAA101', [
+      section('AAA101', '0101', [meeting('Tu', 13, 14)]),
+      section('AAA101', '0201', [meeting('Tu', 16, 17)]),
+    ]);
+    const result = generateFromCourses([c], {
+      ...defaultConstraints(),
+      blockedTimes: [{ day: 'Tu', start: 14 * 60, end: 16 * 60 }],
+    });
+    expect(result.schedules).toHaveLength(2);
+  });
+
+  test('blocked times only apply on their own day', () => {
+    const c = course('AAA101', [section('AAA101', '0101', [meeting('MWF', 14, 15)])]);
+    const result = generateFromCourses([c], {
+      ...defaultConstraints(),
+      blockedTimes: [{ day: 'Tu', start: 14 * 60, end: 16 * 60 }],
+    });
+    expect(result.schedules).toHaveLength(1);
+  });
+
+  test('blocked times filter a section if any meeting overlaps', () => {
+    const c = course('AAA101', [
+      section('AAA101', '0101', [meeting('MWF', 9, 10), meeting('Th', 14, 15)]),
+      section('AAA101', '0201', [meeting('MWF', 9, 10), meeting('Th', 11, 12)]),
+    ]);
+    const result = generateFromCourses([c], {
+      ...defaultConstraints(),
+      blockedTimes: [{ day: 'Th', start: 14 * 60, end: 16 * 60 }],
+    });
+    expect(result.schedules).toHaveLength(1);
+    expect(result.schedules[0].selections[0].section.sectionCode).toBe('0201');
+  });
+
+  test('async sections ignore blocked times', () => {
+    const c = course('AAA101', [section('AAA101', '0101', ['OnlineAsync'])]);
+    const result = generateFromCourses([c], {
+      ...defaultConstraints(),
+      blockedTimes: ['M', 'Tu', 'W', 'Th', 'F'].map((day) => ({
+        day: day as EngineDay,
+        start: 0,
+        end: 24 * 60,
+      })),
+    });
+    expect(result.schedules).toHaveLength(1);
+  });
 });
 
 // --- Bounds ----------------------------------------------------------------
@@ -278,6 +352,17 @@ describe('pins', () => {
     expect(result.schedules).toHaveLength(1);
     expect(result.pinNotices).toHaveLength(1);
     expect(result.pinNotices[0].overriddenFilters).toContain('earliestStart');
+  });
+
+  test('pin wins over blocked times and reports the override', () => {
+    const c = course('AAA101', [section('AAA101', '0101', [meeting('TuTh', 14, 15)])]);
+    const result = generate([req(c, true, { kind: 'bySection', sectionCode: '0101' })], {
+      ...defaultConstraints(),
+      blockedTimes: [{ day: 'Tu', start: 14 * 60, end: 16 * 60 }],
+    });
+    expect(result.schedules).toHaveLength(1);
+    expect(result.pinNotices).toHaveLength(1);
+    expect(result.pinNotices[0].overriddenFilters).toContain('blockedTime');
   });
 });
 

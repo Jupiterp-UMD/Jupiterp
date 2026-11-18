@@ -63,6 +63,8 @@ export function overriddenFilterLabel(filter: OverriddenFilter): string {
       return 'ends later than your latest-end time';
     case 'dayOff':
       return 'meets on a day you marked off';
+    case 'blockedTime':
+      return 'meets during a time you blocked off';
     case 'openSeats':
       return 'has no open seats';
   }
@@ -77,6 +79,8 @@ export function relaxationLabel(relaxation: Relaxation): string {
       return 'Allow later classes';
     case 'dayOff':
       return relaxation.day ? `Allow ${engineDayLong(relaxation.day)} classes` : 'Allow classes on a day off';
+    case 'blockedTimes':
+      return 'Allow classes during your blocked times';
     case 'openSeats':
       return 'Include full (closed) sections';
     case 'minGap':

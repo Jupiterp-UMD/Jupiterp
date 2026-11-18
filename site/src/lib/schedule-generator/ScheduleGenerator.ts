@@ -16,6 +16,7 @@ import type { Course, Section } from '@jupiterp/jupiterp';
 import type { ScheduleSelection } from '../../types';
 import { noDifferences } from '../course-planner/Schedule';
 import type {
+  BlockedTime,
   CourseRequest,
   EngineDay,
   GeneratedSchedule,
@@ -59,6 +60,14 @@ interface CourseCandidates {
  */
 function slotsConflict(a: MinuteSlot, b: MinuteSlot, minGapMinutes: number): boolean {
   return a.day === b.day && a.start - minGapMinutes < b.end && a.end + minGapMinutes > b.start;
+}
+
+/**
+ * Whether a slot overlaps any blocked time. Intervals are half-open, so a
+ * class that ends exactly when a block starts is still allowed.
+ */
+function overlapsBlockedTime(slot: MinuteSlot, blockedTimes: BlockedTime[]): boolean {
+  return blockedTimes.some((block) => block.day === slot.day && slot.start < block.end && slot.end > block.start);
 }
 
 /**
@@ -151,7 +160,7 @@ function candidatePasses(candidate: Candidate, constraints: HardConstraints): bo
     if (latest !== null && slot.end > latest) {
       return false;
     }
-    return true;
+    return !overlapsBlockedTime(slot, constraints.blockedTimes);
   });
 }
 
@@ -171,6 +180,9 @@ function overriddenFilters(candidate: Candidate, constraints: HardConstraints): 
   }
   if (candidate.slots.some((s) => constraints.daysOff.has(s.day))) {
     result.push('dayOff');
+  }
+  if (candidate.slots.some((s) => overlapsBlockedTime(s, constraints.blockedTimes))) {
+    result.push('blockedTime');
   }
   return result;
 }

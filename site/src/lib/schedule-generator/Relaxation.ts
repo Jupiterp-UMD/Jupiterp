@@ -46,6 +46,14 @@ export function singleRelaxations(constraints: HardConstraints): Relaxation[] {
     });
   }
 
+  if (constraints.blockedTimes.length > 0) {
+    relaxations.push({
+      kind: 'blockedTimes',
+      day: null,
+      constraints: { ...constraints, blockedTimes: [] },
+    });
+  }
+
   if (constraints.onlyOpenSeats) {
     relaxations.push({
       kind: 'openSeats',
