@@ -8,12 +8,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import { getClasstimeBounds, schedulify, appendHoveredSection } from '../../../lib/course-planner/Schedule';
   import ScheduleDay from './ScheduleDay.svelte';
   import ScheduleBackground from './ScheduleBackground.svelte';
-  import { formatCredits, testudoLink } from '../../../lib/course-planner/Formatting';
-  import InstructorListing from '../course-search/InstructorListing.svelte';
+  import CourseInfoPanel from './CourseInfoPanel.svelte';
   import { HoveredSectionStore, CurrentScheduleStore, CourseInfoPairStore } from '../../../stores/CoursePlannerStores';
-  import MeetingListing from '../course-search/MeetingListing.svelte';
-  import SeatData from '../course-search/SeatData.svelte';
-  import CourseCondition from '../course-search/CourseCondition.svelte';
   import type { Schedule, ScheduleBlock, ScheduleSelection } from '../../../types';
   import type { CourseBasic, Section } from '@jupiterp/jupiterp';
   import { chainScroll } from '../../../lib/course-planner/ChainScroll';
@@ -182,84 +178,20 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   <!-- Course info panel -->
   {#if showCourseInfo !== null && courseInfoCourse !== null && courseInfoSection !== null}
     <div
-      class={`border-outline bg-bg-secondary absolute z-10 mb-2 w-full rounded-xl border-2 px-2 py-1 text-left shadow-md ${
+      class={`border-outline bg-bg-secondary absolute z-10 mb-2 w-full rounded-xl border-2 shadow-md ${
         infoPanelAtTop ? 'top-0' : 'bottom-0'
       }`}
       bind:clientHeight={courseInfoPanelHeight}
     >
-      <!-- X Button to get rid of course info -->
-      <button
-        class="absolute right-0 top-0 h-7 w-7 justify-center 2xl:right-1 2xl:top-1"
-        onclick={() => {
-          CourseInfoPairStore.set(null);
-        }}
-        title="Hide course info panel"
-      >
-        <!-- format-check exempt 7 -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 384 512"
-          style="transform: translateX(-50%) translateY(-50%);"
-          class="fill-text-primary stroke-text-primary absolute left-[50%] top-[50%] h-5 w-5 2xl:h-6 2xl:w-6"
-        >
-          <!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path
-            d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z"
-          /></svg
-        >
-      </button>
-
-      <!-- Course info -->
-      <div style="width: calc(100% - 1.5rem);" class="text-lg 2xl:text-xl">
-        <span class="font-bold">
-          {courseInfoCourse.courseCode}
-        </span>
-        <span class="font-normal"> - {courseInfoCourse.name} </span>
-        <span class="text-orange mx-1 text-base font-normal underline 2xl:text-lg">
-          <a href={testudoLink(courseInfoCourse.courseCode)} rel="external noopener noreferrer" target="_blank">
-            (view on Testudo)
-          </a>
-        </span>
-      </div>
-
-      <div class="text-sm 2xl:text-base">
-        {formatCredits(courseInfoCourse.minCredits, courseInfoCourse.maxCredits)} credits | Section {courseInfoSection.sectionCode}
-      </div>
-      {#if courseInfoCourse.genEds != null && courseInfoCourse.genEds.length > 0}
-        <div class="text-sm 2xl:text-base">
-          <span class="font-black underline"> GenEds: </span>
-          {courseInfoCourse.genEds.map((g) => g.code).join(', ')}
-        </div>
-      {/if}
-      <!-- Keyed by index: instructor names, meetings and conditions are not
-           guaranteed unique, and a duplicate key is fatal in Svelte 5. -->
-      {#each courseInfoSection.instructors as instructor, i (i)}
-        <InstructorListing
-          {instructor}
-          slug={courseInfoSection.instructorSlugs?.[i]}
-          profsHover={false}
-          removeHoverSection={() => {}}
+      <!-- Keyed so per-course UI state (e.g. an expanded description) resets
+           when a different course is opened. -->
+      {#key `${courseInfoCourse.courseCode}-${courseInfoSection.sectionCode}`}
+        <CourseInfoPanel
+          course={courseInfoCourse}
+          section={courseInfoSection}
+          onclose={() => CourseInfoPairStore.set(null)}
         />
-      {/each}
-      <div class="text-sm 2xl:text-base">
-        {#each courseInfoSection.meetings as meeting, i (i)}
-          <MeetingListing {meeting} condensed={true} locationHover={false} removeHoverSection={() => {}} />
-        {/each}
-      </div>
-
-      <SeatData section={courseInfoSection} />
-
-      <div class="text-base leading-5 2xl:text-lg">
-        {#if courseInfoCourse.conditions != null && courseInfoCourse.conditions.length > 0}
-          <div class="pb-2 text-sm 2xl:text-base">
-            {#each courseInfoCourse.conditions as condition, i (i)}
-              <CourseCondition {condition} />
-            {/each}
-          </div>
-        {/if}
-        {#if courseInfoCourse.description != null}
-          {courseInfoCourse.description}
-        {/if}
-      </div>
+      {/key}
     </div>
   {/if}
 </div>
