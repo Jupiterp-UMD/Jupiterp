@@ -6,35 +6,38 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 -->
 <script lang="ts">
   import { base } from '$app/paths';
+  import { afterNavigate } from '$app/navigation';
   import { page } from '$app/state';
   import NavBarLink from './NavBarLink.svelte';
+  import ToolIcon from './ToolIcon.svelte';
   import DarkModeToggle from './DarkModeToggle.svelte';
   import { AngleDownOutline, GithubSolid } from 'flowbite-svelte-icons';
 
   interface NavLink {
     link: string;
     text: string;
+    tool?: 'planner' | 'generator' | 'reviews' | 'compare';
     children?: { link: string; text: string; isExternal?: boolean; icon?: import('svelte').Component }[];
     isExternal?: boolean;
   }
 
+  afterNavigate(() => {
+    for (const input of document.querySelectorAll<HTMLInputElement>('header input[type="checkbox"]')) {
+      input.checked = false;
+    }
+  });
+
   const navLinks: NavLink[] = [
-    { link: '/', text: 'Course Planner' },
-    { link: '/generate', text: 'Schedule Generator' },
-    {
-      link: '/professors',
-      text: 'Professors',
-      children: [
-        { link: '/professors', text: 'Search Professors' },
-        { link: '/professors/compare', text: 'Compare Professors' },
-        { link: '/review/withdraw', text: 'Withdraw Review' },
-        { link: '/review-policy', text: 'Review Policy' },
-      ],
-    },
+    { link: '/planner', text: 'Course Planner', tool: 'planner' },
+    { link: '/generate', text: 'Schedule Generator', tool: 'generator' },
+    { link: '/professors', text: 'Professors', tool: 'reviews' },
+    { link: '/professors/compare', text: 'Compare Professors', tool: 'compare' },
     {
       link: '/about',
       text: 'About',
       children: [
+        { link: '/review-policy', text: 'Review Policy' },
+        { link: '/review/withdraw', text: 'Withdraw Review' },
         { link: '/terms-of-use', text: 'Terms of Use' },
         { link: '/privacy-policy', text: 'Privacy Policy' },
         { link: '/changelog', text: 'Changelog' },
@@ -51,7 +54,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <!-- [START] Nav Menu Toggle -->
 <input type="checkbox" id="nav-menu-toggle" class="peer hidden" />
 
-<label for="nav-menu-toggle" class="group relative -mr-4 flex cursor-pointer select-none items-center px-4 md:hidden">
+<label for="nav-menu-toggle" class="group relative -mr-4 flex cursor-pointer select-none items-center px-4 xl:hidden">
   <svg xmlns="http://w3.org" width="1em" height="1em" viewBox="0 0 24 24" class="h-6 w-6">
     <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
       <!-- Top Line: Rotates and slides left by 2px on the X-axis -->
@@ -73,7 +76,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <!-- [END] Nav Menu Toggle -->
 
 <aside
-  class="custom-scrollbar max-md:bg-bg-primary md:text-md max-md:min-w-62 flex gap-2 px-6 py-4 text-lg max-md:fixed max-md:bottom-0 max-md:right-0 max-md:top-12 max-md:translate-x-full max-md:flex-col max-md:overflow-y-auto max-md:border-l-2 max-md:transition-transform max-md:duration-300 max-md:peer-checked:translate-x-0 md:gap-6 md:px-0 md:py-2 lg:gap-8"
+  class="custom-scrollbar max-xl:bg-bg-primary xl:text-md max-xl:min-w-62 flex gap-2 px-6 py-4 text-lg max-xl:fixed max-xl:bottom-0 max-xl:right-0 max-xl:top-12 max-xl:translate-x-full max-xl:flex-col max-xl:overflow-y-auto max-xl:border-l-2 max-xl:transition-transform max-xl:duration-300 max-xl:peer-checked:translate-x-0 lg:gap-8 xl:gap-6 xl:px-0 xl:py-1.5"
 >
   {#each navLinks as item, i (i)}
     {#if item.children}
@@ -81,8 +84,15 @@ https://github.com/atcupps/Jupiterp/LICENSE).
         <!-- [START] Nav List Toggle  -->
         <input type="checkbox" id="nav-list-{i}" class="peer hidden" />
 
-        <div class="flex justify-between md:-mr-2">
-          <NavBarLink link={item.link} current={currentPath === item.link} isExternal={item.isExternal}>
+        <div class="flex justify-between xl:-mr-2">
+          <NavBarLink
+            link={item.link}
+            current={currentPath === item.link ||
+              (item.link === '/professors' && currentPath.startsWith('/professor/'))}
+            isExternal={item.isExternal}
+            class="flex items-center gap-2"
+          >
+            {#if item.tool}<ToolIcon kind={item.tool} small />{/if}
             {item.text}
           </NavBarLink>
           <label
@@ -92,19 +102,19 @@ https://github.com/atcupps/Jupiterp/LICENSE).
           </label>
         </div>
 
-        <label for="nav-list-{i}" class="fixed inset-0 hidden bg-black/50 md:peer-checked:block"></label>
+        <label for="nav-list-{i}" class="fixed inset-0 hidden bg-black/50 xl:peer-checked:block"></label>
         <!-- [END] Nav List Toggle  -->
 
         <div
           style="transition: height 0.3s;"
-          class="nav-list-contents md:-left-4.25 md:bg-bg-primary max-md:border-border/50 -mt-px flex h-auto flex-col overflow-clip peer-checked:h-0 max-md:border-y md:absolute md:mt-2.5 md:h-0 md:rounded-lg md:border md:peer-checked:h-auto"
+          class="nav-list-contents xl:bg-bg-primary max-xl:border-border/50 -mt-px flex h-auto flex-col overflow-clip peer-checked:h-0 max-xl:border-y xl:absolute xl:right-0 xl:mt-2.5 xl:h-0 xl:min-w-48 xl:rounded-lg xl:border xl:peer-checked:h-auto"
         >
           {#each item.children as child, j (j)}
             <NavBarLink
               link={child.link}
               current={currentPath === child.link}
               isExternal={child.isExternal}
-              class="md:hover:bg-hover flex items-center px-4 py-1"
+              class="xl:hover:bg-hover flex items-center px-4 py-1"
             >
               {child.text}
               {#if child.icon}
@@ -116,13 +126,19 @@ https://github.com/atcupps/Jupiterp/LICENSE).
         </div>
       </div>
     {:else}
-      <NavBarLink link={item.link} current={currentPath === item.link} isExternal={item.isExternal}>
+      <NavBarLink
+        link={item.link}
+        current={currentPath === item.link || (item.link === '/professors' && currentPath.startsWith('/professor/'))}
+        isExternal={item.isExternal}
+        class="flex items-center gap-2"
+      >
+        {#if item.tool}<ToolIcon kind={item.tool} small />{/if}
         {item.text}
       </NavBarLink>
     {/if}
   {/each}
-  <div class="flex flex-col items-center justify-center text-sm max-md:mt-auto max-md:py-4">
-    <DarkModeToggle />
+  <div class="flex flex-col items-center justify-center text-sm max-xl:mt-auto max-xl:py-4">
+    <DarkModeToggle iconOnly />
   </div>
 </aside>
 
@@ -145,7 +161,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     }
 
     /* Target desktop devices that support a real mouse hover */
-    @media (min-width: 768px) and (hover: hover) {
+    @media (min-width: 1280px) and (hover: hover) {
       padding-bottom: 0.75rem;
       margin-bottom: -0.75rem;
       --toggle-deg: 0deg;
@@ -166,8 +182,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       }
     }
 
-    /* Fallback behavior for tablets/touch screens wider than 768px */
-    @media (min-width: 768px) and (hover: none) {
+    /* Fallback behavior for tablets/touch screens wider than 1280px */
+    @media (min-width: 1280px) and (hover: none) {
       --toggle-deg: 0deg;
 
       &:has(input:checked) {

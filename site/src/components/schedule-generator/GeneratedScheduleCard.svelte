@@ -35,7 +35,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   function apply() {
     applyGeneratedSchedule(schedule);
-    goto(resolve('/'));
+    goto(resolve('/planner'));
   }
 </script>
 

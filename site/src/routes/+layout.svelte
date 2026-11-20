@@ -20,8 +20,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
 <Analytics />
 
-<header class="fixed z-50 flex h-12 w-full flex-row justify-between border-b-2 px-4">
-  <a href={resolvedHomeLink} aria-label="Home" rel="canonical" class="flex py-1">
+<header class="site-header fixed z-50 flex h-12 w-full flex-row items-center justify-between border-b px-5">
+  <a href={resolvedHomeLink} aria-label="Home" rel="canonical" class="flex h-full items-center py-1">
     <img
       src={asset('/logo.svg')}
       alt="Jupiterp Logo"
@@ -36,3 +36,10 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 </header>
 
 {@render children?.()}
+
+<style>
+  .site-header {
+    background: var(--bg-primary);
+    border-color: var(--border);
+  }
+</style>

@@ -33,6 +33,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   {target}
   {rel}
   class="hover:text-orange dark:hover:text-light-orange aria-current:text-orange aria-current:underline text-nowrap underline-offset-4 hover:transition-colors {className}"
+  class:text-orange={current}
+  class:underline={current}
   aria-current={current}
   {title}
 >

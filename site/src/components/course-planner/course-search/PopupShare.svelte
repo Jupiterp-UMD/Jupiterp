@@ -35,7 +35,7 @@
     if (!token) return;
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     try {
-      await navigator.clipboard.writeText(`${origin}${base}/?${SHARE_PARAM}=${token}`);
+      await navigator.clipboard.writeText(`${origin}${base}/planner?${SHARE_PARAM}=${token}`);
       linkCopied = true;
       setTimeout(() => (linkCopied = false), 1200);
     } catch (e) {
