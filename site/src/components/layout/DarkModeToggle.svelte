@@ -7,6 +7,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <script lang="ts">
   import { SunOutline, MoonOutline } from 'flowbite-svelte-icons';
 
+  let { iconOnly = false }: { iconOnly?: boolean } = $props();
+
   let currentTheme = $state(typeof localStorage !== 'undefined' ? localStorage.theme : 'light');
 
   function toggleDarkMode() {
@@ -20,31 +22,43 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   let isDark = $derived(currentTheme === 'dark');
 </script>
 
-<div class="flex w-full items-center gap-2">
-  <input type="checkbox" id="theme-toggle" class="sr-only" checked={isDark} onchange={toggleDarkMode} />
-
-  <label
-    for="theme-toggle"
-    class="flex cursor-pointer select-none items-center max-md:mr-4"
-    title="Switch to {isDark ? 'Light' : 'Dark'} Mode"
+{#if iconOnly}
+  <button
+    type="button"
+    onclick={toggleDarkMode}
+    aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+    class="hover:text-orange inline-flex h-8 w-8 items-center justify-center rounded-full"
+    title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
   >
-    <div
-      class="border-outline has-checked:border-orange has-checked:bg-orange has-focus-visible:ring-orange has-focus-visible:ring-2 has-focus-visible:ring-offset-2 relative inline-flex h-5 w-9 items-center rounded-full border-2 transition-colors"
+    {#if isDark}<SunOutline class="h-5 w-5" />{:else}<MoonOutline class="h-5 w-5" />{/if}
+  </button>
+{:else}
+  <div class="flex w-full items-center gap-2">
+    <input type="checkbox" id="theme-toggle" class="sr-only" checked={isDark} onchange={toggleDarkMode} />
+
+    <label
+      for="theme-toggle"
+      class="flex cursor-pointer select-none items-center max-md:mr-4"
+      title="Switch to {isDark ? 'Light' : 'Dark'} Mode"
     >
       <div
-        class="bg-bg-secondary dark:bg-hover absolute left-0.5 top-[50%] h-3 w-3 translate-y-[-50%] transform overflow-clip rounded-lg transition-transform duration-300 ease-in-out dark:translate-x-[1.05rem]"
+        class="border-outline has-checked:border-orange has-checked:bg-orange has-focus-visible:ring-orange has-focus-visible:ring-2 has-focus-visible:ring-offset-2 relative inline-flex h-5 w-9 items-center rounded-full border-2 transition-colors"
       >
-        <SunOutline
-          class="h-2.75 w-2.75 visible relative left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] dark:hidden"
-        />
-        <MoonOutline
-          class="h-2.75 w-2.75 relative left-[50%] top-[50%] hidden translate-x-[-50%] translate-y-[-50%] dark:block"
-        />
+        <div
+          class="bg-bg-secondary dark:bg-hover absolute left-0.5 top-[50%] h-3 w-3 translate-y-[-50%] transform overflow-clip rounded-lg transition-transform duration-300 ease-in-out dark:translate-x-[1.05rem]"
+        >
+          <SunOutline
+            class="h-2.75 w-2.75 visible relative left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] dark:hidden"
+          />
+          <MoonOutline
+            class="h-2.75 w-2.75 relative left-[50%] top-[50%] hidden translate-x-[-50%] translate-y-[-50%] dark:block"
+          />
+        </div>
       </div>
-    </div>
 
-    <span class="ml-2 md:hidden">
-      Switch to {isDark ? 'Light' : 'Dark'} Mode
-    </span>
-  </label>
-</div>
+      <span class="ml-2 md:hidden">
+        Switch to {isDark ? 'Light' : 'Dark'} Mode
+      </span>
+    </label>
+  </div>
+{/if}

@@ -11,7 +11,9 @@ import { client } from '../../lib/client';
 import { displayRating, withDisplayRating } from '../../lib/professor/Rating';
 
 const STATIC_PAGES = [
-  { url: '/', changefreq: 'daily', priority: 0.7 },
+  { url: '/', changefreq: 'weekly', priority: 1.0 },
+  { url: '/planner', changefreq: 'daily', priority: 0.7 },
+  { url: '/generate', changefreq: 'weekly', priority: 0.7 },
   { url: '/professors', changefreq: 'weekly', priority: 0.6 },
   { url: '/review-policy', changefreq: 'monthly', priority: 0.4 },
   { url: '/about', changefreq: 'monthly', priority: 0.3 },
