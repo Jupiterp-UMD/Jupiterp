@@ -78,3 +78,9 @@ export const GeneratorSortChosenByUserStore: Writable<boolean> = writable(false)
 export const GenerationStateStore: Writable<GenerationState> = writable({
   kind: 'idle',
 });
+
+/**
+ * Position, in the results' current sort order, of the generated schedule
+ * being previewed in place of the results, or null while the results show.
+ */
+export const GeneratorPreviewIndexStore: Writable<number | null> = writable(null);

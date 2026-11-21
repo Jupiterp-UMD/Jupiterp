@@ -5,9 +5,10 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
 -->
 <script lang="ts">
-  import { getClasstimeBounds, schedulify } from '../../lib/course-planner/Schedule';
+  import { schedulify } from '../../lib/course-planner/Schedule';
   import { getColorFromNumber } from '../../lib/course-planner/ClassMeetingUtils';
   import { formatClasstime, formatInstructors, formatLocation } from '../../lib/course-planner/Formatting';
+  import { formatHour, previewHourWindow, weekGridHeightPercent } from '../../lib/schedule-generator/SchedulePreview';
   import type { ClassMeetingExtended, Schedule, ScheduleSelection } from '../../types';
 
   // A read-only, full-size week view of a generated schedule, drawn to look
@@ -23,12 +24,6 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   let { selections }: Props = $props();
 
   const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-
-  // Height given to one hour before the grid starts to scroll; enough for a
-  // 50-minute class to show its course, instructor and time. Phones get taller
-  // hours because their narrow columns need the time on two lines.
-  const MIN_REM_PER_HOUR = 4.5;
-  const MIN_REM_PER_HOUR_NARROW = 6;
 
   const EMPTY_SCHEDULE: Schedule = {
     monday: [],
@@ -50,34 +45,6 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     }
   }
 
-  // Same window the planner uses: whole hours around the classes, widened to
-  // at least eight hours.
-  function computeBounds(s: Schedule): { start: number; end: number } {
-    const { earliestStart, latestEnd } = getClasstimeBounds(s);
-    if (earliestStart === Number.MAX_SAFE_INTEGER) {
-      return { start: 8, end: 16 };
-    }
-    let start = earliestStart;
-    let end = latestEnd;
-    const diff = end - start;
-    if (diff < 8) {
-      start -= Math.floor((8 - diff) / 2);
-      end += Math.ceil((8 - diff) / 2);
-    }
-    return { start, end };
-  }
-
-  function formatHour(hour: number): string {
-    const inDay = ((hour % 24) + 24) % 24;
-    if (inDay === 0) {
-      return '12 AM';
-    }
-    if (inDay < 12) {
-      return inDay + ' AM';
-    }
-    return (inDay === 12 ? 12 : inDay - 12) + ' PM';
-  }
-
   function timeLabel(cm: ClassMeetingExtended): string {
     if (typeof cm.meeting !== 'string') {
       return formatClasstime(cm.meeting.classtime);
@@ -92,31 +59,12 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     }
   }
 
-  // Start and end separately, for narrow blocks that stack them. Null for
-  // meetings with no set time.
-  function timeParts(cm: ClassMeetingExtended): { start: string; end: string } | null {
-    if (typeof cm.meeting === 'string') {
-      return null;
-    }
-    const [start, end] = formatClasstime(cm.meeting.classtime).split(' - ');
-    return end !== undefined ? { start, end } : null;
-  }
-
   function locationLabel(cm: ClassMeetingExtended): string {
     return typeof cm.meeting !== 'string' ? formatLocation(cm.meeting.location) : '';
   }
 
   function instructorLabel(cm: ClassMeetingExtended): string {
     return cm.instructors.length > 0 ? formatInstructors(cm.instructors) : 'Instructor TBA';
-  }
-
-  // Last names only, for blocks too narrow for a full name. The full name is
-  // still in the block's tooltip and in the course list.
-  function shortInstructorLabel(cm: ClassMeetingExtended): string {
-    if (cm.instructors.length === 0) {
-      return 'TBA';
-    }
-    return cm.instructors.map((name) => name.trim().split(/\s+/).pop() ?? name).join(', ');
   }
 
   // Blocks clip whatever does not fit, so the full text is also the tooltip.
@@ -144,15 +92,20 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   let schedule = $derived(safeSchedulify(selections));
   let days = $derived([schedule.monday, schedule.tuesday, schedule.wednesday, schedule.thursday, schedule.friday]);
   let hasOther = $derived(schedule.other.length > 0);
-  let bounds = $derived(computeBounds(schedule));
+  let bounds = $derived(previewHourWindow(schedule));
   let span = $derived(bounds.end - bounds.start);
   let hours = $derived(Array.from({ length: span + 1 }, (_, i) => bounds.start + i));
 </script>
 
 {#snippet block(cm: ClassMeetingExtended)}
-  {@const time = timeParts(cm)}
-  <!-- Each block is a size container: below 5.5rem wide (a phone's day
-       column) its lines switch to short forms instead of being cut off. -->
+  <!-- Where the class meets, or how ("Online async") when it has no set time. -->
+  {@const place = typeof cm.meeting === 'string' ? timeLabel(cm) : locationLabel(cm)}
+  <!-- Like the planner's blocks, down to the text sizes: course, then
+       section above location. The time is left to the grid's lines and the
+       instructor to the course list (both are in the tooltip too). Each block
+       is a size container: the course shrinks at the widths the planner's
+       does, and below 5.5rem (a phone's day column) the lines switch to short
+       forms instead of being cut off. -->
   <div
     style={blockStyle(cm)}
     class="@container flex flex-col overflow-hidden rounded-lg text-black"
@@ -160,7 +113,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     title={blockTitle(cm)}
   >
     <div
-      class="@max-[5.5rem]:text-[0.6875rem] @max-[5.5rem]:tracking-tight shrink-0 truncate bg-black/10 px-0.5 text-sm font-semibold leading-6"
+      class="@max-[5.5rem]:text-[0.6875rem] @max-[5.5rem]:tracking-tight @min-[6.5rem]:text-sm @min-[7.5rem]:text-base bg-black/7 shrink-0 truncate px-0.5 text-xs font-semibold leading-6"
     >
       {cm.courseCode}
     </div>
@@ -168,34 +121,27 @@ https://github.com/atcupps/Jupiterp/LICENSE).
          column, which is clipped, so no line is ever shown cut in half. The
          padding is on the lines, not the column, so that second column starts
          fully outside the block. -->
-    <div class="@max-[5.5rem]:text-[0.6875rem] flex min-h-0 grow flex-col flex-wrap overflow-hidden text-xs leading-4">
+    <div
+      class="@max-[5.5rem]:text-[0.6875rem] flex min-h-0 grow flex-col flex-wrap overflow-hidden text-xs font-thin leading-4 2xl:font-normal"
+    >
       <div class="@max-[5.5rem]:px-0.5 w-full truncate px-1.5">
-        <span class="@max-[5.5rem]:hidden">{instructorLabel(cm)}</span>
-        <span class="@max-[5.5rem]:inline hidden">{shortInstructorLabel(cm)}</span>
+        Sec<span class="@max-[5.5rem]:hidden">tion</span>
+        {cm.sectionCode}
       </div>
-      {#if time}
-        <div class="@max-[5.5rem]:hidden w-full truncate px-1.5">{timeLabel(cm)}</div>
-        <div class="@max-[5.5rem]:block hidden w-full whitespace-nowrap px-0.5 tracking-tight">
-          {time.start}–<br />{time.end}
-        </div>
-      {:else}
-        <div class="@max-[5.5rem]:px-0.5 w-full truncate px-1.5">{timeLabel(cm)}</div>
+      {#if place !== ''}
+        <div class="@max-[5.5rem]:px-0.5 w-full truncate px-1.5">{place}</div>
       {/if}
-      {#if locationLabel(cm) !== ''}
-        <div class="@max-[5.5rem]:px-0.5 w-full truncate px-1.5">{locationLabel(cm)}</div>
-      {/if}
-      <div class="@max-[5.5rem]:hidden w-full truncate px-1.5">Section {cm.sectionCode}</div>
-      <div class="@max-[5.5rem]:block hidden w-full truncate px-0.5">Sec {cm.sectionCode}</div>
     </div>
   </div>
 {/snippet}
 
-<div
-  style="--grid-min: {span * MIN_REM_PER_HOUR + 3.5}rem; --grid-min-narrow: {span * MIN_REM_PER_HOUR_NARROW + 3.5}rem;"
-  class="min-h-(--grid-min-narrow) sm:min-h-(--grid-min) flex h-full flex-col text-center"
->
+<!-- Fills its container, like the planner's schedule; only a day longer than
+     ten hours grows past it, for the container to scroll. The hour-label
+     gutter (2.25rem, 2.75rem on very wide screens), the label sizes and the
+     day names are the planner's. -->
+<div style="height: {weekGridHeightPercent(bounds)}%;" class="flex flex-col text-center">
   <!-- Day names -->
-  <div class="flex flex-row pl-12 font-medium">
+  <div class="flex flex-row pl-9 text-lg font-medium 2xl:pl-11">
     {#each DAY_LABELS as label (label)}
       <div class="grow basis-0">{label}</div>
     {/each}
@@ -206,19 +152,26 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   <!-- Time grid. The vertical margin leaves room for the first and last hour
        labels, which are centered on their lines. -->
-  <div class="relative my-3 flex grow flex-row pl-12">
+  <div class="relative my-3 flex grow flex-row pl-9 2xl:pl-11">
     {#each hours as hour, i (hour)}
       <div style="top: {(i / span) * 100}%;" class="absolute inset-x-0 flex -translate-y-1/2 flex-row items-center">
-        <span class="w-11 shrink-0 whitespace-nowrap pr-1 text-right text-xs font-light">{formatHour(hour)}</span>
+        <span
+          class="w-10 shrink-0 whitespace-nowrap pr-1.5 text-right text-xs font-light 2xl:w-12 2xl:pr-2 2xl:text-sm"
+        >
+          {formatHour(hour)}
+        </span>
         <span class="bg-border h-px grow"></span>
       </div>
       {#if i < span}
-        <div style="top: {((i + 0.5) / span) * 100}%;" class="bg-border absolute left-11 right-0 h-px opacity-60"></div>
+        <div
+          style="top: {((i + 0.5) / span) * 100}%;"
+          class="bg-border absolute left-10 right-0 h-px opacity-60 2xl:left-12"
+        ></div>
       {/if}
     {/each}
 
     {#each days as day, dayIndex (dayIndex)}
-      <div class="relative mx-0.5 grow basis-0">
+      <div class="relative mx-0.5 grow basis-0 sm:mx-1">
         {#each day as cm (cm)}
           {@render block(cm)}
         {/each}
@@ -227,7 +180,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
     <!-- Meetings with no set time (online async, TBA) are stacked, not placed. -->
     {#if hasOther}
-      <div class="relative mx-0.5 flex grow basis-0 flex-col gap-2">
+      <div class="relative mx-0.5 flex grow basis-0 flex-col gap-2 sm:mx-1">
         {#each schedule.other as cm (cm)}
           {@render block(cm)}
         {/each}
