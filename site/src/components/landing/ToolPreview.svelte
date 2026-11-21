@@ -14,12 +14,12 @@
   const reviews = [
     {
       course: 'CMSC131',
-      professor: 'Anvita',
+      professor: 'Shell',
       rating: 5,
       title: 'The sweetest, kindest professor ever',
       term: 'Spring 2026',
       grade: 'A−',
-      body: 'Professor Anvita is the sweetest, kindest person ever. She makes it easy to ask questions, explains things patiently, and makes CMSC131 feel welcoming even if you’re new to coding.',
+      body: 'Professor Shell is the sweetest, kindest person ever. She makes it easy to ask questions, explains things patiently, and makes CMSC131 feel welcoming even if you’re new to coding.',
     },
     {
       course: 'MATH141',
@@ -235,6 +235,33 @@
   }
   .yellow {
     background: #ffeca5;
+  }
+  :global(.dark) .peach {
+    background: #b66746;
+  }
+  :global(.dark) .green {
+    background: #43866b;
+  }
+  :global(.dark) .blue {
+    background: #5c78b8;
+  }
+  :global(.dark) .purple {
+    background: #8265b6;
+  }
+  :global(.dark) .yellow {
+    background: #a18a3f;
+  }
+  :global(.dark) .wishlist b {
+    color: #f5f7fb;
+  }
+  :global(.dark) .section-row b {
+    color: #80d6a5;
+  }
+  :global(.dark) .section-row b.waitlist {
+    color: #ffa391;
+  }
+  :global(.dark) .sample-card {
+    box-shadow: 0 18px 40px #00000026;
   }
   .week {
     display: flex;
@@ -489,7 +516,20 @@
     line-height: 1.6;
   }
   .review.offset {
-    transform: translateY(25px);
+    transform: none;
+  }
+  .review:first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .review:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .review:nth-child(3) {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: center;
   }
   .review-header {
     display: flex;
@@ -539,12 +579,12 @@
     line-height: 1.5;
   }
   .moderation {
-    align-self: end;
-    padding: 16px;
-    border-radius: 15px;
-    background: #dcf2e2;
-    color: #225e3b;
+    grid-column: 1 / -1;
+    padding: 16px 0 0;
+    border-top: 1px solid var(--landing-line);
+    color: var(--landing-muted);
     font-size: 11px;
+    line-height: 1.6;
   }
   .moderation p {
     margin-top: 5px;
@@ -632,6 +672,11 @@
   }
   .compact .review {
     padding: 10px;
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .compact .review:nth-child(3) {
+    width: 100%;
   }
   .compact .review.offset {
     transform: none;

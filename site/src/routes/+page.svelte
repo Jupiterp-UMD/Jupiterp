@@ -10,6 +10,7 @@
   import { TERM_NAME } from '$lib/term';
   import ToolIcon from '../components/layout/ToolIcon.svelte';
   import ToolPreview from '../components/landing/ToolPreview.svelte';
+  import FitContent from '../components/landing/FitContent.svelte';
   let active = $state(0);
   let landing: HTMLElement | undefined = $state();
   afterNavigate(({ to, type }) => {
@@ -54,16 +55,9 @@
 <main bind:this={landing} class="landing custom-scrollbar">
   <section class="hero" aria-label="Welcome to Jupiterp">
     <div class="planet" aria-hidden="true">
-      <svg viewBox="0 0 500 500" fill="none"
-        ><defs><clipPath id="planet-clip"><circle cx="250" cy="250" r="245" /></clipPath></defs><g
-          clip-path="url(#planet-clip)"
-          transform="rotate(-26 250 250)"
-          ><path fill="#d3a589" d="M0 0h500v500H0z" /><path
-            fill="#e98355"
-            d="M0 55h500v55H0zm0 95h500v50H0zm0 95h500v65H0zm0 110h500v95H0z"
-          /><path fill="#f5ece5" d="M0 110h500v28H0zm0 90h500v30H0zm0 113h500v27H0z" /></g
-        ></svg
-      >
+      <svg viewBox="20 50 285 285" fill="none" aria-hidden="true">
+        <image href={asset('/logo.svg')} width="1343" height="355" />
+      </svg>
     </div>
     <div class="welcome-window">
       <div class="window-bar">
@@ -84,28 +78,30 @@
         </nav>
         <div id="welcome-tool" class="welcome-content">
           <div class="welcome-copy">
-            <h1>{current.headline}</h1>
-            <p class="intro">{current.intro}</p>
-            <ul>
-              {#each current.bullets as bullet (bullet)}<li><span aria-hidden="true">✓</span>{bullet}</li>{/each}
-            </ul>
-            {#if current.id === 'reviews'}
-              <aside class="review-promise" aria-label="Review moderation and turnaround">
-                <strong>Read, approved, then published.</strong>
-                <p>
-                  Every published review is read and approved. About 99% of submitted reviews appear on the site within
-                  a few minutes.
-                </p>
-              </aside>
-            {/if}
-            <div class="hero-actions">
-              <a class="primary" href={resolve(current.href)}>{current.cta} →</a>
-            </div>
-            <button class="next-tool" type="button" onclick={() => select((active + 1) % tools.length)}
-              >Next: {tools[(active + 1) % tools.length].label} →</button
-            >
+            <FitContent>
+              <h1>{current.headline}</h1>
+              <p class="intro">{current.intro}</p>
+              <ul>
+                {#each current.bullets as bullet (bullet)}<li><span aria-hidden="true">✓</span>{bullet}</li>{/each}
+              </ul>
+              {#if current.id === 'reviews'}
+                <aside class="review-promise" aria-label="Review moderation and turnaround">
+                  <strong>Read, approved, then published.</strong>
+                  <p>
+                    Every published review is read and approved. About 99% of submitted reviews appear on the site
+                    within a few minutes.
+                  </p>
+                </aside>
+              {/if}
+              <div class="hero-actions">
+                <a class="primary" href={resolve(current.href)}>{current.cta} →</a>
+              </div>
+              <button class="next-tool" type="button" onclick={() => select((active + 1) % tools.length)}
+                >Next: {tools[(active + 1) % tools.length].label} →</button
+              >
+            </FitContent>
           </div>
-          <div class="welcome-preview"><ToolPreview kind={current.id} compact /></div>
+          <div class="welcome-preview"><FitContent><ToolPreview kind={current.id} compact /></FitContent></div>
         </div>
       </div>
     </div>
@@ -195,15 +191,31 @@
     color: var(--landing-ink);
   }
   :global(.dark) .landing {
-    --landing-bg: #1d2027;
-    --landing-card: #242a35;
+    --landing-bg: #151922;
+    --landing-card: #202733;
     --landing-ink: #edf0f4;
     --landing-muted: #b4bdcc;
-    --landing-line: #3b4350;
-    --landing-track: #303744;
-    --landing-soft: #202630;
+    --landing-line: #384354;
+    --landing-track: #2a3342;
+    --landing-soft: #1b222d;
     --landing-peach: #3a2b25;
     --landing-hint: #343022;
+  }
+  :global(.dark) .welcome-window {
+    box-shadow: 0 24px 64px #00000040;
+    border: 1px solid var(--landing-line);
+  }
+  :global(.dark) .tool-tabs button.active {
+    background: #ff8c5426;
+  }
+  :global(.dark) .tool-tabs button:hover {
+    background: #ff8c5417;
+  }
+  :global(.dark) .planet {
+    opacity: 0.35;
+  }
+  :global(.dark) .policy-link {
+    color: #ffab83;
   }
   .content-width {
     width: min(1080px, calc(100% - 80px));
@@ -217,8 +229,7 @@
     flex-direction: column;
     justify-content: center;
     padding: 64px 40px;
-    max-width: 1500px;
-    margin: auto;
+    width: 100%;
   }
   .explore-more {
     position: absolute;
@@ -242,12 +253,12 @@
   }
   .planet {
     position: absolute;
-    width: 610px;
-    height: 610px;
-    right: -220px;
+    --planet-size: clamp(500px, 42vw, 850px);
+    width: var(--planet-size);
+    height: var(--planet-size);
+    right: calc(var(--planet-size) * -0.35);
     top: -90px;
     pointer-events: none;
-    opacity: 0.9;
   }
   .planet svg {
     width: 100%;
@@ -255,9 +266,11 @@
   }
   .welcome-window {
     position: relative;
-    max-width: 1080px;
     margin: 0 auto;
-    width: 100%;
+    width: min(100%, clamp(1080px, 82vw, 1600px));
+    height: min(820px, 76svh, calc(100svh - 176px));
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
     border-radius: 22px;
     background: var(--landing-card);
@@ -266,11 +279,12 @@
   .window-bar {
     background: var(--landing-soft);
     height: 42px;
+    flex-shrink: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
-    font-size: 12px;
+    font-size: clamp(12px, 0.8vw, 14px);
   }
   .traffic {
     display: flex;
@@ -292,12 +306,15 @@
   }
   .welcome-body {
     display: grid;
-    grid-template-columns: 238px 1fr;
-    min-height: 475px;
+    grid-template-columns: clamp(220px, 17vw, 300px) minmax(0, 1fr);
+    flex: 1;
+    min-height: 0;
   }
   .tool-tabs {
     background: var(--landing-soft);
     padding: 28px 15px;
+    min-height: 0;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -307,7 +324,7 @@
     align-items: center;
     gap: 7px;
     width: 100%;
-    font-size: 13px;
+    font-size: clamp(13px, 0.9vw, 16px);
     font-weight: 600;
     padding: 6px 7px;
     border-radius: 10px;
@@ -324,20 +341,23 @@
   .welcome-content {
     display: grid;
     grid-template-columns: 1.1fr 0.9fr;
-    align-items: center;
-    gap: 24px;
-    padding: 42px;
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 0;
+    min-width: 0;
+    align-items: stretch;
+    gap: clamp(20px, 2vw, 40px);
+    padding: clamp(32px, 3vw, 56px);
   }
   h1 {
-    font-size: 44px;
+    font-size: clamp(38px, 3.1vw, 62px);
     line-height: 1.06;
     letter-spacing: -1.5px;
     font-weight: 700;
     margin-bottom: 18px;
-    max-width: 340px;
+    max-width: 100%;
   }
   .intro {
-    font-size: 16px;
+    font-size: clamp(16px, 1.1vw, 20px);
     line-height: 1.55;
     color: var(--landing-muted);
   }
@@ -346,7 +366,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    font-size: 12px;
+    font-size: clamp(12px, 0.85vw, 16px);
   }
   .welcome-copy li {
     display: flex;
@@ -359,10 +379,8 @@
   }
   .review-promise {
     margin: 0 0 22px;
-    padding: 14px 16px;
-    border: 1px solid color-mix(in srgb, #409264 25%, var(--landing-line));
-    border-radius: 12px;
-    background: color-mix(in srgb, #d9f1e2 30%, var(--landing-card));
+    padding: 14px 0 0;
+    border-top: 1px solid var(--landing-line);
     font-size: 12px;
     line-height: 1.55;
   }
@@ -405,7 +423,7 @@
 
   .next-tool {
     display: block;
-    font-size: 11px;
+    font-size: clamp(11px, 0.8vw, 14px);
     font-weight: 600;
     margin-top: 29px;
     text-align: left;
@@ -414,8 +432,18 @@
   .next-tool:hover {
     color: #e15a23;
   }
-  .welcome-preview {
+  .welcome-preview,
+  .welcome-copy {
     min-width: 0;
+    min-height: 0;
+    height: 100%;
+  }
+  .welcome-preview :global(.hero-week) {
+    height: clamp(245px, 30svh, 360px);
+  }
+  .hero .primary {
+    font-size: clamp(13px, 0.9vw, 16px);
+    padding: clamp(12px, 1vw, 18px) clamp(18px, 1.4vw, 26px);
   }
   h2 {
     font-size: 36px;
@@ -570,6 +598,7 @@
     }
     .welcome-body {
       grid-template-columns: 1fr;
+      grid-template-rows: auto minmax(0, 1fr);
     }
     .tool-tabs {
       display: flex;

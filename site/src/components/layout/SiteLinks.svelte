@@ -16,7 +16,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   interface NavLink {
     link: string;
     text: string;
-    tool?: 'planner' | 'generator' | 'reviews' | 'compare';
+    tool?: 'planner' | 'generator' | 'reviews' | 'teacher' | 'compare';
     children?: { link: string; text: string; isExternal?: boolean; icon?: import('svelte').Component }[];
     isExternal?: boolean;
   }
@@ -30,7 +30,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   const navLinks: NavLink[] = [
     { link: '/planner', text: 'Course Planner', tool: 'planner' },
     { link: '/generate', text: 'Schedule Generator', tool: 'generator' },
-    { link: '/professors', text: 'Professors', tool: 'reviews' },
+    { link: '/professors', text: 'Professors', tool: 'teacher' },
     { link: '/professors/compare', text: 'Compare Professors', tool: 'compare' },
     {
       link: '/about',

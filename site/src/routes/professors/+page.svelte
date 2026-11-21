@@ -1018,6 +1018,20 @@
     border-radius: 4px;
     padding: 1px 6px;
   }
+  :global(.dark) .course-chips button {
+    background: #252e3d;
+    border: 1px solid #3b475a;
+    color: #dce3ee;
+  }
+  :global(.dark) .course-chips button:hover {
+    background: #303c4f;
+    border-color: #ff8c54;
+    color: #ffb28c;
+  }
+  :global(.dark) td input,
+  :global(.dark) .card-heading input {
+    color-scheme: dark;
+  }
   .course-chips > span {
     color: var(--text-secondary);
   }
