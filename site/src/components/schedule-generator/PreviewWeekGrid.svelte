@@ -24,12 +24,6 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
-  // Height given to one hour before the grid starts to scroll; enough for a
-  // 50-minute class to show its course, instructor and time. Phones get taller
-  // hours because their narrow columns need the time on two lines.
-  const MIN_REM_PER_HOUR = 4.5;
-  const MIN_REM_PER_HOUR_NARROW = 6;
-
   const EMPTY_SCHEDULE: Schedule = {
     monday: [],
     tuesday: [],
@@ -92,31 +86,12 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     }
   }
 
-  // Start and end separately, for narrow blocks that stack them. Null for
-  // meetings with no set time.
-  function timeParts(cm: ClassMeetingExtended): { start: string; end: string } | null {
-    if (typeof cm.meeting === 'string') {
-      return null;
-    }
-    const [start, end] = formatClasstime(cm.meeting.classtime).split(' - ');
-    return end !== undefined ? { start, end } : null;
-  }
-
   function locationLabel(cm: ClassMeetingExtended): string {
     return typeof cm.meeting !== 'string' ? formatLocation(cm.meeting.location) : '';
   }
 
   function instructorLabel(cm: ClassMeetingExtended): string {
     return cm.instructors.length > 0 ? formatInstructors(cm.instructors) : 'Instructor TBA';
-  }
-
-  // Last names only, for blocks too narrow for a full name. The full name is
-  // still in the block's tooltip and in the course list.
-  function shortInstructorLabel(cm: ClassMeetingExtended): string {
-    if (cm.instructors.length === 0) {
-      return 'TBA';
-    }
-    return cm.instructors.map((name) => name.trim().split(/\s+/).pop() ?? name).join(', ');
   }
 
   // Blocks clip whatever does not fit, so the full text is also the tooltip.
@@ -150,9 +125,11 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 </script>
 
 {#snippet block(cm: ClassMeetingExtended)}
-  {@const time = timeParts(cm)}
-  <!-- Each block is a size container: below 5.5rem wide (a phone's day
-       column) its lines switch to short forms instead of being cut off. -->
+  <!-- Like the planner's blocks: course, then section above location. The
+       time is left to the grid's lines and the instructor to the details
+       sidebar (both are in the tooltip too), so even a 50-minute class shows
+       every line. Each block is a size container: below 5.5rem wide (a
+       phone's day column) its lines switch to short forms. -->
   <div
     style={blockStyle(cm)}
     class="@container flex flex-col overflow-hidden rounded-lg text-black"
@@ -170,30 +147,21 @@ https://github.com/atcupps/Jupiterp/LICENSE).
          fully outside the block. -->
     <div class="@max-[5.5rem]:text-[0.6875rem] flex min-h-0 grow flex-col flex-wrap overflow-hidden text-xs leading-4">
       <div class="@max-[5.5rem]:px-0.5 w-full truncate px-1.5">
-        <span class="@max-[5.5rem]:hidden">{instructorLabel(cm)}</span>
-        <span class="@max-[5.5rem]:inline hidden">{shortInstructorLabel(cm)}</span>
+        Sec<span class="@max-[5.5rem]:hidden">tion</span>
+        {cm.sectionCode}
       </div>
-      {#if time}
-        <div class="@max-[5.5rem]:hidden w-full truncate px-1.5">{timeLabel(cm)}</div>
-        <div class="@max-[5.5rem]:block hidden w-full whitespace-nowrap px-0.5 tracking-tight">
-          {time.start}–<br />{time.end}
-        </div>
-      {:else}
+      {#if typeof cm.meeting === 'string'}
         <div class="@max-[5.5rem]:px-0.5 w-full truncate px-1.5">{timeLabel(cm)}</div>
-      {/if}
-      {#if locationLabel(cm) !== ''}
+      {:else if locationLabel(cm) !== ''}
         <div class="@max-[5.5rem]:px-0.5 w-full truncate px-1.5">{locationLabel(cm)}</div>
       {/if}
-      <div class="@max-[5.5rem]:hidden w-full truncate px-1.5">Section {cm.sectionCode}</div>
-      <div class="@max-[5.5rem]:block hidden w-full truncate px-0.5">Sec {cm.sectionCode}</div>
     </div>
   </div>
 {/snippet}
 
-<div
-  style="--grid-min: {span * MIN_REM_PER_HOUR + 3.5}rem; --grid-min-narrow: {span * MIN_REM_PER_HOUR_NARROW + 3.5}rem;"
-  class="min-h-(--grid-min-narrow) sm:min-h-(--grid-min) flex h-full flex-col text-center"
->
+<!-- Fills its container, like the planner's schedule, rather than growing
+     past it and scrolling. -->
+<div class="flex h-full flex-col text-center">
   <!-- Day names -->
   <div class="flex flex-row pl-12 font-medium">
     {#each DAY_LABELS as label (label)}

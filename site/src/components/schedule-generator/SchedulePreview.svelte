@@ -6,7 +6,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 -->
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
-  import { fade, fly } from 'svelte/transition';
+  import { fly } from 'svelte/transition';
   import { goto, pushState } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
@@ -20,16 +20,19 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import { GenerationStateStore, GeneratorSortStore } from '../../stores/GeneratorStores';
   import type { GeneratedSchedule } from '../../lib/schedule-generator/types';
 
-  // A full-page view of one generated schedule, laid out like the course
-  // planner, opened by clicking a result card. It covers the generator below
-  // the site header without leaving it, so closing the view returns to the
-  // results exactly as they were. The arrow buttons and the left/right arrow
-  // keys move through the other generated schedules.
+  // One generated schedule, shown in the generator page's own layout: its
+  // course details take the place of the wishlist and constraints sidebar,
+  // and its week takes the place of the results, sized like the planner's
+  // schedule. The arrow buttons, the left/right arrow keys and a sideways
+  // swipe move through the other generated schedules.
+  //
+  // This renders two siblings that the page's grid places in its two
+  // columns, so it must be a direct child of that grid.
 
   interface Props {
     /** Position, in the results' current sort order, of the schedule to open on. */
     initialIndex: number;
-    /** Called once the view should be removed. */
+    /** Called once the preview should be removed. */
     onclose: () => void;
   }
 
@@ -54,39 +57,26 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 180;
 
   const titleId = $props.id();
-  let view: HTMLDivElement | null = $state(null);
+  let view: HTMLElement | null = $state(null);
 
-  // Opening the view adds a history entry (without changing the URL), so the
-  // browser's Back button closes it like a page instead of leaving the generator.
+  // Opening the preview adds a history entry (without changing the URL), so
+  // the browser's Back button returns to the results instead of leaving the
+  // generator.
   interface PreviewPageState {
     schedulePreview?: boolean;
   }
   let historyEntryAdded = $state(false);
 
-  // Rendered inside a result card, the view would sit inside the card's
-  // clickable area and the results' scroll container. Moving the node to
-  // <body> makes it a page-level layer.
-  function portal(node: HTMLElement) {
-    document.body.appendChild(node);
-    return {
-      destroy() {
-        node.remove();
-      },
-    };
-  }
-
   onMount(() => {
     const opener = document.activeElement;
-    // The generator underneath is covered, so keep it out of the tab order.
-    const covered = document.querySelector('main');
-    covered?.setAttribute('inert', '');
     pushState('', { schedulePreview: true } as PreviewPageState);
     historyEntryAdded = true;
     view?.focus();
     return () => {
-      covered?.removeAttribute('inert');
+      // The results are shown again in the same update that removes the
+      // preview, so wait a frame for the card to be focusable.
       if (opener instanceof HTMLElement) {
-        opener.focus();
+        requestAnimationFrame(() => opener.focus());
       }
     };
   });
@@ -108,7 +98,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   function close() {
     if ((page.state as PreviewPageState).schedulePreview) {
-      // Drop the history entry this view added; the effect above then closes it.
+      // Drop the history entry this preview added; the effect above then closes it.
       history.back();
     } else {
       onclose();
@@ -117,8 +107,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   function apply() {
     applyGeneratedSchedule(schedule);
-    // Replace this view's history entry, so Back from the planner returns to
-    // the generator's results.
+    // Replace this preview's history entry, so Back from the planner returns
+    // to the generator's results.
     goto(resolve('/'), { replaceState: true });
   }
 
@@ -132,7 +122,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   }
 
   // Touch swipe: a sideways flick moves between schedules, like the arrows.
-  // The view scrolls up and down on small screens, so a swipe only counts
+  // The page scrolls up and down on small screens, so a swipe only counts
   // when it is long enough and clearly more horizontal than vertical.
   const SWIPE_MIN_DISTANCE_PX = 50;
   const SWIPE_MAX_SLOPE = 0.6;
@@ -186,22 +176,29 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <svelte:window onkeydown={handleKeydown} />
 
 {#if schedule}
-  <div
+  <!-- The week, in the results' column. First in the page on small screens,
+       with the details underneath, like the planner. -->
+  <section
     bind:this={view}
-    class="bg-bg-primary text-text-primary fixed inset-x-0 bottom-0 top-12 z-40 flex flex-col outline-none"
-    role="region"
+    class="flex min-w-0 flex-col py-2 outline-none lg:col-start-2 lg:row-start-1 lg:min-h-0 lg:px-1"
     aria-labelledby={titleId}
     tabindex="-1"
-    use:portal
-    in:fade={{ duration: 120 }}
   >
-    <!-- Title bar: Apply and close sit together in the top right. -->
-    <div class="border-border flex flex-row items-center gap-x-4 border-b px-3 py-2">
-      <h2 id={titleId} class="text-lg font-bold" aria-live="polite">
+    <!-- One bar above the schedule: back, title, arrows and Apply. -->
+    <div class="flex shrink-0 flex-row items-center gap-x-2 pb-1 sm:gap-x-3">
+      <button
+        class="hover:bg-hover rounded-md p-1"
+        onclick={close}
+        title="Back to the generated schedules (Esc)"
+        aria-label="Back to the generated schedules"
+      >
+        <CloseOutline class="h-5 w-5" />
+      </button>
+      <h2 id={titleId} class="whitespace-nowrap text-lg font-bold" aria-live="polite">
         Schedule {index + 1}
         <span class="text-text-secondary text-sm font-normal">of {schedules.length}</span>
       </h2>
-      <div class="hidden flex-row flex-wrap gap-x-4 text-xs opacity-80 sm:flex">
+      <div class="hidden flex-row flex-wrap gap-x-4 text-xs opacity-80 md:flex">
         <span>{metrics.sectionCount} class{metrics.sectionCount === 1 ? '' : 'es'}</span>
         <span>{formatCredits(metrics.minCredits, metrics.maxCredits)} cr</span>
         <span>{metrics.daysWithClasses} days</span>
@@ -209,76 +206,70 @@ https://github.com/atcupps/Jupiterp/LICENSE).
           <span>★ {metrics.avgDisplayRating.toFixed(1)}</span>
         {/if}
       </div>
+      <div class="ml-auto flex flex-row items-center gap-x-1">
+        <button
+          class="hover:text-orange rounded-md p-1 transition-colors disabled:opacity-25 disabled:hover:text-inherit"
+          onclick={() => move(-1)}
+          disabled={!hasPrevious}
+          title="Previous schedule (←)"
+          aria-label="Previous schedule"
+        >
+          <AngleLeftOutline class="h-6 w-6" />
+        </button>
+        <button
+          class="hover:text-orange rounded-md p-1 transition-colors disabled:opacity-25 disabled:hover:text-inherit"
+          onclick={() => move(1)}
+          disabled={!hasNext}
+          title="Next schedule (→)"
+          aria-label="Next schedule"
+        >
+          <AngleRightOutline class="h-6 w-6" />
+        </button>
+      </div>
       <button
-        class="border-orange text-orange hover:bg-orange ml-auto rounded-md border px-3 py-1 text-sm font-semibold hover:text-white"
+        class="border-orange text-orange hover:bg-orange rounded-md border px-3 py-1 text-sm font-semibold hover:text-white"
         onclick={apply}
         title="Open this schedule in the planner"
       >
         Apply
       </button>
-      <button
-        class="hover:bg-hover -ml-2 rounded-md p-1"
-        onclick={close}
-        title="Back to the generated schedules (Esc)"
-        aria-label="Back to the generated schedules"
-      >
-        <CloseOutline class="h-5 w-5" />
-      </button>
     </div>
 
-    <!-- The schedule, with an arrow on either side to move between schedules. -->
-    <div class="flex min-h-0 grow flex-row">
-      <button
-        class="hover:text-orange flex w-6 shrink-0 items-center justify-center transition-colors disabled:opacity-25 disabled:hover:text-inherit sm:w-10"
-        onclick={() => move(-1)}
-        disabled={!hasPrevious}
-        title="Previous schedule (←)"
-        aria-label="Previous schedule"
-      >
-        <AngleLeftOutline class="h-6 w-6 sm:h-8 sm:w-8" />
-      </button>
+    <!-- Both the outgoing and incoming schedule occupy this one grid cell
+         while they slide past each other. Swiping it sideways also moves
+         between schedules; `touch-pan-y` leaves vertical scrolling to the
+         browser. The swipe is a touch shortcut for the arrow buttons, which
+         remain the accessible controls. Its height follows the planner's
+         schedule, so the week is drawn at the same proportions. -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="grid h-[calc(100svh-11rem)] min-h-80 touch-pan-y grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] overflow-hidden lg:h-auto lg:grow"
+      ontouchstart={handleTouchStart}
+      ontouchend={handleTouchEnd}
+      ontouchcancel={() => (touchStart = null)}
+    >
+      {#key schedule}
+        <div
+          class="col-start-1 row-start-1 min-h-0"
+          in:fly={{ x: direction * SLIDE_DISTANCE_PX, duration: slideDuration }}
+          out:fly={{ x: -direction * SLIDE_DISTANCE_PX, duration: slideDuration }}
+        >
+          <PreviewWeekGrid selections={schedule.selections} />
+        </div>
+      {/key}
+    </div>
+  </section>
 
-      <!-- Both the outgoing and incoming schedule occupy this one grid cell
-           while they slide past each other. Swiping it sideways also moves
-           between schedules; `touch-pan-y` leaves vertical scrolling to the
-           browser. The swipe is a touch shortcut for the arrow buttons on
-           either side, which remain the accessible controls. -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="grid min-h-0 min-w-0 grow touch-pan-y grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] overflow-hidden"
-        ontouchstart={handleTouchStart}
-        ontouchend={handleTouchEnd}
-        ontouchcancel={() => (touchStart = null)}
-      >
-        {#key schedule}
-          <!-- Laid out like the planner: course list beside the week on
-               desktop, week first with the list underneath on small screens. -->
-          <div
-            class="custom-scrollbar col-start-1 row-start-1 flex min-h-0 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden"
-            in:fly={{ x: direction * SLIDE_DISTANCE_PX, duration: slideDuration }}
-            out:fly={{ x: -direction * SLIDE_DISTANCE_PX, duration: slideDuration }}
-          >
-            <div
-              class="custom-scrollbar border-border order-2 px-3 text-left lg:order-1 lg:w-80 lg:shrink-0 lg:overflow-y-auto lg:border-r"
-            >
-              <ScheduleDetails selections={schedule.selections} />
-            </div>
-            <div class="custom-scrollbar order-1 py-2 sm:px-2 lg:order-2 lg:grow lg:overflow-y-auto">
-              <PreviewWeekGrid selections={schedule.selections} />
-            </div>
-          </div>
-        {/key}
+  <!-- The details, in the sidebar's column. -->
+  <aside
+    class="custom-scrollbar scrollbar-gutter-stable flex w-full flex-col px-1 py-2 text-left lg:col-start-1 lg:row-start-1 lg:overflow-y-auto lg:pr-2"
+    aria-label="Schedule details"
+  >
+    <h2 class="text-lg font-bold">Schedule details</h2>
+    {#key schedule}
+      <div in:fly={{ x: direction * SLIDE_DISTANCE_PX, duration: slideDuration }}>
+        <ScheduleDetails selections={schedule.selections} />
       </div>
-
-      <button
-        class="hover:text-orange flex w-6 shrink-0 items-center justify-center transition-colors disabled:opacity-25 disabled:hover:text-inherit sm:w-10"
-        onclick={() => move(1)}
-        disabled={!hasNext}
-        title="Next schedule (→)"
-        aria-label="Next schedule"
-      >
-        <AngleRightOutline class="h-6 w-6 sm:h-8 sm:w-8" />
-      </button>
-    </div>
-  </div>
+    {/key}
+  </aside>
 {/if}

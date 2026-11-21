@@ -5,15 +5,17 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
 -->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import { loadInstructorLookup } from '$lib/course-planner/CourseSearch';
   import { SELECTED_SECTIONS_KEY } from '$lib/course-planner/SchedulePersistence';
   import { syncFromPlanner } from '$lib/schedule-generator/PlannerSync';
   import { client } from '$lib/client';
   import { DepartmentsStore } from '../../stores/CoursePlannerStores';
+  import { GenerationStateStore, GeneratorPreviewIndexStore } from '../../stores/GeneratorStores';
   import CourseWishlist from '../../components/schedule-generator/CourseWishlist.svelte';
   import ConstraintsPanel from '../../components/schedule-generator/ConstraintsPanel.svelte';
   import ResultsGallery from '../../components/schedule-generator/ResultsGallery.svelte';
+  import SchedulePreview from '../../components/schedule-generator/SchedulePreview.svelte';
 
   // Departments are needed so the course search can resolve department codes.
   async function fetchDeptCodes() {
@@ -38,6 +40,14 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     fetchDeptCodes();
     syncFromPlanner();
   });
+
+  // A preview left open must not reappear when the user comes back later.
+  onDestroy(() => GeneratorPreviewIndexStore.set(null));
+
+  // While a generated schedule is previewed, it takes the place of both
+  // columns. The inputs and results stay mounted, only hidden, so closing the
+  // preview returns to them exactly as they were.
+  let previewIndex = $derived($GenerationStateStore.kind === 'done' ? $GeneratorPreviewIndexStore : null);
 </script>
 
 <svelte:window onstorage={handleStorage} />
@@ -49,8 +59,15 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 <main
   class="custom-scrollbar fixed bottom-0 top-12 w-full flex-col overflow-y-auto px-3 lg:grid lg:grid-cols-[22rem_1fr]"
 >
+  {#if previewIndex !== null}
+    <SchedulePreview initialIndex={previewIndex} onclose={() => GeneratorPreviewIndexStore.set(null)} />
+  {/if}
+
   <!-- Inputs: wishlist + constraints -->
-  <div class="custom-scrollbar scrollbar-gutter-stable flex w-full flex-col px-1 py-2 lg:overflow-y-auto lg:pr-2">
+  <div
+    style:display={previewIndex !== null ? 'none' : null}
+    class="custom-scrollbar scrollbar-gutter-stable flex w-full flex-col px-1 py-2 lg:overflow-y-auto lg:pr-2"
+  >
     <CourseWishlist />
     <div class="border-border border-t-2">
       <h2 class="mb-1 text-lg font-bold">Constraints</h2>
@@ -59,7 +76,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   </div>
 
   <!-- Results -->
-  <div class="custom-scrollbar px-1 py-2 lg:overflow-y-auto">
+  <div style:display={previewIndex !== null ? 'none' : null} class="custom-scrollbar px-1 py-2 lg:overflow-y-auto">
     <ResultsGallery />
   </div>
 </main>

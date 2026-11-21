@@ -8,9 +8,9 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import MiniSchedule from './MiniSchedule.svelte';
-  import SchedulePreview from './SchedulePreview.svelte';
   import { applyGeneratedSchedule } from '../../lib/schedule-generator/ApplySchedule';
   import { formatCredits } from '../../lib/course-planner/Formatting';
+  import { GeneratorPreviewIndexStore } from '../../stores/GeneratorStores';
   import type { GeneratedSchedule } from '../../lib/schedule-generator/types';
 
   interface Props {
@@ -39,16 +39,17 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     goto(resolve('/'));
   }
 
-  // Whether the full-page view of the generated schedules is open, started
-  // from this card.
-  let previewOpen = $state(false);
+  // The preview takes the place of the results on the generator page.
+  function openPreview() {
+    GeneratorPreviewIndexStore.set(rank - 1);
+  }
 
   // The whole card opens the view, except its Apply button.
   function handleCardClick(event: MouseEvent) {
     if (event.target instanceof Element && event.target.closest('button')) {
       return;
     }
-    previewOpen = true;
+    openPreview();
   }
 
   function handleCardKeydown(event: KeyboardEvent) {
@@ -57,7 +58,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     }
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      previewOpen = true;
+      openPreview();
     }
   }
 </script>
@@ -101,8 +102,4 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       {/if}
     </span>
   </div>
-
-  {#if previewOpen}
-    <SchedulePreview initialIndex={rank - 1} onclose={() => (previewOpen = false)} />
-  {/if}
 </div>
