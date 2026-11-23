@@ -179,8 +179,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
 <svelte:window onkeydown={handleKeydown} />
 
-<!-- An arrow on either side of the schedule moves to the previous (-1) or next
-     (1) one. `placement` is the button's cell in the grid below. -->
+<!-- An arrow on either side of the week moves to the previous (-1) or next
+     (1) schedule. `placement` is the button's cell in the grid below. -->
 {#snippet arrowButton(step: 1 | -1, placement: string)}
   {@const Icon = step === 1 ? AngleRightOutline : AngleLeftOutline}
   {@const label = step === 1 ? 'Next schedule' : 'Previous schedule'}
@@ -197,25 +197,25 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
 {#if schedule}
   <!-- One grid, so each piece is rendered once and only its place changes.
-       On desktop: arrow, details, the bar above the week, arrow. The negative
-       margin lets the arrows use the page's 0.75rem side padding, so arrow +
-       details (2.5rem + 20.25rem) end where the generator's 22rem sidebar
-       does. On small screens: the bar, then the week between the arrows, then
-       the details, scrolling with the page like the planner. -->
+       On desktop: the details, then the bar above the week with an arrow on
+       either side of it. The negative margin lets the grid use the page's
+       0.75rem side padding, so the details column (22.75rem) ends where the
+       generator's 22rem sidebar does and the right arrow sits in the padding.
+       On small screens: the bar, then the week between the arrows, then the
+       details, scrolling with the page like the planner. -->
   <div
     bind:this={view}
-    class="-mx-3 grid grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] outline-none lg:col-span-2 lg:min-h-0 lg:grid-cols-[2.5rem_20.25rem_minmax(0,1fr)_2.5rem] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden"
+    class="-mx-3 grid grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] outline-none lg:col-span-2 lg:min-h-0 lg:grid-cols-[22.75rem_2.5rem_minmax(0,1fr)_2.5rem] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden"
     role="region"
     aria-labelledby={titleId}
     tabindex="-1"
   >
     <!-- Title bar: Apply and close sit together in the top right. -->
     <div
-      class="border-border col-span-3 row-start-1 flex flex-row items-center gap-x-4 border-b px-3 py-2 lg:col-span-1 lg:col-start-3"
+      class="border-border col-span-3 row-start-1 flex flex-row items-center gap-x-4 border-b px-3 py-2 lg:col-start-2"
     >
       <h2 id={titleId} class="whitespace-nowrap text-lg font-bold" aria-live="polite">
-        Schedule {index + 1}
-        <span class="text-text-secondary text-sm font-normal">of {schedules.length}</span>
+        Schedule {index + 1} of {schedules.length}
       </h2>
       <div class="hidden flex-row flex-wrap gap-x-4 text-xs opacity-80 sm:flex">
         <span>{metrics.sectionCount} class{metrics.sectionCount === 1 ? '' : 'es'}</span>
@@ -242,7 +242,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       </button>
     </div>
 
-    {@render arrowButton(-1, 'col-start-1 row-start-2 lg:row-span-2 lg:row-start-1')}
+    {@render arrowButton(-1, 'col-start-1 row-start-2 lg:col-start-2')}
 
     <!-- The week. Both the outgoing and incoming schedule occupy this one
          grid cell while they slide past each other. Swiping it sideways also
@@ -270,11 +270,11 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       {/key}
     </div>
 
-    {@render arrowButton(1, 'col-start-3 row-start-2 lg:col-start-4 lg:row-span-2 lg:row-start-1')}
+    {@render arrowButton(1, 'col-start-3 row-start-2 lg:col-start-4')}
 
     <!-- The details, where the generator's sidebar was. -->
     <div
-      class="custom-scrollbar border-border col-span-3 row-start-3 px-3 text-left lg:col-span-1 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:overflow-y-auto lg:border-r lg:pl-1"
+      class="custom-scrollbar border-border col-span-3 row-start-3 px-3 text-left lg:col-span-1 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:overflow-y-auto lg:border-r lg:pl-4"
     >
       <ScheduleDetails selections={schedule.selections} />
     </div>
