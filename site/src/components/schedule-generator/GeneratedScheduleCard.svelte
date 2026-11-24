@@ -10,6 +10,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   import MiniSchedule from './MiniSchedule.svelte';
   import { applyGeneratedSchedule } from '../../lib/schedule-generator/ApplySchedule';
   import { formatCredits } from '../../lib/course-planner/Formatting';
+  import { GeneratorPreviewIndexStore } from '../../stores/GeneratorStores';
   import type { GeneratedSchedule } from '../../lib/schedule-generator/types';
 
   interface Props {
@@ -37,9 +38,42 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     applyGeneratedSchedule(schedule);
     goto(resolve('/'));
   }
+
+  // The preview takes the place of the results on the generator page.
+  function openPreview() {
+    GeneratorPreviewIndexStore.set(rank - 1);
+  }
+
+  // The button that opens the preview; see the markup.
+  let previewButton: HTMLButtonElement | null = $state(null);
+
+  // A click anywhere else on the card counts as a click on that button. It
+  // takes focus first, so focus returns to this card when the preview closes.
+  function handleCardClick(event: MouseEvent) {
+    if (event.target instanceof Element && event.target.closest('button')) {
+      return;
+    }
+    previewButton?.focus();
+    openPreview();
+  }
 </script>
 
-<div class="border-border bg-bg-primary shadow-xs flex flex-col gap-2 rounded-xl border p-3">
+<!-- The whole card opens the preview. The control is the button just inside,
+     which lies behind the card's content: it is what the keyboard and screen
+     readers use, and shows the focus ring around the card, without the Apply
+     button being nested in a button. The click handler here only extends that
+     button to the content in front of it, so it needs no key handling. -->
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+<div
+  class="border-border bg-bg-primary shadow-xs hover:border-orange relative isolate flex cursor-pointer flex-col gap-2 rounded-xl border p-3"
+  onclick={handleCardClick}
+>
+  <button
+    bind:this={previewButton}
+    class="absolute inset-0 -z-10 cursor-pointer rounded-xl"
+    onclick={openPreview}
+    aria-label="View schedule {rank} in detail"
+  ></button>
   <div class="flex flex-row items-center justify-between">
     <span class="text-sm font-semibold opacity-60">#{rank}</span>
     <button
