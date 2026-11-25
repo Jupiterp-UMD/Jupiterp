@@ -70,5 +70,13 @@ export function singleRelaxations(constraints: HardConstraints): Relaxation[] {
     });
   }
 
+  if (constraints.minAverageGpa !== null) {
+    relaxations.push({
+      kind: 'minGpa',
+      day: null,
+      constraints: { ...constraints, minAverageGpa: null },
+    });
+  }
+
   return relaxations;
 }

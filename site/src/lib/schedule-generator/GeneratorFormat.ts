@@ -65,6 +65,8 @@ export function overriddenFilterLabel(filter: OverriddenFilter): string {
       return 'meets on a day you marked off';
     case 'openSeats':
       return 'has no open seats';
+    case 'minGpa':
+      return 'is below your minimum average GPA';
   }
 }
 
@@ -83,5 +85,7 @@ export function relaxationLabel(relaxation: Relaxation): string {
       return 'Remove the minimum gap between classes';
     case 'minCredits':
       return 'Allow fewer credits';
+    case 'minGpa':
+      return 'Remove the minimum average GPA';
   }
 }

@@ -22,11 +22,21 @@ describe('singleRelaxations', () => {
       onlyOpenSeats: true,
       minGapMinutes: 15,
       minCredits: 12,
+      minAverageGpa: 3.0,
     });
     const kinds = relaxations.map((r) => r.kind).sort();
-    // earliestStart, latestEnd, dayOff x2, openSeats, minGap, minCredits
-    expect(relaxations).toHaveLength(7);
-    expect(kinds).toEqual(['dayOff', 'dayOff', 'earliestStart', 'latestEnd', 'minCredits', 'minGap', 'openSeats']);
+    // earliestStart, latestEnd, dayOff x2, openSeats, minGap, minCredits, minGpa
+    expect(relaxations).toHaveLength(8);
+    expect(kinds).toEqual([
+      'dayOff',
+      'dayOff',
+      'earliestStart',
+      'latestEnd',
+      'minCredits',
+      'minGap',
+      'minGpa',
+      'openSeats',
+    ]);
   });
 
   test('relaxes each day off individually', () => {

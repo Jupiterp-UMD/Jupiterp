@@ -23,10 +23,13 @@ import {
   type GeneratorRequirement,
   type RelaxationHint,
 } from '../../stores/GeneratorStores';
-import { generate } from './ScheduleGenerator';
+import { DEFAULT_MAX_RESULTS, generate } from './ScheduleGenerator';
 import { singleRelaxations } from './Relaxation';
 import type { CourseRequest, InstructorRating } from './types';
+import { instructorGpaKey } from './types';
 import { displayRating, rankingRating } from '../professor/Rating';
+import { loadCourseGradeSummaries } from '../course-planner/GradesLoader';
+import { hasEnoughForGpa, mergeDistributions, toDistribution } from '../course-planner/Grades';
 
 /**
  * Node budget for relaxation probes. Each zero-result generation re-runs the
@@ -97,6 +100,41 @@ function buildRatings(requests: CourseRequest[]): Map<string, InstructorRating> 
   return ratings;
 }
 
+/**
+ * Load course×instructor GPAs for the wishlist. Failures are ignored: GPA is
+ * supplementary, and a grades outage must not block generation.
+ */
+async function buildInstructorGpas(courseCodes: Iterable<string>): Promise<Map<string, number>> {
+  const gpas = new Map<string, number>();
+  await Promise.all(
+    [...courseCodes].map(async (courseCode) => {
+      try {
+        const [, instructors] = await loadCourseGradeSummaries(courseCode);
+        if (instructors.status !== 'fulfilled') {
+          return;
+        }
+        const bySlug = new Map<string, ReturnType<typeof toDistribution>>();
+        for (const row of instructors.value.data) {
+          if (!row.instructor_slug) {
+            continue;
+          }
+          const distribution = toDistribution(row);
+          const existing = bySlug.get(row.instructor_slug);
+          bySlug.set(row.instructor_slug, existing ? mergeDistributions(existing, distribution) : distribution);
+        }
+        for (const [slug, distribution] of bySlug) {
+          if (hasEnoughForGpa(distribution)) {
+            gpas.set(instructorGpaKey(courseCode, slug), distribution.gpa);
+          }
+        }
+      } catch (error) {
+        console.error(`Could not load grades for ${courseCode}:`, error);
+      }
+    })
+  );
+  return gpas;
+}
+
 /** Build engine requests from the wishlist using refetched full courses. */
 function buildRequests(requirements: GeneratorRequirement[], fullCourses: Record<string, Course>): CourseRequest[] {
   const requests: CourseRequest[] = [];
@@ -147,9 +185,10 @@ export async function runGeneration(): Promise<void> {
 
   const requests = buildRequests(requirements, fullCourses);
   const ratings = buildRatings(requests);
+  const instructorGpas = await buildInstructorGpas(Object.keys(fullCourses));
 
   try {
-    const result = generate(requests, constraints, ratings);
+    const result = generate(requests, constraints, ratings, DEFAULT_MAX_RESULTS, undefined, instructorGpas);
 
     if (result.schedules.length > 0) {
       // With optional courses in play, lead with the fullest schedules —
@@ -169,7 +208,7 @@ export async function runGeneration(): Promise<void> {
     // Nothing fits: explain which single constraint to loosen.
     const hints: RelaxationHint[] = [];
     for (const relaxation of singleRelaxations(constraints)) {
-      const rerun = generate(requests, relaxation.constraints, ratings, 50, RELAXATION_MAX_NODES);
+      const rerun = generate(requests, relaxation.constraints, ratings, 50, RELAXATION_MAX_NODES, instructorGpas);
       if (rerun.schedules.length > 0) {
         hints.push({
           relaxation,

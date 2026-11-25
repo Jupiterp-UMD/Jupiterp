@@ -32,6 +32,8 @@ export interface HardConstraints {
   onlyOpenSeats: boolean;
   minGapMinutes: number;
   minCredits: number | null;
+  /** Minimum average instructor GPA for a section (UMD 4.0 scale), or null. */
+  minAverageGpa: number | null;
 }
 
 /**
@@ -46,6 +48,7 @@ export function defaultConstraints(): HardConstraints {
     onlyOpenSeats: true,
     minGapMinutes: 0,
     minCredits: null,
+    minAverageGpa: null,
   };
 }
 
@@ -67,7 +70,7 @@ export interface CourseRequest {
 }
 
 /** A per-section filter that a pinned section was kept despite violating. */
-export type OverriddenFilter = 'earliestStart' | 'latestEnd' | 'dayOff' | 'openSeats';
+export type OverriddenFilter = 'earliestStart' | 'latestEnd' | 'dayOff' | 'openSeats' | 'minGpa';
 
 /** Raised when a pinned section was kept despite violating active filters. */
 export interface PinNotice {
@@ -101,6 +104,13 @@ export interface ScheduleMetrics {
    */
   avgDisplayRating: number | null;
   ratedSectionCount: number;
+  /**
+   * Mean of sections that have enough grade data for a GPA. Null when none do.
+   * Built from course×instructor registrar GPAs, same threshold as the planner.
+   */
+  avgGpa: number | null;
+  /** How many sections contributed to `avgGpa`. */
+  gpaSectionCount: number;
   sectionCount: number;
   minCredits: number;
   maxCredits: number;
@@ -133,7 +143,8 @@ export interface GenerationResult {
 }
 
 /** A single constraint loosened from a `HardConstraints`. */
-export type RelaxationKind = 'earliestStart' | 'latestEnd' | 'dayOff' | 'openSeats' | 'minGap' | 'minCredits';
+export type RelaxationKind =
+  'earliestStart' | 'latestEnd' | 'dayOff' | 'openSeats' | 'minGap' | 'minCredits' | 'minGpa';
 
 /** A constraint set differing from the original by one loosened restriction. */
 export interface Relaxation {
@@ -144,12 +155,20 @@ export interface Relaxation {
 
 /** The criteria by which generated schedules can be ranked. */
 export type SortCriterion =
-  'mostClasses' | 'bestRating' | 'mostCompact' | 'fewestDays' | 'latestStart' | 'earliestEnd' | 'mostCredits';
+  | 'mostClasses'
+  | 'bestRating'
+  | 'bestGpa'
+  | 'mostCompact'
+  | 'fewestDays'
+  | 'latestStart'
+  | 'earliestEnd'
+  | 'mostCredits';
 
 /** Human-readable labels for each `SortCriterion`. */
 export const SORT_CRITERION_LABELS: Record<SortCriterion, string> = {
   mostClasses: 'Most classes',
   bestRating: 'Top rated',
+  bestGpa: 'Highest GPA',
   mostCompact: 'Fewest gaps',
   fewestDays: 'Fewest days',
   latestStart: 'Latest start',
@@ -160,6 +179,7 @@ export const SORT_CRITERION_LABELS: Record<SortCriterion, string> = {
 /** The ordered list of sort criteria, for rendering a sort selector. */
 export const SORT_CRITERIA: SortCriterion[] = [
   'bestRating',
+  'bestGpa',
   'mostClasses',
   'mostCompact',
   'fewestDays',
@@ -167,3 +187,8 @@ export const SORT_CRITERIA: SortCriterion[] = [
   'earliestEnd',
   'mostCredits',
 ];
+
+/** Map key for a course×instructor GPA lookup used by the generator. */
+export function instructorGpaKey(courseCode: string, instructorSlug: string): string {
+  return `${courseCode}\t${instructorSlug}`;
+}

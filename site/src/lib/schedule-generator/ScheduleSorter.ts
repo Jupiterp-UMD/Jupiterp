@@ -19,6 +19,11 @@ function ratingOrUnrated(schedule: GeneratedSchedule): number {
   return schedule.metrics.avgInstructorRating ?? -1;
 }
 
+/** Schedules with no GPA map to -1 so they sort below any with a GPA. */
+function gpaOrUnknown(schedule: GeneratedSchedule): number {
+  return schedule.metrics.avgGpa ?? -1;
+}
+
 /** Ascending comparator on a numeric selector. */
 function byAsc(selector: (s: GeneratedSchedule) => number): Comparator {
   return (a, b) => selector(a) - selector(b);
@@ -56,6 +61,12 @@ function comparatorFor(criterion: SortCriterion): Comparator {
         byDesc(ratingOrUnrated),
         byAsc((s) => s.metrics.totalGapMinutes),
         byAsc((s) => s.metrics.daysWithClasses)
+      );
+    case 'bestGpa':
+      return chain(
+        byDesc(gpaOrUnknown),
+        byDesc(ratingOrUnrated),
+        byAsc((s) => s.metrics.totalGapMinutes)
       );
     case 'mostCompact':
       return chain(

@@ -19,6 +19,8 @@ function withMetrics(metrics: Partial<ScheduleMetrics>): GeneratedSchedule {
       avgInstructorRating: null,
       avgDisplayRating: null,
       ratedSectionCount: 0,
+      avgGpa: null,
+      gpaSectionCount: 0,
       sectionCount: 0,
       minCredits: 0,
       maxCredits: 0,
@@ -46,6 +48,14 @@ describe('sortedByCriterion', () => {
     const unrated = withMetrics({ avgInstructorRating: null });
     const sorted = sortedByCriterion([low, unrated, high], 'bestRating');
     expect(sorted).toEqual([high, low, unrated]);
+  });
+
+  test('best GPA sorts descending with unknown last', () => {
+    const low = withMetrics({ avgGpa: 2.8 });
+    const high = withMetrics({ avgGpa: 3.6 });
+    const unknown = withMetrics({ avgGpa: null });
+    const sorted = sortedByCriterion([low, unknown, high], 'bestGpa');
+    expect(sorted).toEqual([high, low, unknown]);
   });
 
   test('most compact sorts by gap minutes ascending', () => {

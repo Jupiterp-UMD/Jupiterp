@@ -26,6 +26,7 @@ import type {
   PinNotice,
   ScheduleMetrics,
 } from './types';
+import { instructorGpaKey } from './types';
 
 /** Default cap on the number of schedules returned. */
 export const DEFAULT_MAX_RESULTS = 1000;
@@ -134,10 +135,39 @@ function pinnedSections(request: CourseRequest): Section[] {
   }
 }
 
+/**
+ * Mean GPA of a section's instructors who have enough grade data for this
+ * course. Null when none do.
+ */
+function sectionAverageGpa(candidate: Candidate, instructorGpas: Map<string, number>): number | null {
+  const values: number[] = [];
+  candidate.section.instructors.forEach((_, index) => {
+    const slug = candidate.section.instructorSlugs?.[index];
+    if (!slug) {
+      return;
+    }
+    const gpa = instructorGpas.get(instructorGpaKey(candidate.course.courseCode, slug));
+    if (gpa !== undefined) {
+      values.push(gpa);
+    }
+  });
+  return values.length === 0 ? null : mean(values);
+}
+
 /** Whether a candidate survives the per-section hard constraints. */
-function candidatePasses(candidate: Candidate, constraints: HardConstraints): boolean {
+function candidatePasses(
+  candidate: Candidate,
+  constraints: HardConstraints,
+  instructorGpas: Map<string, number>
+): boolean {
   if (constraints.onlyOpenSeats && candidate.section.openSeats <= 0) {
     return false;
+  }
+  if (constraints.minAverageGpa !== null) {
+    const gpa = sectionAverageGpa(candidate, instructorGpas);
+    if (gpa === null || gpa < constraints.minAverageGpa) {
+      return false;
+    }
   }
   const earliest = constraints.earliestStartMinutes;
   const latest = constraints.latestEndMinutes;
@@ -156,10 +186,20 @@ function candidatePasses(candidate: Candidate, constraints: HardConstraints): bo
 }
 
 /** Which per-section filters a (pinned) candidate violates. */
-function overriddenFilters(candidate: Candidate, constraints: HardConstraints): OverriddenFilter[] {
+function overriddenFilters(
+  candidate: Candidate,
+  constraints: HardConstraints,
+  instructorGpas: Map<string, number>
+): OverriddenFilter[] {
   const result: OverriddenFilter[] = [];
   if (constraints.onlyOpenSeats && candidate.section.openSeats <= 0) {
     result.push('openSeats');
+  }
+  if (constraints.minAverageGpa !== null) {
+    const gpa = sectionAverageGpa(candidate, instructorGpas);
+    if (gpa === null || gpa < constraints.minAverageGpa) {
+      result.push('minGpa');
+    }
   }
   const earliest = constraints.earliestStartMinutes;
   if (earliest !== null && candidate.slots.some((s) => s.start < earliest)) {
@@ -206,7 +246,11 @@ function sumMinCredits(combo: Candidate[]): number {
 }
 
 /** Compute, once, the ranking metrics for a found combination. */
-function computeMetrics(combo: Candidate[], ratings: Map<string, InstructorRating>): ScheduleMetrics {
+function computeMetrics(
+  combo: Candidate[],
+  ratings: Map<string, InstructorRating>,
+  instructorGpas: Map<string, number>
+): ScheduleMetrics {
   const slots = combo.flatMap((c) => c.slots);
 
   const slotsByDay = new Map<EngineDay, MinuteSlot[]>();
@@ -241,6 +285,7 @@ function computeMetrics(combo: Candidate[], ratings: Map<string, InstructorRatin
   // sort's number describe the same instructors.
   const sectionRankings: number[] = [];
   const sectionDisplays: number[] = [];
+  const sectionGpas: number[] = [];
   for (const candidate of combo) {
     const rated = candidate.section.instructors
       .map((name) => ratings.get(name))
@@ -249,9 +294,14 @@ function computeMetrics(combo: Candidate[], ratings: Map<string, InstructorRatin
       sectionRankings.push(mean(rated.map((r) => r.ranking)));
       sectionDisplays.push(mean(rated.map((r) => r.display)));
     }
+    const gpa = sectionAverageGpa(candidate, instructorGpas);
+    if (gpa !== null) {
+      sectionGpas.push(gpa);
+    }
   }
   const avgInstructorRating = sectionRankings.length === 0 ? null : mean(sectionRankings);
   const avgDisplayRating = sectionDisplays.length === 0 ? null : mean(sectionDisplays);
+  const avgGpa = sectionGpas.length === 0 ? null : mean(sectionGpas);
 
   const starts = slots.map((s) => s.start);
   const ends = slots.map((s) => s.end);
@@ -260,6 +310,8 @@ function computeMetrics(combo: Candidate[], ratings: Map<string, InstructorRatin
     avgInstructorRating,
     avgDisplayRating,
     ratedSectionCount: sectionRankings.length,
+    avgGpa,
+    gpaSectionCount: sectionGpas.length,
     sectionCount: combo.length,
     minCredits: sumMinCredits(combo),
     maxCredits: combo.reduce((total, c) => total + (c.course.maxCredits ?? c.course.minCredits), 0),
@@ -296,13 +348,15 @@ function dedupePinNotices(notices: PinNotice[]): PinNotice[] {
  * @param maxNodes Hard cap on explored search nodes; defaults to MAX_NODES.
  *   Pass a smaller value for lightweight probes (e.g. relaxation hints) to
  *   bound their cost. The primary generation run should use the default.
+ * @param instructorGpas Course×instructor GPA keyed by `instructorGpaKey`.
  */
 export function generate(
   requests: CourseRequest[],
   constraints: HardConstraints,
   instructorRatings: Map<string, InstructorRating> = new Map(),
   maxResults: number = DEFAULT_MAX_RESULTS,
-  maxNodes: number = MAX_NODES
+  maxNodes: number = MAX_NODES,
+  instructorGpas: Map<string, number> = new Map()
 ): GenerationResult {
   const pinNotices: PinNotice[] = [];
 
@@ -317,10 +371,10 @@ export function generate(
     }));
     let kept: Candidate[];
     if (request.pin.kind === 'none') {
-      kept = candidates.filter((c) => candidatePasses(c, constraints));
+      kept = candidates.filter((c) => candidatePasses(c, constraints, instructorGpas));
     } else {
       for (const candidate of candidates) {
-        const overridden = overriddenFilters(candidate, constraints);
+        const overridden = overriddenFilters(candidate, constraints, instructorGpas);
         if (overridden.length > 0) {
           pinNotices.push({
             courseCode: request.course.courseCode,
@@ -436,7 +490,7 @@ export function generate(
       .map((candidate, i) => toScheduleSelection(candidate, i));
     return {
       selections,
-      metrics: computeMetrics(combo, instructorRatings),
+      metrics: computeMetrics(combo, instructorRatings, instructorGpas),
     };
   });
 
@@ -456,12 +510,13 @@ export function generateFromCourses(
   courses: Course[],
   constraints: HardConstraints,
   instructorRatings: Map<string, InstructorRating> = new Map(),
-  maxResults: number = DEFAULT_MAX_RESULTS
+  maxResults: number = DEFAULT_MAX_RESULTS,
+  instructorGpas: Map<string, number> = new Map()
 ): GenerationResult {
   const requests: CourseRequest[] = courses.map((course) => ({
     course,
     required: true,
     pin: { kind: 'none' },
   }));
-  return generate(requests, constraints, instructorRatings, maxResults);
+  return generate(requests, constraints, instructorRatings, maxResults, MAX_NODES, instructorGpas);
 }

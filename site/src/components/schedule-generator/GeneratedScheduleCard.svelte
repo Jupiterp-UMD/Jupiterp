@@ -70,5 +70,13 @@ https://github.com/atcupps/Jupiterp/LICENSE).
         Unrated
       {/if}
     </span>
+    <span>
+      {#if metrics.avgGpa !== null}
+        GPA {metrics.avgGpa.toFixed(2)}
+        ({metrics.gpaSectionCount}/{metrics.sectionCount})
+      {:else}
+        No GPA
+      {/if}
+    </span>
   </div>
 </div>

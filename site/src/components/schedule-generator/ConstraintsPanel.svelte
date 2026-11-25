@@ -33,6 +33,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     onlyOpenSeats: true,
     minGapMinutes: 0,
     minCredits: null,
+    minAverageGpa: null,
   });
   GeneratorConstraintsStore.subscribe((c) => {
     constraints = c;
@@ -46,6 +47,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     if (c.onlyOpenSeats) count++;
     if (c.minGapMinutes > 0) count++;
     if (c.minCredits !== null) count++;
+    if (c.minAverageGpa !== null) count++;
     return count;
   }
 
@@ -73,12 +75,24 @@ https://github.com/atcupps/Jupiterp/LICENSE).
       daysOff: new SvelteSet<EngineDay>(),
       minGapMinutes: 0,
       minCredits: null,
+      minAverageGpa: null,
     }));
   }
 
   function setNumberOrNull(value: string): number | null {
     const parsed = parseInt(value, 10);
     return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  function setGpaOrNull(value: string): number | null {
+    if (value.trim() === '') {
+      return null;
+    }
+    const parsed = parseFloat(value);
+    if (Number.isNaN(parsed)) {
+      return null;
+    }
+    return Math.min(4, Math.max(0, parsed));
   }
   let activeCount = $derived(countActive(constraints));
 </script>
@@ -181,6 +195,22 @@ https://github.com/atcupps/Jupiterp/LICENSE).
                 minCredits: setNumberOrNull(e.currentTarget.value),
               })}
             class="border-outline bg-bg-primary w-16 rounded-md border px-1 py-0.5"
+          />
+        </label>
+        <label class="flex flex-row items-center gap-2">
+          <span class="opacity-70">Min avg GPA</span>
+          <input
+            type="number"
+            min="0"
+            max="4"
+            step="0.1"
+            value={constraints.minAverageGpa ?? ''}
+            onchange={(e) =>
+              patch({
+                minAverageGpa: setGpaOrNull(e.currentTarget.value),
+              })}
+            class="border-outline bg-bg-primary w-16 rounded-md border px-1 py-0.5"
+            title="Only include sections whose instructors average at least this GPA"
           />
         </label>
       </div>

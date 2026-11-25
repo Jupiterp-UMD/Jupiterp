@@ -10,7 +10,7 @@
 import { describe, expect, test } from '@jest/globals';
 import type { ClassMeeting, Course, Section } from '@jupiterp/jupiterp';
 import { generate, generateFromCourses } from './ScheduleGenerator';
-import { defaultConstraints } from './types';
+import { defaultConstraints, instructorGpaKey } from './types';
 import type { CourseRequest, HardConstraints, SectionPin } from './types';
 
 // --- Fixture builders ------------------------------------------------------
@@ -32,12 +32,14 @@ function section(
   courseCode: string,
   sectionCode: string,
   meetings: ClassMeeting[],
-  opts: { openSeats?: number; instructors?: string[] } = {}
+  opts: { openSeats?: number; instructors?: string[]; instructorSlugs?: string[] } = {}
 ): Section {
+  const instructors = opts.instructors ?? ['Prof ' + sectionCode];
   return {
     courseCode,
     sectionCode,
-    instructors: opts.instructors ?? ['Prof ' + sectionCode],
+    instructors,
+    instructorSlugs: opts.instructorSlugs ?? instructors.map((name) => name.toLowerCase().replace(/\s+/g, '-')),
     meetings,
     openSeats: opts.openSeats ?? 30,
     totalSeats: 30,
@@ -311,7 +313,11 @@ describe('metrics', () => {
       minCredits: 4,
     });
     const ratings = new Map([['Prof 0101', { ranking: 3.9, display: 4.5 }]]);
-    const result = generateFromCourses([a, b], defaultConstraints(), ratings);
+    const gpas = new Map([
+      [instructorGpaKey('AAA101', 'prof-0101'), 3.4],
+      [instructorGpaKey('BBB200', 'prof-0101'), 3.0],
+    ]);
+    const result = generateFromCourses([a, b], defaultConstraints(), ratings, 1000, gpas);
     const m = result.schedules[0].metrics;
 
     expect(m.sectionCount).toBe(2);
@@ -323,6 +329,27 @@ describe('metrics', () => {
     expect(m.avgInstructorRating).toBe(3.9);
     expect(m.avgDisplayRating).toBe(4.5);
     expect(m.ratedSectionCount).toBe(2);
+    expect(m.avgGpa).toBeCloseTo(3.2);
+    expect(m.gpaSectionCount).toBe(2);
+  });
+
+  test('min average GPA filters sections', () => {
+    const low = section('AAA101', '0101', [meeting('MWF', 9, 10)], {
+      instructors: ['Low'],
+      instructorSlugs: ['low'],
+    });
+    const high = section('AAA101', '0201', [meeting('MWF', 11, 12)], {
+      instructors: ['High'],
+      instructorSlugs: ['high'],
+    });
+    const c = course('AAA101', [low, high]);
+    const gpas = new Map([
+      [instructorGpaKey('AAA101', 'low'), 2.5],
+      [instructorGpaKey('AAA101', 'high'), 3.5],
+    ]);
+    const result = generateFromCourses([c], { ...defaultConstraints(), minAverageGpa: 3.0 }, new Map(), 1000, gpas);
+    expect(result.schedules).toHaveLength(1);
+    expect(result.schedules[0].selections[0].section.sectionCode).toBe('0201');
   });
 
   test('gap counts breaks within and across courses', () => {
