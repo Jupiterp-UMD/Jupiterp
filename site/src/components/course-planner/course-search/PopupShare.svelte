@@ -1,3 +1,9 @@
+<!--
+This file is part of Jupiterp. For terms of use, please see the file
+called LICENSE at the top level of the Jupiterp source tree (online at
+https://github.com/atcupps/Jupiterp/LICENSE).
+
+-->
 <script lang="ts">
   import { SvelteDate } from 'svelte/reactivity';
   import { onDestroy } from 'svelte';
@@ -7,24 +13,34 @@
     ClipboardCheckOutline,
     ArrowDownToBracketOutline,
     CloseOutline,
+    ImageOutline,
   } from 'flowbite-svelte-icons';
   import { CurrentScheduleStore } from '../../../stores/CoursePlannerStores';
   import type { ScheduleSelection, UserEvent } from '../../../types';
   import { encodeSchedule, SHARE_PARAM } from '$lib/course-planner/ShareLink';
+  import { canvasToPngBlob, drawScheduleImage, imageFileName } from '$lib/course-planner/ScheduleImage';
+  import { TERM_NAME } from '$lib/term';
   import Tooltip from '../schedule/Tooltip.svelte';
 
   let { onCloseExport } = $props<{ onCloseExport?: () => void }>();
 
   let selections: ScheduleSelection[] = $state([]);
   let selectionsCustom: UserEvent[] = $state([]);
+  let scheduleName = $state('');
   let linkCopied = $state(false);
+  let imageCopyResult: 'copied' | 'failed' | null = $state(null);
 
   let isScheduleEmptyCustom = $derived(selections.length === 0 && selectionsCustom.length === 0);
   let isScheduleEmpty = $derived(selections.length === 0);
 
+  // Firefox before 127 has no ClipboardItem, so only the download is offered there.
+  const canCopyImage =
+    typeof window !== 'undefined' && typeof ClipboardItem !== 'undefined' && !!navigator.clipboard?.write;
+
   const unsubscribe = CurrentScheduleStore.subscribe((stored) => {
     selections = stored.selections.filter((s) => 'course' in s && 'section' in s) as ScheduleSelection[];
     selectionsCustom = stored.selections.filter((s): s is UserEvent => !('course' in s));
+    scheduleName = stored.scheduleName;
   });
   onDestroy(unsubscribe);
 
@@ -40,6 +56,36 @@
       setTimeout(() => (linkCopied = false), 1200);
     } catch (e) {
       console.error('Failed to copy share link:', e);
+    }
+  }
+
+  function renderSchedulePng(): Promise<Blob> {
+    return drawScheduleImage([...selections, ...selectionsCustom], scheduleName, TERM_NAME).then(canvasToPngBlob);
+  }
+
+  async function copyScheduleImage() {
+    try {
+      // Safari only allows a clipboard write that starts within the click,
+      // so the PNG is handed over as a promise rather than awaited first.
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': renderSchedulePng() })]);
+      imageCopyResult = 'copied';
+    } catch (e) {
+      console.error('Failed to copy schedule image:', e);
+      imageCopyResult = 'failed';
+    }
+    setTimeout(() => (imageCopyResult = null), 1500);
+  }
+
+  async function downloadScheduleImage() {
+    try {
+      const url = URL.createObjectURL(await renderSchedulePng());
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = imageFileName(scheduleName);
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      console.error('Failed to download schedule image:', e);
     }
   }
 
@@ -155,6 +201,33 @@
       <span class="mr-0.75">Download</span>
       <Tooltip text=".ics file" tooltipText="This will download a universal .ics file containing your schedule." />
     </button>
+
+    <div class="flex w-full gap-2">
+      {#if canCopyImage}
+        <button
+          class="bg-outline hover:bg-hover disabled:text-text-secondary disabled:bg-outline/50 flex flex-1 items-center justify-center rounded-md px-2 py-3 font-medium disabled:cursor-not-allowed"
+          disabled={isScheduleEmptyCustom}
+          title="Copy your schedule as an image to paste into a chat"
+          onclick={copyScheduleImage}
+        >
+          {#if imageCopyResult === 'copied'}
+            <ClipboardCheckOutline class="mr-2 inline h-4 w-4" /> Copied
+          {:else if imageCopyResult === 'failed'}
+            Couldn't copy
+          {:else}
+            <ImageOutline class="mr-2 inline h-4 w-4" /> Copy image
+          {/if}
+        </button>
+      {/if}
+      <button
+        class="bg-outline hover:bg-hover disabled:text-text-secondary disabled:bg-outline/50 flex flex-1 items-center justify-center rounded-md px-2 py-3 font-medium disabled:cursor-not-allowed"
+        disabled={isScheduleEmptyCustom}
+        title="Download your schedule as a PNG image"
+        onclick={downloadScheduleImage}
+      >
+        <ArrowDownToBracketOutline class="mr-2 inline h-4 w-4" /> Save .png
+      </button>
+    </div>
 
     <button
       class="bg-outline hover:bg-hover disabled:text-text-secondary disabled:bg-outline/50 flex w-full items-center justify-center rounded-md px-4 py-3 font-medium disabled:cursor-not-allowed"
