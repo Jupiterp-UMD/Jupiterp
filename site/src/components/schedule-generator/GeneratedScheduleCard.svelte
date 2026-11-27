@@ -36,7 +36,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   function apply() {
     applyGeneratedSchedule(schedule);
-    goto(resolve('/'));
+    goto(resolve('/planner'));
   }
 
   // The preview takes the place of the results on the generator page.
