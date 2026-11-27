@@ -5,6 +5,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
 -->
 <script lang="ts">
+  import { MediaQuery } from 'svelte/reactivity';
+  import EventTimeInput from './EventTimeInput.svelte';
   import type { UserEvent } from '../../../types';
 
   interface Props {
@@ -26,6 +28,8 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   let errors: string[] = $state([]);
   let isSubmitting = $state(false);
 
+  const desktop = new MediaQuery('(min-width: 64rem)');
+
   // Keystroke caches to catch lone digits typed by the user
   let rawStartKeys = '';
   let rawEndKeys = '';
@@ -46,9 +50,9 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     }
   });
 
-  // Automatically enforce 1-hour relative buffers reactively when values change
+  // Preserve the native mobile fields’ one-hour adjustment.
   $effect(() => {
-    if (startTime) {
+    if (!desktop.current && startTime) {
       if (lastChanged === 'start' || !endTime) {
         if (!endTime || timeStringToDecimal(startTime) >= timeStringToDecimal(endTime)) {
           endTime = addHour(startTime, 1);
@@ -58,7 +62,7 @@ https://github.com/atcupps/Jupiterp/LICENSE).
   });
 
   $effect(() => {
-    if (endTime) {
+    if (!desktop.current && endTime) {
       if (lastChanged === 'end' || !startTime) {
         if (!startTime || timeStringToDecimal(startTime) >= timeStringToDecimal(endTime)) {
           startTime = addHour(endTime, -1);
@@ -185,7 +189,9 @@ https://github.com/atcupps/Jupiterp/LICENSE).
     if (selectedDays.length === 0) errors.push('Select at least one day');
     if (!startTime) errors.push('Start time is required');
     if (!endTime) errors.push('End time is required');
-    if (startTime && endTime && timeStringToDecimal(startTime) >= timeStringToDecimal(endTime)) {
+    if (desktop.current && endTime === '24:00') {
+      errors.push('End time must be before midnight');
+    } else if (startTime && endTime && timeStringToDecimal(startTime) >= timeStringToDecimal(endTime)) {
       errors.push('End time must be after start time');
     }
 
@@ -263,32 +269,37 @@ https://github.com/atcupps/Jupiterp/LICENSE).
 
   <!-- Start / End time fields -->
   <div class="mb-2 flex gap-2">
-    <div class="flex-1">
-      <label class="mb-0.5 block text-sm" for="user-event-start">Start<span class="text-orange">*</span></label>
-      <input
-        bind:this={startInputRef}
-        id="user-event-start"
-        type="time"
-        value={startTime}
-        onkeydown={(e) => handleKeyDown('start', e)}
-        onblur={() => handleBlur('start')}
-        onchange={(e) => handleDirectChange('start', e)}
-        class="border-outline w-full rounded-lg border border-solid bg-transparent px-2 py-1 text-sm"
-      />
-    </div>
-    <div class="flex-1">
-      <label class="mb-0.5 block text-sm" for="user-event-end">End<span class="text-orange">*</span></label>
-      <input
-        bind:this={endInputRef}
-        id="user-event-end"
-        type="time"
-        value={endTime}
-        onkeydown={(e) => handleKeyDown('end', e)}
-        onblur={() => handleBlur('end')}
-        onchange={(e) => handleDirectChange('end', e)}
-        class="border-outline w-full rounded-lg border border-solid bg-transparent px-2 py-1 text-sm"
-      />
-    </div>
+    {#if desktop.current}
+      <EventTimeInput label="Start" value={startTime} onTimeInput={(value) => (startTime = value)} />
+      <EventTimeInput label="End" value={endTime} onTimeInput={(value) => (endTime = value)} />
+    {:else}
+      <div class="flex-1">
+        <label class="mb-0.5 block text-sm" for="user-event-start">Start<span class="text-orange">*</span></label>
+        <input
+          bind:this={startInputRef}
+          id="user-event-start"
+          type="time"
+          value={startTime}
+          onkeydown={(e) => handleKeyDown('start', e)}
+          onblur={() => handleBlur('start')}
+          onchange={(e) => handleDirectChange('start', e)}
+          class="border-outline w-full rounded-lg border border-solid bg-transparent px-2 py-1 text-sm"
+        />
+      </div>
+      <div class="flex-1">
+        <label class="mb-0.5 block text-sm" for="user-event-end">End<span class="text-orange">*</span></label>
+        <input
+          bind:this={endInputRef}
+          id="user-event-end"
+          type="time"
+          value={endTime}
+          onkeydown={(e) => handleKeyDown('end', e)}
+          onblur={() => handleBlur('end')}
+          onchange={(e) => handleDirectChange('end', e)}
+          class="border-outline w-full rounded-lg border border-solid bg-transparent px-2 py-1 text-sm"
+        />
+      </div>
+    {/if}
   </div>
 
   <!-- Location -->
