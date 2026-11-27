@@ -63,7 +63,9 @@ This component handles segmented time entry for custom schedule events.
 
     if (segment === 'hour') {
       hour = digits;
-      if (hasTwoDigits && number >= 1 && number <= 12) {
+      const isUnambiguous = digits.length === 1 && number >= 2;
+      const isValidTwoDigitHour = hasTwoDigits && number >= 1 && number <= 12;
+      if (isUnambiguous || isValidTwoDigitHour) {
         focusSegment(minuteInput);
       }
     } else {
@@ -172,13 +174,13 @@ This component handles segmented time entry for custom schedule events.
   .time-segment:focus {
     outline: none;
     box-shadow: none;
-    background-color: #2563eb;
-    color: #fff;
+    background-color: var(--selection-bg);
+    color: var(--selection-text);
   }
 
   .time-segment:focus::placeholder,
   .time-segment::selection {
-    background-color: #2563eb;
-    color: #fff;
+    background-color: var(--selection-bg);
+    color: var(--selection-text);
   }
 </style>

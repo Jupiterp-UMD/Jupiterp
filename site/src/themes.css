@@ -32,6 +32,8 @@
   --border: #f1f1f1;
   --outline: #a2aabd;
   --hover: #d8d8d8;
+  --selection-bg: #1d4ed8;
+  --selection-text: var(--white);
 
   /* UI state accents: an error message, a destructive action, a confirmation.
      Darkened on light backgrounds and lightened on dark ones to hold contrast
@@ -65,6 +67,7 @@
   --border: #252e3e;
   --outline: #47526a;
   --hover: #30374a;
+  --selection-bg: #2563eb;
   --success: #4ade80;
   --warning: #facc15;
   --danger: #f87171;
