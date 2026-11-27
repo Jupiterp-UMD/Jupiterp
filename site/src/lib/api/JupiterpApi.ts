@@ -217,8 +217,6 @@ export async function gradeTerms(fetchFn?: Fetch): Promise<Page<GradeTerm>> {
 /* ============================ instructors =============================== */
 
 export interface InstructorSearchConfig {
-  instructorSlugs?: string;
-  ratings?: string;
   /** Case-insensitive substring match, normalized server-side. */
   nameSearch?: string;
   activeOnly?: boolean;
@@ -244,32 +242,11 @@ export async function searchInstructors(cfg: InstructorSearchConfig, fetchFn?: F
       // un-normalized query finds nothing: "O'Brien" against the stored
       // "o brien" fails on the apostrophe.
       nameSearch: normalizeName(cfg.nameSearch) ?? undefined,
-      instructorSlugs: cfg.instructorSlugs,
-      ratings: cfg.ratings,
       activeOnly: cfg.activeOnly,
       sortBy: cfg.sortBy,
       limit: cfg.limit ?? 50,
       offset: cfg.offset,
       count: cfg.count,
-    }),
-    fetchFn
-  );
-}
-
-/** Globally ordered grade summaries for the directory's GPA/student sorts. */
-export async function directoryGradeSummaries(
-  sortBy: string,
-  offset: number,
-  fetchFn?: Fetch
-): Promise<Page<InstructorGradeSummary>> {
-  return get<InstructorGradeSummary>(
-    '/v1/grades/summary',
-    build({
-      groupBy: 'instructorOverall',
-      sortBy,
-      offset,
-      limit: 25,
-      minStudents: sortBy.startsWith('gpa') ? 20 : 1,
     }),
     fetchFn
   );

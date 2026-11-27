@@ -178,7 +178,6 @@ export async function loadComparisonProfessors(code: string) {
   const overall = summary.status === 'fulfilled' ? summary.value.data[0] : undefined;
   return {
     professors: comparisonProfessors(history.value.data, currentCourse?.sections ?? []),
-    courseName: currentCourse?.name ?? null,
     overall: overall ? toDistribution(overall) : null,
     warning: warnings.join(' '),
   };

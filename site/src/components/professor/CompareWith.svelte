@@ -5,7 +5,12 @@ https://github.com/atcupps/Jupiterp/LICENSE.
 <script lang="ts">
   import { tick } from 'svelte';
   import { resolve } from '$app/paths';
-  import { loadComparisonProfessors, loadRatings, type ComparisonProfessor } from '../../lib/professor/Comparison';
+  import {
+    loadComparisonProfessors,
+    loadComparisonInstructor,
+    type ComparisonProfessor,
+  } from '../../lib/professor/Comparison';
+  import { displayRating } from '../../lib/professor/Rating';
   import { hasEnoughForGpa } from '../../lib/course-planner/Grades';
 
   let {
@@ -35,9 +40,11 @@ https://github.com/atcupps/Jupiterp/LICENSE.
   let retry = $state(0);
   let warning = $state('');
   let visible = $derived(
-    professors.filter(
-      (professor) => professor.slug !== slug && professor.name.toLowerCase().includes(search.trim().toLowerCase())
-    )
+    professors
+      .filter(
+        (professor) => professor.slug !== slug && professor.name.toLowerCase().includes(search.trim().toLowerCase())
+      )
+      .slice(0, 8)
   );
   let query = $derived(new URLSearchParams({ course, left: slug, right: selected }).toString());
 
@@ -113,17 +120,14 @@ https://github.com/atcupps/Jupiterp/LICENSE.
     const options = visible;
     let cancelled = false;
     if (!open || options.length === 0) return;
-    loadRatings(options.map((professor) => professor.slug))
-      .then((result) => {
-        if (!cancelled)
-          ratings = {
-            ...ratings,
-            ...Object.fromEntries([...result].map(([slug, rating]) => [slug, rating?.display ?? null])),
-          };
+    Promise.all(
+      options.map(async (professor) => {
+        const instructor = await loadComparisonInstructor(professor.slug).catch(() => null);
+        return [professor.slug, instructor ? displayRating(instructor) : null] as const;
       })
-      .catch(() => {
-        // Missing ratings must not hide instructors or prevent a comparison.
-      });
+    ).then((entries) => {
+      if (!cancelled) ratings = { ...ratings, ...Object.fromEntries(entries) };
+    });
     return () => {
       cancelled = true;
     };
@@ -199,11 +203,7 @@ https://github.com/atcupps/Jupiterp/LICENSE.
                 No other matching professors for {course}.
               </p>
             {:else}
-              <p class="text-text-secondary mb-1 text-xs">
-                {visible.length}
-                {visible.length === 1 ? 'professor' : 'professors'} who taught or teach {course}
-              </p>
-              {#if visible.length > 5}<p class="text-text-secondary pb-1 text-xs">Scroll to see all professors.</p>{/if}
+              <p class="text-text-secondary mb-1 text-xs">Also teach {course}</p>
               {#each visible as professor (professor.slug)}
                 <button
                   type="button"

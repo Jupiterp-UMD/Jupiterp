@@ -275,7 +275,7 @@ renders it.
 <!-- Reviews -->
 <ReviewList instructorSlug={data.instructor.slug} courseCode={selectedCode} {planetterpUrl} bind:reviewsEl />
 
-<section id="write-review" aria-label="Write a review" class="mt-4 flex flex-col gap-2">
+<section aria-label="Write a review" class="mt-4 flex flex-col gap-2">
   {#if showForm}
     <ReviewForm
       instructorSlug={data.instructor.slug}

@@ -18,7 +18,6 @@ Generic searchable single-select dropdown.
     label: string;
     widthClass?: string;
     compact?: boolean;
-    onChange?: (value: string | null) => void;
   }
 
   let {
@@ -29,7 +28,6 @@ Generic searchable single-select dropdown.
     label,
     widthClass = 'w-40 sm:w-56',
     compact = false,
-    onChange,
   }: Props = $props();
 
   const LIST_ID = $derived(`${id}-list`);
@@ -59,7 +57,6 @@ Generic searchable single-select dropdown.
   async function choose(value: string | null) {
     selected = value;
     open = false;
-    onChange?.(value);
     await tick();
     button?.focus();
   }
